@@ -18,8 +18,10 @@ export default function QuestionsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      router.push("/survey/register");
+    // Check if user is authenticated
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      router.push("/auth/login");
       return;
     }
 
@@ -38,7 +40,7 @@ export default function QuestionsPage() {
     };
 
     loadSurvey();
-  }, [user, survey, router, setSurvey]);
+  }, [survey, router, setSurvey]);
 
   if (loading || !survey) {
     return (

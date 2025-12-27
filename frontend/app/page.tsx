@@ -96,7 +96,7 @@ export default function Home() {
 
         <div className="space-y-4">
           <button
-            onClick={() => router.push("/survey/register")}
+            onClick={() => router.push("/auth/login")}
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
           >
             Comenzar Encuesta
