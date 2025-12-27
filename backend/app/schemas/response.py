@@ -63,3 +63,101 @@ class SurveyResponseResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AnswerDetail(BaseModel):
+    """Detalle de una respuesta con información de la pregunta"""
+    id: UUID
+    question_id: UUID
+    question_text: str
+    question_type: str
+    option_id: Optional[UUID] = None
+    option_text: Optional[str] = None
+    answer_text: Optional[str] = None
+    rating: Optional[int] = None
+    percentage_data: Optional[Dict[str, Any]] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserResponseListItem(BaseModel):
+    """Item de lista de respuestas de usuario"""
+    id: UUID
+    survey_id: UUID
+    survey_title: str
+    completed: bool
+    points_earned: int
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def model_validate(cls, obj: Any) -> "UserResponseListItem":
+        """Custom validation to extract survey title from relationship."""
+        if hasattr(obj, '__dict__'):
+            data = {
+                'id': obj.id,
+                'survey_id': obj.survey_id,
+                'survey_title': obj.survey.title if obj.survey else 'Sin título',
+                'completed': obj.completed,
+                'points_earned': obj.points_earned,
+                'started_at': obj.started_at,
+                'completed_at': obj.completed_at,
+            }
+            return cls(**data)
+        return super().model_validate(obj)
+
+
+class UserResponseDetail(BaseModel):
+    """Detalle completo de una respuesta de usuario"""
+    id: UUID
+    survey_id: UUID
+    survey_title: str
+    survey_description: Optional[str] = None
+    completed: bool
+    points_earned: int
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    answers: List[AnswerDetail] = []
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def model_validate(cls, obj: Any) -> "UserResponseDetail":
+        """Custom validation to extract nested data from relationships."""
+        if hasattr(obj, '__dict__'):
+            # Process answers
+            answers_list = []
+            for answer in obj.answers:
+                answer_data = {
+                    'id': answer.id,
+                    'question_id': answer.question_id,
+                    'question_text': answer.question.question_text if answer.question else '',
+                    'question_type': answer.question.question_type if answer.question else '',
+                    'option_id': answer.option_id,
+                    'option_text': answer.option.option_text if answer.option else None,
+                    'answer_text': answer.answer_text,
+                    'rating': answer.rating,
+                    'percentage_data': answer.percentage_data,
+                    'created_at': answer.created_at,
+                }
+                answers_list.append(AnswerDetail(**answer_data))
+
+            data = {
+                'id': obj.id,
+                'survey_id': obj.survey_id,
+                'survey_title': obj.survey.title if obj.survey else 'Sin título',
+                'survey_description': obj.survey.description if obj.survey else None,
+                'completed': obj.completed,
+                'points_earned': obj.points_earned,
+                'started_at': obj.started_at,
+                'completed_at': obj.completed_at,
+                'answers': answers_list,
+            }
+            return cls(**data)
+        return super().model_validate(obj)

@@ -38,8 +38,8 @@ export default function LoginPage() {
       // Save token to localStorage
       localStorage.setItem("access_token", data.access_token);
 
-      // Redirect to survey
-      router.push("/survey/questions");
+      // Redirect to dashboard
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {
