@@ -134,6 +134,16 @@ class UserResponseDetail(BaseModel):
             # Process answers
             answers_list = []
             for answer in obj.answers:
+                # Convert percentage_data UUIDs to option texts
+                percentage_display = None
+                if answer.percentage_data and answer.question:
+                    percentage_display = {}
+                    # Create a map of option IDs to option texts
+                    option_map = {str(opt.id): opt.option_text for opt in answer.question.options}
+                    for option_id, percentage in answer.percentage_data.items():
+                        option_text = option_map.get(option_id, option_id)
+                        percentage_display[option_text] = percentage
+
                 answer_data = {
                     'id': answer.id,
                     'question_id': answer.question_id,
@@ -143,7 +153,7 @@ class UserResponseDetail(BaseModel):
                     'option_text': answer.option.option_text if answer.option else None,
                     'answer_text': answer.answer_text,
                     'rating': answer.rating,
-                    'percentage_data': answer.percentage_data,
+                    'percentage_data': percentage_display,
                     'created_at': answer.created_at,
                 }
                 answers_list.append(AnswerDetail(**answer_data))

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/dashboard";
+
   const [cuil, setCuil] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -38,8 +41,8 @@ export default function LoginPage() {
       // Save token to localStorage
       localStorage.setItem("access_token", data.access_token);
 
-      // Redirect to dashboard
-      router.push("/dashboard");
+      // Redirect to specified page or dashboard
+      router.push(redirect);
     } catch (err: any) {
       setError(err.message);
     } finally {

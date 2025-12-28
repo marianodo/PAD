@@ -20,6 +20,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    router.push("/");
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -59,11 +64,6 @@ export default function DashboardPage() {
     fetchResponses();
   }, [router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    router.push("/auth/login");
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("es-AR", {
@@ -72,6 +72,7 @@ export default function DashboardPage() {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "America/Argentina/Buenos_Aires",
     });
   };
 

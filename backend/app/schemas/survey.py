@@ -38,6 +38,7 @@ class SurveyResponse(BaseModel):
     status: str
     points_per_question: int
     bonus_points: int
+    max_responses_per_user: int = 0
     created_at: datetime
     expires_at: Optional[datetime] = None
     questions: List[QuestionResponse] = []
@@ -67,5 +68,6 @@ class SurveyCreate(BaseModel):
     description: Optional[str] = None
     points_per_question: int = 10
     bonus_points: int = 50
+    max_responses_per_user: int = 0
     expires_at: Optional[datetime] = None
     questions: List[QuestionCreate] = []

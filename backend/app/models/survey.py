@@ -25,6 +25,7 @@ class Survey(Base):
     status = Column(String(50), default="active")  # active, inactive, archived
     points_per_question = Column(Integer, default=10)  # Puntos por pregunta respondida
     bonus_points = Column(Integer, default=50)  # Puntos bonus por completar todo
+    max_responses_per_user = Column(Integer, default=0)  # 0 = ilimitado, >0 = límite de respuestas
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime(timezone=True), nullable=True)
 

@@ -37,6 +37,7 @@ class SurveyService:
             description=survey_data.description,
             points_per_question=survey_data.points_per_question,
             bonus_points=survey_data.bonus_points,
+            max_responses_per_user=survey_data.max_responses_per_user,
             expires_at=survey_data.expires_at,
         )
         db.add(survey)
@@ -73,22 +74,29 @@ class SurveyService:
     def user_can_respond(db: Session, user_id: UUID, survey_id: UUID) -> bool:
         """
         Verifica si el usuario puede responder la encuesta.
-        Regla: No puede responder la misma encuesta más de una vez al mes.
+        Regla: Si max_responses_per_user = 0, puede responder ilimitadamente.
+               Si max_responses_per_user > 0, ese es el límite de respuestas.
         """
-        # Obtener fecha de hace 30 días
-        one_month_ago = datetime.now() - timedelta(days=30)
+        # Obtener la encuesta
+        survey = db.query(Survey).filter(Survey.id == survey_id).first()
+        if not survey:
+            return False
 
-        # Buscar respuestas del usuario a esta encuesta en el último mes
-        existing_response = db.query(SurveyResponse).filter(
+        # Si max_responses_per_user es 0, puede responder ilimitadamente
+        if survey.max_responses_per_user == 0:
+            return True
+
+        # Contar respuestas completadas del usuario para esta encuesta
+        response_count = db.query(SurveyResponse).filter(
             and_(
                 SurveyResponse.user_id == user_id,
                 SurveyResponse.survey_id == survey_id,
-                SurveyResponse.started_at >= one_month_ago,
                 SurveyResponse.completed == True
             )
-        ).first()
+        ).count()
 
-        return existing_response is None
+        # Verificar si alcanzó el límite
+        return response_count < survey.max_responses_per_user
 
     @staticmethod
     def submit_response(
@@ -102,7 +110,7 @@ class SurveyService:
         """
         # Verificar que el usuario puede responder
         if not SurveyService.user_can_respond(db, response_data.user_id, response_data.survey_id):
-            raise ValueError("El usuario ya respondió esta encuesta este mes")
+            raise ValueError("Ya alcanzaste el límite de respuestas para esta encuesta")
 
         # Obtener encuesta
         survey = SurveyService.get_survey_by_id(db, response_data.survey_id)

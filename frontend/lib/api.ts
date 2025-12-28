@@ -18,6 +18,22 @@ const api = axios.create({
   },
 });
 
+// Add token to requests if available
+api.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
+// Auth
+export const authApi = {
+  me: () => api.get<User>("/auth/me"),
+};
+
 // Users
 export const usersApi = {
   create: (data: UserCreate) => api.post<User>("/users", data),

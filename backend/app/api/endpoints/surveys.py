@@ -89,5 +89,5 @@ def check_can_respond(
     can_respond = SurveyService.user_can_respond(db, user_id, survey_id)
     return {
         "can_respond": can_respond,
-        "message": "Usuario puede responder" if can_respond else "Usuario ya respondió esta encuesta este mes"
+        "message": "Usuario puede responder" if can_respond else "Ya alcanzaste el límite de respuestas para esta encuesta"
     }

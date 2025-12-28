@@ -1,17 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { surveysApi } from "@/lib/api";
+import { useRouter, useParams } from "next/navigation";
+import { surveysApi, authApi } from "@/lib/api";
 import { useSurveyStore } from "@/lib/store";
 import { QuestionRenderer } from "@/components/QuestionRenderer";
-import type { Survey, Answer } from "@/types";
+import type { Survey, Answer, User } from "@/types";
 
 export default function QuestionsPage() {
   const router = useRouter();
-  const { user, survey, answers, addAnswer, setCurrentStep, setSurvey } =
+  const params = useParams();
+  const surveyId = params.id as string;
+
+  const { survey, answers, addAnswer, setCurrentStep, setSurvey, setUser } =
     useSurveyStore();
 
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -21,26 +25,44 @@ export default function QuestionsPage() {
     // Check if user is authenticated
     const token = localStorage.getItem("access_token");
     if (!token) {
-      router.push("/auth/login");
+      // Save the survey ID to redirect back after login
+      router.push(`/auth/login?redirect=/survey/${surveyId}`);
       return;
     }
 
-    const loadSurvey = async () => {
+    const loadData = async () => {
       try {
-        if (!survey) {
-          const response = await surveysApi.getActive();
-          setSurvey(response.data);
+        // Load user info
+        const userResponse = await authApi.me();
+        setCurrentUser(userResponse.data);
+        setUser(userResponse.data);
+
+        // Load specific survey by ID
+        const surveyResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!surveyResponse.ok) {
+          throw new Error("Encuesta no encontrada");
         }
+
+        const data = await surveyResponse.json();
+        setSurvey(data);
       } catch (err) {
-        setError("Error al cargar la encuesta");
+        setError("Error al cargar los datos");
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    loadSurvey();
-  }, [survey, router, setSurvey]);
+    loadData();
+  }, [surveyId, router, setSurvey, setUser]);
 
   if (loading || !survey) {
     return (
@@ -113,24 +135,25 @@ export default function QuestionsPage() {
   };
 
   const handleSubmit = async () => {
-    if (!user || !survey) return;
+    if (!currentUser || !survey) return;
 
     setSubmitting(true);
     setError(null);
 
     try {
       // Verificar si puede responder
-      const canRespondCheck = await surveysApi.canRespond(survey.id, user.id);
+      const canRespondCheck = await surveysApi.canRespond(survey.id, currentUser.id);
 
       if (!canRespondCheck.data.can_respond) {
         setError(canRespondCheck.data.message);
+        setSubmitting(false);
         return;
       }
 
       // Enviar respuestas
       await surveysApi.submitResponse({
         survey_id: survey.id,
-        user_id: user.id,
+        user_id: currentUser.id,
         answers: answers,
         completed: true,
       });
