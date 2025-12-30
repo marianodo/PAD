@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -493,6 +494,19 @@ export default function LoginPage() {
               </button>
             </form>
           )}
+
+          {/* Link to Admin/Client Login */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-center text-sm text-gray-600">
+              ¿Eres administrador o cliente?{" "}
+              <Link
+                href="/auth/admin-login"
+                className="text-blue-600 hover:text-blue-700 font-semibold"
+              >
+                Accede aquí
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

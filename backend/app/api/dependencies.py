@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.db.base import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.core.security import decode_access_token
 
 security = HTTPBearer()
@@ -42,3 +42,39 @@ def get_current_user(
         )
 
     return user
+
+
+def get_current_admin(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Verify that current user is an admin."""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos de administrador"
+        )
+    return current_user
+
+
+def get_current_client(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Verify that current user is a client."""
+    if current_user.role != UserRole.CLIENT:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos de cliente"
+        )
+    return current_user
+
+
+def get_current_regular_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Verify that current user is a regular user."""
+    if current_user.role != UserRole.USER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Esta funcionalidad es solo para usuarios regulares"
+        )
+    return current_user

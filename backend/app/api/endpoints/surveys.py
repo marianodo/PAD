@@ -1,14 +1,42 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from uuid import UUID
-from typing import Optional
+from typing import Optional, List
 
 from app.db.base import get_db
 from app.services.survey_service import SurveyService
 from app.schemas.survey import SurveyResponse, SurveyCreate
 from app.schemas.response import SurveyResponseCreate, SurveyResponseResponse
+from app.api.dependencies import get_current_user
+from app.models.user import User, UserRole
 
 router = APIRouter()
+
+
+@router.get("/", response_model=List[SurveyResponse])
+def get_surveys(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene las encuestas según el rol del usuario:
+    - Admin: ve todas las encuestas
+    - Client: ve solo sus encuestas
+    - User: no tiene acceso a esta ruta
+    """
+    if current_user.role == UserRole.ADMIN:
+        # Admin ve todas las encuestas
+        surveys = SurveyService.get_all_surveys(db)
+    elif current_user.role == UserRole.CLIENT:
+        # Cliente ve solo sus encuestas
+        surveys = SurveyService.get_all_surveys(db, client_id=current_user.id)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para acceder a esta funcionalidad"
+        )
+
+    return surveys
 
 
 @router.get("/active", response_model=SurveyResponse)

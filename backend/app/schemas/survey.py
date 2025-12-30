@@ -36,12 +36,14 @@ class SurveyResponse(BaseModel):
     title: str
     description: Optional[str] = None
     status: str
+    client_id: Optional[UUID] = None
     points_per_question: int
     bonus_points: int
     max_responses_per_user: int = 0
     created_at: datetime
     expires_at: Optional[datetime] = None
     questions: List[QuestionResponse] = []
+    total_responses: int = 0
 
     class Config:
         from_attributes = True

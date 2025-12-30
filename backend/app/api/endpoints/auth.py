@@ -43,6 +43,7 @@ def register(
         hashed_password=hashed_password,
         email=user_data.email,
         name=user_data.name,
+        role=user_data.role,
         phone=user_data.phone,
         address=user_data.address,
         neighborhood=user_data.neighborhood,
@@ -62,15 +63,19 @@ def login(
     credentials: LoginRequest,
     db: Session = Depends(get_db)
 ):
-    """Login with CUIL and password."""
+    """Login with CUIL/Email and password."""
 
-    # Find user by CUIL
-    user = db.query(User).filter(User.cuil == credentials.cuil).first()
+    # Try to find user by CUIL or email
+    # If it contains @, it's an email, otherwise it's a CUIL
+    if "@" in credentials.cuil:
+        user = db.query(User).filter(User.email == credentials.cuil).first()
+    else:
+        user = db.query(User).filter(User.cuil == credentials.cuil).first()
 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="CUIL o contraseña incorrectos",
+            detail="Credenciales incorrectas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -78,7 +83,7 @@ def login(
     if not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="CUIL o contraseña incorrectos",
+            detail="Credenciales incorrectas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

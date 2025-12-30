@@ -29,6 +29,30 @@ class SurveyService:
         return db.query(Survey).filter(Survey.id == survey_id).first()
 
     @staticmethod
+    def get_all_surveys(db: Session, client_id: Optional[UUID] = None) -> List[Survey]:
+        """
+        Obtiene todas las encuestas.
+        Si se proporciona client_id, filtra por ese cliente.
+        Si no, devuelve todas (para admin).
+        """
+        query = db.query(Survey)
+
+        if client_id:
+            query = query.filter(Survey.client_id == client_id)
+
+        surveys = query.order_by(Survey.created_at.desc()).all()
+
+        # Agregar total_responses a cada encuesta
+        for survey in surveys:
+            total_responses = db.query(SurveyResponse).filter(
+                SurveyResponse.survey_id == survey.id,
+                SurveyResponse.completed == True
+            ).count()
+            survey.total_responses = total_responses
+
+        return surveys
+
+    @staticmethod
     def create_survey(db: Session, survey_data: SurveyCreate) -> Survey:
         """Crea una nueva encuesta con sus preguntas y opciones"""
         # Crear encuesta

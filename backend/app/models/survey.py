@@ -23,6 +23,7 @@ class Survey(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text)
     status = Column(String(50), default="active")  # active, inactive, archived
+    client_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # Cliente owner de la encuesta
     points_per_question = Column(Integer, default=10)  # Puntos por pregunta respondida
     bonus_points = Column(Integer, default=50)  # Puntos bonus por completar todo
     max_responses_per_user = Column(Integer, default=0)  # 0 = ilimitado, >0 = límite de respuestas
@@ -30,6 +31,7 @@ class Survey(Base):
     expires_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
+    client = relationship("User", foreign_keys=[client_id])
     questions = relationship("Question", back_populates="survey", cascade="all, delete-orphan")
     responses = relationship("SurveyResponse", back_populates="survey")
 
