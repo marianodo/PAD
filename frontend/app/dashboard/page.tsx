@@ -439,9 +439,252 @@ export default function DashboardPage() {
           )}
 
           {activeTab === "points" && (
-            <div className="p-6 text-center py-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Mis Puntos</h2>
-              <p className="text-gray-600">Esta sección está en desarrollo</p>
+            <div className="p-6">
+              {/* Nivel Actual Card */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 mb-8">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      Nivel Actual
+                    </h2>
+                    <p className="text-gray-600">
+                      Tu progreso en participación ciudadana
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-full p-4 shadow-sm">
+                    <svg
+                      className="w-8 h-8 text-gray-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="text-6xl font-bold text-gray-900 mb-2">
+                    {stats.total_points}
+                  </div>
+                  <p className="text-gray-600 text-lg">puntos totales</p>
+                </div>
+
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      {stats.level}
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      {stats.points_to_next_level} puntos para{" "}
+                      {stats.level === "Bronce" ? "Plata" : stats.level === "Plata" ? "Oro" : "Platino"}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-300 rounded-full h-3">
+                    <div
+                      className="bg-gradient-to-r from-blue-600 to-blue-800 h-3 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${
+                          stats.level === "Bronce"
+                            ? (stats.total_points / 500) * 100
+                            : stats.level === "Plata"
+                            ? ((stats.total_points - 500) / 500) * 100
+                            : ((stats.total_points - 1000) / 1000) * 100
+                        }%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Niveles de Participación */}
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                Niveles de Participación
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {/* Bronce */}
+                <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 relative">
+                  {stats.total_points >= 0 && (
+                    <div className="absolute top-4 right-4 flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Completado
+                    </div>
+                  )}
+                  <h4 className="text-2xl font-bold text-gray-900 mb-4">Bronce</h4>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <svg
+                      className="w-5 h-5 text-orange-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    <span>0+ puntos</span>
+                  </div>
+                </div>
+
+                {/* Plata */}
+                <div
+                  className={`border-2 rounded-2xl p-6 relative ${
+                    stats.level === "Plata"
+                      ? "bg-white border-blue-600"
+                      : "bg-white border-gray-200"
+                  }`}
+                >
+                  {stats.level === "Plata" && (
+                    <div className="absolute top-4 right-4 px-3 py-1 bg-blue-900 text-white text-sm font-medium rounded-full">
+                      Actual
+                    </div>
+                  )}
+                  {stats.total_points >= 500 && stats.level !== "Plata" && (
+                    <div className="absolute top-4 right-4 flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Completado
+                    </div>
+                  )}
+                  <h4 className="text-2xl font-bold text-gray-900 mb-4">Plata</h4>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <svg
+                      className="w-5 h-5 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    <span>500+ puntos</span>
+                  </div>
+                </div>
+
+                {/* Oro */}
+                <div
+                  className={`border-2 rounded-2xl p-6 relative ${
+                    stats.level === "Oro"
+                      ? "bg-white border-blue-600"
+                      : "bg-white border-gray-200"
+                  }`}
+                >
+                  {stats.level === "Oro" && (
+                    <div className="absolute top-4 right-4 px-3 py-1 bg-blue-900 text-white text-sm font-medium rounded-full">
+                      Actual
+                    </div>
+                  )}
+                  <h4 className="text-2xl font-bold text-gray-900 mb-4">Oro</h4>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <svg
+                      className="w-5 h-5 text-yellow-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    <span>1000+ puntos</span>
+                  </div>
+                </div>
+
+                {/* Platino */}
+                <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 relative">
+                  <h4 className="text-2xl font-bold text-gray-900 mb-4">Platino</h4>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <svg
+                      className="w-5 h-5 text-purple-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    <span>2000+ puntos</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Historial de Puntos */}
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                Historial de Puntos
+              </h3>
+              <div className="space-y-4">
+                {responses
+                  .filter((r) => r.completed)
+                  .map((response) => (
+                    <div
+                      key={response.id}
+                      className="flex items-center justify-between p-6 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition"
+                    >
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-1">
+                          {response.survey_title}
+                        </h4>
+                        <p className="text-sm text-gray-500">
+                          {formatDate(response.completed_at!)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-green-600 font-bold text-xl">
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                          />
+                        </svg>
+                        +{response.points_earned}
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           )}
 
