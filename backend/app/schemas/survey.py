@@ -30,6 +30,17 @@ class QuestionResponse(BaseModel):
         from_attributes = True
 
 
+class ClientInfo(BaseModel):
+    """Schema para información básica del cliente"""
+    id: UUID
+    name: str
+    email: str
+    cuit: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class SurveyResponse(BaseModel):
     """Schema de respuesta para encuesta"""
     id: UUID
@@ -37,6 +48,8 @@ class SurveyResponse(BaseModel):
     description: Optional[str] = None
     status: str
     client_id: Optional[UUID] = None
+    client: Optional[ClientInfo] = None
+    is_active: bool = True
     points_per_question: int
     bonus_points: int
     max_responses_per_user: int = 0

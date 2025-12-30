@@ -7,12 +7,17 @@ from app.db.base import get_db
 from app.services.survey_service import SurveyService
 from app.schemas.survey import SurveyResponse, SurveyCreate
 from app.schemas.response import SurveyResponseCreate, SurveyResponseResponse
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, get_current_admin
 from app.models.user import User
 from app.models.admin import Admin
 from app.models.client import Client
+from pydantic import BaseModel
 
 router = APIRouter()
+
+
+class ToggleSurveyRequest(BaseModel):
+    is_active: bool
 
 
 @router.get("/", response_model=List[SurveyResponse])
@@ -157,3 +162,34 @@ def get_survey_results(
     # Obtener resultados
     results = SurveyService.get_survey_results(db, survey_id)
     return results
+
+
+@router.patch("/{survey_id}/toggle")
+def toggle_survey_status(
+    survey_id: UUID,
+    toggle_data: ToggleSurveyRequest,
+    current_admin: Admin = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Activa o desactiva una encuesta.
+    Solo accesible para admin.
+    """
+    # Verificar que la encuesta existe
+    survey = SurveyService.get_survey_by_id(db, survey_id)
+    if not survey:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Encuesta no encontrada"
+        )
+
+    # Actualizar estado
+    survey.is_active = toggle_data.is_active
+    db.commit()
+    db.refresh(survey)
+
+    return {
+        "id": str(survey.id),
+        "is_active": survey.is_active,
+        "message": f"Encuesta {'activada' if toggle_data.is_active else 'desactivada'} exitosamente"
+    }

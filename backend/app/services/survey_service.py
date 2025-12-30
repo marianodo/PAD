@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, func
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta, date
@@ -7,6 +7,7 @@ from uuid import UUID
 from app.models.survey import Survey, Question, QuestionOption
 from app.models.response import SurveyResponse, Answer
 from app.models.user import User
+from app.models.client import Client
 from app.models.points import UserPoints, PointTransaction
 from app.schemas.survey import SurveyCreate
 from app.schemas.response import SurveyResponseCreate, AnswerCreate
@@ -35,7 +36,7 @@ class SurveyService:
         Si se proporciona client_id, filtra por ese cliente.
         Si no, devuelve todas (para admin).
         """
-        query = db.query(Survey)
+        query = db.query(Survey).options(joinedload(Survey.client))
 
         if client_id:
             query = query.filter(Survey.client_id == client_id)
