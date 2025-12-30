@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
-from app.schemas.user import UserRole
+from datetime import date
 
 
 class Token(BaseModel):
@@ -18,12 +18,13 @@ class LoginRequest(BaseModel):
 
 
 class RegisterRequest(BaseModel):
+    """Schema para registro de usuarios ciudadanos"""
     cuil: str = Field(..., min_length=11, max_length=11, description="CUIL sin guiones")
     password: str = Field(..., min_length=6, max_length=72)
     email: str = Field(..., description="Email del usuario")
     name: str = Field(..., min_length=1, description="Nombre completo")
-    role: Optional[UserRole] = UserRole.USER
     phone: Optional[str] = None
+    birth_date: Optional[date] = None
     address: Optional[str] = None
     neighborhood: Optional[str] = None
     city: Optional[str] = None

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
-from typing import Optional, List
-from datetime import datetime, timedelta
+from sqlalchemy import and_, func
+from typing import Optional, List, Dict, Any
+from datetime import datetime, timedelta, date
 from uuid import UUID
 
 from app.models.survey import Survey, Question, QuestionOption
@@ -221,3 +221,84 @@ class SurveyService:
             related_response_id=response_id,
         )
         db.add(transaction)
+
+    @staticmethod
+    def get_survey_results(db: Session, survey_id: UUID) -> Dict[str, Any]:
+        """
+        Obtiene los resultados y estadísticas demográficas de una encuesta.
+        Retorna KPIs por edad, ciudad y barrio.
+        """
+        # Obtener todas las respuestas completadas con datos del usuario
+        responses = db.query(SurveyResponse, User).join(
+            User, SurveyResponse.user_id == User.id
+        ).filter(
+            SurveyResponse.survey_id == survey_id,
+            SurveyResponse.completed == True
+        ).all()
+
+        total_responses = len(responses)
+
+        if total_responses == 0:
+            return {
+                "survey_id": str(survey_id),
+                "total_responses": 0,
+                "demographics": {
+                    "by_age_group": {},
+                    "by_city": {},
+                    "by_neighborhood": {}
+                }
+            }
+
+        # Calcular edad y agrupar
+        def calculate_age(birth_date: date) -> Optional[int]:
+            if not birth_date:
+                return None
+            today = date.today()
+            return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+
+        def get_age_group(age: Optional[int]) -> str:
+            if age is None:
+                return "Sin especificar"
+            if age < 18:
+                return "Menor de 18"
+            elif age < 25:
+                return "18-24"
+            elif age < 35:
+                return "25-34"
+            elif age < 45:
+                return "35-44"
+            elif age < 55:
+                return "45-54"
+            elif age < 65:
+                return "55-64"
+            else:
+                return "65+"
+
+        # Contadores
+        age_groups: Dict[str, int] = {}
+        cities: Dict[str, int] = {}
+        neighborhoods: Dict[str, int] = {}
+
+        for response, user in responses:
+            # Por grupo de edad
+            age = calculate_age(user.birth_date)
+            age_group = get_age_group(age)
+            age_groups[age_group] = age_groups.get(age_group, 0) + 1
+
+            # Por ciudad
+            city = user.city or "Sin especificar"
+            cities[city] = cities.get(city, 0) + 1
+
+            # Por barrio
+            neighborhood = user.neighborhood or "Sin especificar"
+            neighborhoods[neighborhood] = neighborhoods.get(neighborhood, 0) + 1
+
+        return {
+            "survey_id": str(survey_id),
+            "total_responses": total_responses,
+            "demographics": {
+                "by_age_group": age_groups,
+                "by_city": cities,
+                "by_neighborhood": neighborhoods
+            }
+        }

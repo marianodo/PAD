@@ -9,7 +9,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.db.base import get_db
-from app.models.user import User, UserRole
+from app.models.client import Client
 from app.core.security import get_password_hash
 
 
@@ -21,32 +21,29 @@ def create_client():
 
     try:
         # Check if client already exists
-        existing_client = db.query(User).filter(User.email == "muni.altagracia@gmail.com").first()
+        existing_client = db.query(Client).filter(Client.email == "muni.altagracia@gmail.com").first()
 
         if existing_client:
-            print("Client user already exists. Updating role to client...")
-            existing_client.role = UserRole.CLIENT
-            existing_client.name = "Municipalidad de Alta Gracia"
-            db.commit()
-            print("✅ Client user updated successfully!")
+            print("Client user already exists!")
             print(f"Email: {existing_client.email}")
-            print(f"CUIL: {existing_client.cuil}")
+            print(f"CUIT: {existing_client.cuit}")
             print(f"Name: {existing_client.name}")
-            print(f"Role: {existing_client.role.value}")
             return existing_client
 
         # Create new client user
-        client_user = User(
-            cuil="30123456789",  # CUIL de ejemplo para entidad
-            hashed_password=get_password_hash("muni123"),
+        client_user = Client(
             email="muni.altagracia@gmail.com",
+            hashed_password=get_password_hash("muni123"),
             name="Municipalidad de Alta Gracia",
-            role=UserRole.CLIENT,
+            cuit="30123456789",  # CUIT de ejemplo para entidad
             phone="0351-4123456",
+            contact_person="Juan Pérez",
+            contact_position="Director de Participación Ciudadana",
             address="Av. Sarmiento 1",
-            neighborhood="Centro",
             city="Alta Gracia",
-            postal_code="5186"
+            postal_code="5186",
+            website="https://www.altagracia.gob.ar",
+            description="Municipalidad de Alta Gracia, Córdoba"
         )
 
         db.add(client_user)
@@ -57,9 +54,8 @@ def create_client():
         print(f"\nCredentials:")
         print(f"Email: muni.altagracia@gmail.com")
         print(f"Password: muni123")
-        print(f"CUIL: 30123456789")
+        print(f"CUIT: 30123456789")
         print(f"Name: Municipalidad de Alta Gracia")
-        print(f"Role: {client_user.role.value}")
         print(f"ID: {client_user.id}")
 
         return client_user

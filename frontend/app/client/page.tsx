@@ -20,6 +20,7 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [userName, setUserName] = useState("Cliente");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -44,9 +45,9 @@ export default function ClientDashboard() {
           const userData = await userResponse.json();
 
           // Check if user is client
-          if (userData.role !== "client") {
-            // Redirect based on role
-            if (userData.role === "admin") {
+          if (userData.account_type !== "client") {
+            // Redirect based on account type
+            if (userData.account_type === "admin") {
               router.push("/admin");
             } else {
               router.push("/dashboard");
@@ -85,6 +86,17 @@ export default function ClientDashboard() {
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     router.push("/auth/admin-login");
+  };
+
+  const handleCopyLink = async (surveyId: string) => {
+    const surveyLink = `${window.location.origin}/survey/${surveyId}`;
+    try {
+      await navigator.clipboard.writeText(surveyLink);
+      setCopiedId(surveyId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error("Error al copiar el link:", err);
+    }
   };
 
   if (loading) {
@@ -284,9 +296,55 @@ export default function ClientDashboard() {
                       {new Date(survey.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900">
-                        Ver Resultados
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => router.push(`/client/results/${survey.id}`)}
+                          className="text-blue-600 hover:text-blue-900 font-medium"
+                        >
+                          Ver Resultados
+                        </button>
+                        <button
+                          onClick={() => handleCopyLink(survey.id)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                          title="Copiar link de la encuesta"
+                        >
+                          {copiedId === survey.id ? (
+                            <>
+                              <svg
+                                className="w-4 h-4 text-green-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                              <span className="text-green-600">Copiado</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                />
+                              </svg>
+                              <span>Copiar Link</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

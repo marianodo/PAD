@@ -9,7 +9,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.db.base import get_db
-from app.models.user import User, UserRole
+from app.models.admin import Admin
 from app.core.security import get_password_hash
 
 
@@ -21,30 +21,19 @@ def create_admin():
 
     try:
         # Check if admin already exists
-        existing_admin = db.query(User).filter(User.email == "mardom4164@gmail.com").first()
+        existing_admin = db.query(Admin).filter(Admin.email == "mardom4164@gmail.com").first()
 
         if existing_admin:
-            print("Admin user already exists. Updating role to admin...")
-            existing_admin.role = UserRole.ADMIN
-            db.commit()
-            print("✅ Admin user updated successfully!")
+            print("Admin user already exists!")
             print(f"Email: {existing_admin.email}")
-            print(f"CUIL: {existing_admin.cuil}")
-            print(f"Role: {existing_admin.role.value}")
-            return
+            print(f"Name: {existing_admin.name}")
+            return existing_admin
 
         # Create new admin user
-        admin_user = User(
-            cuil="20416412347",  # CUIL de ejemplo
-            hashed_password=get_password_hash("admin123"),
+        admin_user = Admin(
             email="mardom4164@gmail.com",
+            hashed_password=get_password_hash("admin123"),
             name="Admin PAD",
-            role=UserRole.ADMIN,
-            phone=None,
-            address=None,
-            neighborhood=None,
-            city=None,
-            postal_code=None
         )
 
         db.add(admin_user)
@@ -55,8 +44,10 @@ def create_admin():
         print(f"\nCredentials:")
         print(f"Email: mardom4164@gmail.com")
         print(f"Password: admin123")
-        print(f"CUIL: 20416412347")
-        print(f"Role: {admin_user.role.value}")
+        print(f"Name: {admin_user.name}")
+        print(f"ID: {admin_user.id}")
+
+        return admin_user
 
     except Exception as e:
         db.rollback()

@@ -2,17 +2,10 @@ from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import date, datetime
 from uuid import UUID
-from enum import Enum
-
-
-class UserRole(str, Enum):
-    """Roles de usuario en el sistema"""
-    ADMIN = "admin"
-    CLIENT = "client"
-    USER = "user"
 
 
 class UserBase(BaseModel):
+    """Schema base para usuarios ciudadanos"""
     email: EmailStr
     name: Optional[str] = None
     phone: Optional[str] = None
@@ -41,10 +34,9 @@ class UserUpdate(BaseModel):
 
 
 class UserResponse(UserBase):
-    """Schema de respuesta de usuario"""
+    """Schema de respuesta de usuario ciudadano"""
     id: UUID
     cuil: str
-    role: UserRole
     created_at: datetime
     updated_at: Optional[datetime] = None
 

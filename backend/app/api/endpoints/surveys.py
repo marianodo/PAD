@@ -1,33 +1,35 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from uuid import UUID
-from typing import Optional, List
+from typing import Optional, List, Union
 
 from app.db.base import get_db
 from app.services.survey_service import SurveyService
 from app.schemas.survey import SurveyResponse, SurveyCreate
 from app.schemas.response import SurveyResponseCreate, SurveyResponseResponse
 from app.api.dependencies import get_current_user
-from app.models.user import User, UserRole
+from app.models.user import User
+from app.models.admin import Admin
+from app.models.client import Client
 
 router = APIRouter()
 
 
 @router.get("/", response_model=List[SurveyResponse])
 def get_surveys(
-    current_user: User = Depends(get_current_user),
+    current_user: Union[User, Admin, Client] = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Obtiene las encuestas según el rol del usuario:
+    Obtiene las encuestas según el tipo de cuenta:
     - Admin: ve todas las encuestas
     - Client: ve solo sus encuestas
     - User: no tiene acceso a esta ruta
     """
-    if current_user.role == UserRole.ADMIN:
+    if isinstance(current_user, Admin):
         # Admin ve todas las encuestas
         surveys = SurveyService.get_all_surveys(db)
-    elif current_user.role == UserRole.CLIENT:
+    elif isinstance(current_user, Client):
         # Cliente ve solo sus encuestas
         surveys = SurveyService.get_all_surveys(db, client_id=current_user.id)
     else:
@@ -119,3 +121,39 @@ def check_can_respond(
         "can_respond": can_respond,
         "message": "Usuario puede responder" if can_respond else "Ya alcanzaste el límite de respuestas para esta encuesta"
     }
+
+
+@router.get("/{survey_id}/results")
+def get_survey_results(
+    survey_id: UUID,
+    current_user: Union[User, Admin, Client] = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene los resultados y estadísticas de una encuesta.
+    Solo accesible para admin y cliente dueño de la encuesta.
+    """
+    # Verificar que la encuesta existe
+    survey = SurveyService.get_survey_by_id(db, survey_id)
+    if not survey:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Encuesta no encontrada"
+        )
+
+    # Verificar permisos
+    if isinstance(current_user, User):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para ver resultados"
+        )
+
+    if isinstance(current_user, Client) and survey.client_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para ver esta encuesta"
+        )
+
+    # Obtener resultados
+    results = SurveyService.get_survey_results(db, survey_id)
+    return results

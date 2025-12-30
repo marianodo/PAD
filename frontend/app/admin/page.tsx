@@ -45,8 +45,13 @@ export default function AdminDashboard() {
           const userData = await userResponse.json();
 
           // Check if user is admin
-          if (userData.role !== "admin") {
-            router.push("/dashboard");
+          if (userData.account_type !== "admin") {
+            // Redirect based on account type
+            if (userData.account_type === "client") {
+              router.push("/client");
+            } else {
+              router.push("/dashboard");
+            }
             return;
           }
 

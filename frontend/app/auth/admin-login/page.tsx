@@ -56,10 +56,10 @@ export default function AdminLoginPage() {
       if (userResponse.ok) {
         const userData = await userResponse.json();
 
-        // Redirigir según el rol
-        if (userData.role === "admin") {
+        // Redirigir según el tipo de cuenta
+        if (userData.account_type === "admin") {
           router.push("/admin");
-        } else if (userData.role === "client") {
+        } else if (userData.account_type === "client") {
           router.push("/client");
         } else {
           // Si es un usuario regular, redirigir al dashboard normal
