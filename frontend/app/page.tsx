@@ -15,27 +15,21 @@ export default function Home() {
   useEffect(() => {
     // Check if user is logged in
     const token = localStorage.getItem("access_token");
-    setIsLoggedIn(!!token);
 
-    const loadSurvey = async () => {
-      try {
-        const response = await surveysApi.getActive();
-        setSurvey(response.data);
-      } catch (err) {
-        setError("No hay encuesta activa disponible");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!token) {
+      // Redirect to login if not authenticated
+      router.push("/auth/login");
+      return;
+    }
 
-    loadSurvey();
-  }, []);
+    // Redirect to dashboard if authenticated
+    router.push("/dashboard");
+  }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     setIsLoggedIn(false);
-    router.push("/");
+    router.push("/auth/login");
   };
 
   if (loading) {

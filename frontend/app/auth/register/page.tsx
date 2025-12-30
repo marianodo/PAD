@@ -80,7 +80,7 @@ export default function RegisterPage() {
       if (loginResponse.ok) {
         const data = await loginResponse.json();
         localStorage.setItem("access_token", data.access_token);
-        router.push("/survey/questions");
+        router.push("/dashboard");
       } else {
         router.push("/auth/login");
       }
