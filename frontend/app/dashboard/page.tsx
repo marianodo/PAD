@@ -21,6 +21,17 @@ interface UserStats {
   points_to_next_level: number;
 }
 
+interface UserData {
+  cuil: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  neighborhood?: string;
+  city?: string;
+  postal_code?: string;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
@@ -31,15 +42,131 @@ export default function DashboardPage() {
     points_to_next_level: 250,
   });
   const [userName, setUserName] = useState("Usuario");
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"surveys" | "points" | "profile">(
     "surveys"
   );
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<UserData | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordError, setPasswordError] = useState("");
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     router.push("/auth/login");
+  };
+
+  const handleEditClick = () => {
+    setEditData(userData);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditData(null);
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editData) return;
+
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/me`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: editData.name,
+            email: editData.email,
+            phone: editData.phone,
+            address: editData.address,
+            neighborhood: editData.neighborhood,
+            city: editData.city,
+            postal_code: editData.postal_code,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUserData(updatedUser);
+        setUserName(updatedUser.name || "Usuario");
+        setIsEditing(false);
+        setEditData(null);
+      } else {
+        setError("Error al actualizar los datos");
+      }
+    } catch (err) {
+      setError("Error al actualizar los datos");
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    setPasswordError("");
+
+    // Validation
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setPasswordError("Todos los campos son obligatorios");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError("La nueva contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError("Las contraseñas no coinciden");
+      return;
+    }
+
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/change-password`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            current_password: passwordData.currentPassword,
+            new_password: passwordData.newPassword,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        setIsChangingPassword(false);
+        setPasswordData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+        alert("Contraseña actualizada exitosamente");
+      } else {
+        const data = await response.json();
+        setPasswordError(data.detail || "Error al cambiar la contraseña");
+      }
+    } catch (err) {
+      setPasswordError("Error al cambiar la contraseña");
+    }
   };
 
   useEffect(() => {
@@ -64,6 +191,7 @@ export default function DashboardPage() {
         if (userResponse.ok) {
           const userData = await userResponse.json();
           setUserName(userData.name || "Usuario");
+          setUserData(userData);
         }
 
         // Fetch responses
@@ -689,9 +817,335 @@ export default function DashboardPage() {
           )}
 
           {activeTab === "profile" && (
-            <div className="p-6 text-center py-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Mi Perfil</h2>
-              <p className="text-gray-600">Esta sección está en desarrollo</p>
+            <div className="p-6">
+              {/* Datos Personales */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      Datos Personales
+                    </h2>
+                    <p className="text-gray-600">
+                      Administra tu información personal y de contacto
+                    </p>
+                  </div>
+                  {!isEditing ? (
+                    <button
+                      onClick={handleEditClick}
+                      className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                      Editar
+                    </button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleCancelEdit}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleSaveEdit}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      >
+                        Guardar
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-2xl p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Nombre completo */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nombre Completo
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editData?.name || ""}
+                          onChange={(e) =>
+                            setEditData({ ...editData!, name: e.target.value })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                        />
+                      ) : (
+                        <p className="text-gray-600">{userData?.name || "-"}</p>
+                      )}
+                    </div>
+
+                    {/* Correo electrónico */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Correo electrónico
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="email"
+                          value={editData?.email || ""}
+                          onChange={(e) =>
+                            setEditData({ ...editData!, email: e.target.value })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                        />
+                      ) : (
+                        <p className="text-gray-600">{userData?.email || "-"}</p>
+                      )}
+                    </div>
+
+                    {/* Teléfono */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Teléfono
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="tel"
+                          value={editData?.phone || ""}
+                          onChange={(e) =>
+                            setEditData({ ...editData!, phone: e.target.value })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                        />
+                      ) : (
+                        <p className="text-gray-600">{userData?.phone || "-"}</p>
+                      )}
+                    </div>
+
+                    {/* Barrio */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Barrio
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editData?.neighborhood || ""}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData!,
+                              neighborhood: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                        />
+                      ) : (
+                        <p className="text-gray-600">
+                          {userData?.neighborhood || "-"}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Ciudad */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Ciudad
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editData?.city || ""}
+                          onChange={(e) =>
+                            setEditData({ ...editData!, city: e.target.value })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                        />
+                      ) : (
+                        <p className="text-gray-600">{userData?.city || "-"}</p>
+                      )}
+                    </div>
+
+                    {/* Dirección */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Dirección
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editData?.address || ""}
+                          onChange={(e) =>
+                            setEditData({ ...editData!, address: e.target.value })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                        />
+                      ) : (
+                        <p className="text-gray-600">{userData?.address || "-"}</p>
+                      )}
+                    </div>
+
+                    {/* CUIL - No editable */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        CUIL
+                      </label>
+                      <p className="text-gray-600">
+                        {userData?.cuil
+                          ? `${userData.cuil.slice(0, 2)}-${userData.cuil.slice(
+                              2,
+                              10
+                            )}-${userData.cuil.slice(10)}`
+                          : "-"}
+                      </p>
+                    </div>
+
+                    {/* Código Postal */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Código Postal
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editData?.postal_code || ""}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData!,
+                              postal_code: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                        />
+                      ) : (
+                        <p className="text-gray-600">
+                          {userData?.postal_code || "-"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seguridad */}
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    Seguridad
+                  </h2>
+                  <p className="text-gray-600">
+                    Administra la seguridad de tu cuenta
+                  </p>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-2xl p-8">
+                  <button
+                    onClick={() => setIsChangingPassword(true)}
+                    className="px-6 py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
+                  >
+                    Cambiar Contraseña
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal para cambiar contraseña */}
+          {isChangingPassword && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  Cambiar Contraseña
+                </h2>
+
+                {passwordError && (
+                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-800">{passwordError}</p>
+                  </div>
+                )}
+
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Contraseña Actual
+                    </label>
+                    <input
+                      type="password"
+                      value={passwordData.currentPassword}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          currentPassword: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nueva Contraseña
+                    </label>
+                    <input
+                      type="password"
+                      value={passwordData.newPassword}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          newPassword: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Mínimo 6 caracteres
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Confirmar Nueva Contraseña
+                    </label>
+                    <input
+                      type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={(e) =>
+                        setPasswordData({
+                          ...passwordData,
+                          confirmPassword: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setIsChangingPassword(false);
+                      setPasswordData({
+                        currentPassword: "",
+                        newPassword: "",
+                        confirmPassword: "",
+                      });
+                      setPasswordError("");
+                    }}
+                    className="flex-1 px-6 py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handlePasswordChange}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
