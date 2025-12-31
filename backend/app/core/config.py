@@ -24,10 +24,13 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
     # CORS
-    BACKEND_CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:8000",
-    ]
+    BACKEND_CORS_ORIGINS: List[str] = []
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Parse BACKEND_CORS_ORIGINS from environment variable (comma-separated)
+        cors_origins = os.getenv("BACKEND_CORS_ORIGINS", "http://localhost:3000,http://localhost:8000")
+        self.BACKEND_CORS_ORIGINS = [origin.strip() for origin in cors_origins.split(",")]
 
     # Pagination
     DEFAULT_PAGE_SIZE: int = 50
