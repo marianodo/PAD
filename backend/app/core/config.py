@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 import os
+import json
 
 
 class Settings(BaseSettings):
@@ -28,9 +29,16 @@ class Settings(BaseSettings):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Parse BACKEND_CORS_ORIGINS from environment variable (comma-separated)
+        # Parse BACKEND_CORS_ORIGINS from environment variable
+        # Supports both JSON array format and comma-separated format
         cors_origins = os.getenv("BACKEND_CORS_ORIGINS", "http://localhost:3000,http://localhost:8000")
-        self.BACKEND_CORS_ORIGINS = [origin.strip() for origin in cors_origins.split(",")]
+
+        try:
+            # Try parsing as JSON array first (Railway format)
+            self.BACKEND_CORS_ORIGINS = json.loads(cors_origins)
+        except (json.JSONDecodeError, TypeError):
+            # Fallback to comma-separated format
+            self.BACKEND_CORS_ORIGINS = [origin.strip() for origin in cors_origins.split(",")]
 
     # Pagination
     DEFAULT_PAGE_SIZE: int = 50
