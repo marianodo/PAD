@@ -61,7 +61,7 @@ export default function ClientDashboard() {
 
         // Fetch client's surveys
         const surveysResponse = await fetch(
-          `${API_URL}/api/v1/surveys`,
+          `${API_URL}/api/v1/surveys/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
