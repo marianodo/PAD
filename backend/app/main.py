@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from app.core.config import settings
 from app.api.api import api_router
 from app.db.base import engine, Base
+import os
 
 # Crear tablas
 Base.metadata.create_all(bind=engine)
@@ -13,9 +15,11 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_PREFIX}/openapi.json",
     docs_url=f"{settings.API_V1_PREFIX}/docs",
     redoc_url=f"{settings.API_V1_PREFIX}/redoc",
-    # Disable redirect_slashes to avoid HTTP redirects
-    redirect_slashes=False
 )
+
+# Add HTTPS redirect middleware in production
+if os.getenv("RAILWAY_ENVIRONMENT"):
+    app.add_middleware(HTTPSRedirectMiddleware)
 
 # CORS - Must be added before routes
 app.add_middleware(
