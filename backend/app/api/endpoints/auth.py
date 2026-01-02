@@ -76,6 +76,8 @@ def login(
     Login with CUIL/Email and password.
     Busca en las tres tablas: users (CUIL), admins (email), clients (email).
     """
+    import logging
+    logger = logging.getLogger(__name__)
 
     account: Union[User, Admin, Client, None] = None
     account_type = None
@@ -84,7 +86,9 @@ def login(
     if "@" in credentials.cuil:
         # Primero buscar en admins
         admin = db.query(Admin).filter(Admin.email == credentials.cuil).first()
+        logger.info(f"Login attempt for email: {credentials.cuil}, admin found: {admin is not None}")
         if admin:
+            logger.info(f"Admin found - ID: {admin.id}, Email: {admin.email}")
             account = admin
             account_type = "admin"
         else:
@@ -107,6 +111,7 @@ def login(
             account_type = "user"
 
     if not account:
+        logger.warning(f"No account found for: {credentials.cuil}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas",
@@ -114,7 +119,9 @@ def login(
         )
 
     # Verify password
-    if not verify_password(credentials.password, account.hashed_password):
+    password_valid = verify_password(credentials.password, account.hashed_password)
+    logger.info(f"Password verification for {credentials.cuil}: {password_valid}")
+    if not password_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas",
