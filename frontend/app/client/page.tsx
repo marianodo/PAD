@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/lib/config";
 
 interface Survey {
   id: string;
@@ -33,7 +34,7 @@ export default function ClientDashboard() {
       try {
         // Verify user is client
         const userResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`,
+          `${API_URL}/api/v1/auth/me`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -60,7 +61,7 @@ export default function ClientDashboard() {
 
         // Fetch client's surveys
         const surveysResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys`,
+          `${API_URL}/api/v1/surveys`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

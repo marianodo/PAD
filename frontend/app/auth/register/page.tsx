@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_URL } from "@/lib/config";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -47,7 +48,7 @@ export default function RegisterPage() {
       const { confirmPassword, ...registerData } = formData;
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/register`,
+        `${API_URL}/api/v1/auth/register`,
         {
           method: "POST",
           headers: {
@@ -64,7 +65,7 @@ export default function RegisterPage() {
 
       // Auto-login after successful registration
       const loginResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/login`,
+        `${API_URL}/api/v1/auth/login`,
         {
           method: "POST",
           headers: {

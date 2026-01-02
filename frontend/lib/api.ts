@@ -7,9 +7,7 @@ import type {
   UserCreate,
   UserPoints,
 } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const API_V1 = `${API_URL}/api/v1`;
+import { API_V1 } from "./config";
 
 const api = axios.create({
   baseURL: API_V1,

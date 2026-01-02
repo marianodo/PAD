@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { API_URL } from "@/lib/config";
 
 function LoginForm() {
   const router = useRouter();
@@ -41,7 +42,7 @@ function LoginForm() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/login`,
+        `${API_URL}/api/v1/auth/login`,
         {
           method: "POST",
           headers: {
@@ -84,7 +85,7 @@ function LoginForm() {
       const { confirmPassword, ...registerPayload } = registerData;
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/register`,
+        `${API_URL}/api/v1/auth/register`,
         {
           method: "POST",
           headers: {
@@ -101,7 +102,7 @@ function LoginForm() {
 
       // Auto-login after registration
       const loginResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/login`,
+        `${API_URL}/api/v1/auth/login`,
         {
           method: "POST",
           headers: {

@@ -6,6 +6,7 @@ import { surveysApi, authApi } from "@/lib/api";
 import { useSurveyStore } from "@/lib/store";
 import { QuestionRenderer } from "@/components/QuestionRenderer";
 import type { Survey, Answer, User } from "@/types";
+import { API_URL } from "@/lib/config";
 
 export default function QuestionsPage() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function QuestionsPage() {
 
         // Load specific survey by ID
         const surveyResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}`,
+          `${API_URL}/api/v1/surveys/${surveyId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_URL } from "@/lib/config";
 
 interface SurveyResponse {
   id: string;
@@ -81,7 +82,7 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/me`,
+        `${API_URL}/api/v1/users/me`,
         {
           method: "PUT",
           headers: {
@@ -138,7 +139,7 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/change-password`,
+        `${API_URL}/api/v1/users/change-password`,
         {
           method: "PUT",
           headers: {
@@ -180,7 +181,7 @@ export default function DashboardPage() {
       try {
         // Fetch user info
         const userResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`,
+          `${API_URL}/api/v1/auth/me`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -196,7 +197,7 @@ export default function DashboardPage() {
 
         // Fetch responses
         const responsesResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/responses/my-responses`,
+          `${API_URL}/api/v1/responses/my-responses`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { API_URL } from "@/lib/config";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function AdminLoginPage() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/login`,
+        `${API_URL}/api/v1/auth/login`,
         {
           method: "POST",
           headers: {
@@ -45,7 +46,7 @@ export default function AdminLoginPage() {
 
       // Verificar el rol del usuario
       const userResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`,
+        `${API_URL}/api/v1/auth/me`,
         {
           headers: {
             Authorization: `Bearer ${data.access_token}`,

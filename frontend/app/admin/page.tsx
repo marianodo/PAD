@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/lib/config";
 
 interface Client {
   id: string;
@@ -46,7 +47,7 @@ export default function AdminDashboard() {
       try {
         // Verify user is admin
         const userResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`,
+          `${API_URL}/api/v1/auth/me`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -73,7 +74,7 @@ export default function AdminDashboard() {
 
         // Fetch all surveys
         const surveysResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys`,
+          `${API_URL}/api/v1/surveys`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -88,7 +89,7 @@ export default function AdminDashboard() {
 
         // Fetch all clients
         const clientsResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/clients`,
+          `${API_URL}/api/v1/admin/clients`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -122,7 +123,7 @@ export default function AdminDashboard() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/toggle`,
+        `${API_URL}/api/v1/surveys/${surveyId}/toggle`,
         {
           method: "PATCH",
           headers: {
