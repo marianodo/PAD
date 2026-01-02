@@ -2,6 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import Union
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.info("AUTH ENDPOINT MODULE LOADED - VERSION 2.0")
 
 from app.db.base import get_db
 from app.models.user import User
@@ -76,34 +82,41 @@ def login(
     Login with CUIL/Email and password.
     Busca en las tres tablas: users (CUIL), admins (email), clients (email).
     """
-    import logging
-    logger = logging.getLogger(__name__)
+    logger.info(f"=== LOGIN ATTEMPT === Email/CUIL: {credentials.cuil}")
 
     account: Union[User, Admin, Client, None] = None
     account_type = None
 
     # Si contiene @, es email (buscar en admins y clients)
     if "@" in credentials.cuil:
+        logger.info(f"Email detected ({credentials.cuil}), searching in admins first")
+
         # Primero buscar en admins
         admin = db.query(Admin).filter(Admin.email == credentials.cuil).first()
-        logger.info(f"Login attempt for email: {credentials.cuil}, admin found: {admin is not None}")
+        logger.info(f"Admin query result: {admin is not None}")
+
         if admin:
-            logger.info(f"Admin found - ID: {admin.id}, Email: {admin.email}")
+            logger.info(f"✅ Admin found - ID: {admin.id}, Email: {admin.email}")
             account = admin
             account_type = "admin"
         else:
+            logger.info(f"No admin found, checking clients...")
             # Luego buscar en clients
             client = db.query(Client).filter(Client.email == credentials.cuil).first()
             if client:
+                logger.info(f"✅ Client found - ID: {client.id}")
                 account = client
                 account_type = "client"
             else:
+                logger.info(f"No client found, checking users...")
                 # Por último, buscar en users por si algún user tiene email
                 user = db.query(User).filter(User.email == credentials.cuil).first()
                 if user:
+                    logger.info(f"✅ User found - ID: {user.id}")
                     account = user
                     account_type = "user"
     else:
+        logger.info(f"CUIL detected ({credentials.cuil}), searching in users only")
         # Es CUIL, buscar solo en users
         user = db.query(User).filter(User.cuil == credentials.cuil).first()
         if user:
@@ -111,7 +124,7 @@ def login(
             account_type = "user"
 
     if not account:
-        logger.warning(f"No account found for: {credentials.cuil}")
+        logger.warning(f"❌ NO ACCOUNT FOUND for: {credentials.cuil}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas",
@@ -119,9 +132,12 @@ def login(
         )
 
     # Verify password
+    logger.info(f"Account found ({account_type}), verifying password...")
     password_valid = verify_password(credentials.password, account.hashed_password)
-    logger.info(f"Password verification for {credentials.cuil}: {password_valid}")
+    logger.info(f"Password verification result: {password_valid}")
+
     if not password_valid:
+        logger.warning(f"❌ INVALID PASSWORD for: {credentials.cuil}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas",
