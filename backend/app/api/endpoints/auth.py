@@ -74,15 +74,16 @@ def register(
 
 
 @router.post("/login", response_model=Token)
-def login(
+def login_v2(
     credentials: LoginRequest,
     db: Session = Depends(get_db)
 ):
     """
     Login with CUIL/Email and password.
     Busca en las tres tablas: users (CUIL), admins (email), clients (email).
+    VERSION 2 - Fixed to search in admins table first
     """
-    logger.warning(f"=== LOGIN ATTEMPT === Email/CUIL: {credentials.cuil}")
+    logger.warning(f"=== LOGIN ATTEMPT V2 === Email/CUIL: {credentials.cuil}")
 
     account: Union[User, Admin, Client, None] = None
     account_type = None
