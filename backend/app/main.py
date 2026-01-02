@@ -35,7 +35,7 @@ def root():
     return {
         "message": "PAD API - Participación Activa Digital",
         "docs": f"{settings.API_V1_PREFIX}/docs",
-        "version": "1.0.0"
+        "version": "1.0.1"
     }
 
 
