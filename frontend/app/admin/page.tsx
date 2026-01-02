@@ -74,7 +74,7 @@ export default function AdminDashboard() {
 
         // Fetch all surveys
         const surveysResponse = await fetch(
-          `${API_URL}/api/v1/surveys`,
+          `${API_URL}/api/v1/surveys/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
 
         // Fetch all clients
         const clientsResponse = await fetch(
-          `${API_URL}/api/v1/admin/clients`,
+          `${API_URL}/api/v1/admin/clients/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
