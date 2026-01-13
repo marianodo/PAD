@@ -21,7 +21,7 @@ def create_admin():
 
     try:
         # Check if admin already exists
-        existing_admin = db.query(Admin).filter(Admin.email == "mardom4164@gmail.com").first()
+        existing_admin = db.query(Admin).filter(Admin.email == "admin@gmail.com").first()
 
         if existing_admin:
             print("Admin user already exists!")
@@ -31,9 +31,9 @@ def create_admin():
 
         # Create new admin user
         admin_user = Admin(
-            email="mardom4164@gmail.com",
+            email="admin@gmail.com",
             hashed_password=get_password_hash("admin123"),
-            name="Admin PAD",
+            name="Administrador",
         )
 
         db.add(admin_user)
@@ -42,7 +42,7 @@ def create_admin():
 
         print("✅ Admin user created successfully!")
         print(f"\nCredentials:")
-        print(f"Email: mardom4164@gmail.com")
+        print(f"Email: admin@gmail.com")
         print(f"Password: admin123")
         print(f"Name: {admin_user.name}")
         print(f"ID: {admin_user.id}")
