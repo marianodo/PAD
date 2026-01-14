@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta, date
 from uuid import UUID
 
-from app.models.survey import Survey, Question, QuestionOption
+from app.models.survey import Survey, Question, QuestionOption, QuestionType
 from app.models.response import SurveyResponse, Answer
 from app.models.user import User
 from app.models.client import Client
@@ -227,7 +227,7 @@ class SurveyService:
     def get_survey_results(db: Session, survey_id: UUID) -> Dict[str, Any]:
         """
         Obtiene los resultados y estadísticas demográficas de una encuesta.
-        Retorna KPIs por edad, ciudad y barrio.
+        Retorna KPIs por edad, ciudad y barrio, más resumen de respuestas por pregunta.
         """
         # Obtener todas las respuestas completadas con datos del usuario
         responses = db.query(SurveyResponse, User).join(
@@ -256,7 +256,8 @@ class SurveyService:
                     "by_age_group": {},
                     "by_city": {},
                     "by_neighborhood": {}
-                }
+                },
+                "questions_summary": []
             }
 
         # Calcular edad y agrupar
@@ -271,29 +272,29 @@ class SurveyService:
                 return "Sin especificar"
             if age < 18:
                 return "Menor de 18"
-            elif age < 25:
-                return "18-24"
-            elif age < 35:
-                return "25-34"
-            elif age < 45:
-                return "35-44"
-            elif age < 55:
-                return "45-54"
-            elif age < 65:
-                return "55-64"
+            elif age < 31:
+                return "18-30"
+            elif age < 46:
+                return "31-45"
+            elif age < 61:
+                return "46-60"
             else:
-                return "65+"
+                return "60+"
 
-        # Contadores
+        # Contadores demográficos
         age_groups: Dict[str, int] = {}
         cities: Dict[str, int] = {}
         neighborhoods: Dict[str, int] = {}
+
+        # Mapeo usuario -> grupo de edad para filtrar respuestas
+        user_age_groups: Dict[UUID, str] = {}
 
         for response, user in responses:
             # Por grupo de edad
             age = calculate_age(user.birth_date)
             age_group = get_age_group(age)
             age_groups[age_group] = age_groups.get(age_group, 0) + 1
+            user_age_groups[user.id] = age_group
 
             # Por ciudad
             city = user.city or "Sin especificar"
@@ -303,6 +304,205 @@ class SurveyService:
             neighborhood = user.neighborhood or "Sin especificar"
             neighborhoods[neighborhood] = neighborhoods.get(neighborhood, 0) + 1
 
+        # Obtener preguntas de la encuesta con sus opciones
+        questions = db.query(Question).filter(
+            Question.survey_id == survey_id
+        ).order_by(Question.order_index).all()
+
+        # Obtener todas las respuestas (answers) para esta encuesta
+        response_ids = [r.id for r, _ in responses]
+        all_answers = db.query(Answer).filter(
+            Answer.response_id.in_(response_ids)
+        ).all()
+
+        # Crear mapeo response_id -> user_id para obtener grupo de edad
+        response_user_map = {r.id: u.id for r, u in responses}
+
+        # Construir resumen por pregunta
+        questions_summary = []
+
+        for question in questions:
+            question_answers = [a for a in all_answers if a.question_id == question.id]
+
+            # Obtener opciones de la pregunta
+            options = {opt.id: {"text": opt.option_text, "value": opt.option_value}
+                      for opt in question.options}
+
+            question_data = {
+                "question_id": str(question.id),
+                "question_text": question.question_text,
+                "question_type": question.question_type.value,
+                "total_answers": len(question_answers),
+                "results": {},
+                "results_by_age": {}
+            }
+
+            if question.question_type == QuestionType.PERCENTAGE_DISTRIBUTION:
+                # Crear mapeo de option_id (UUID string) -> option_value y option_text
+                option_id_map = {}
+                for opt in question.options:
+                    option_id_map[str(opt.id)] = {
+                        "value": opt.option_value,
+                        "text": opt.option_text
+                    }
+
+                # Promediar los porcentajes de todas las respuestas
+                percentage_totals: Dict[str, float] = {}
+                percentage_counts: Dict[str, int] = {}
+
+                # También por grupo de edad
+                percentage_by_age: Dict[str, Dict[str, List[float]]] = {}
+
+                for answer in question_answers:
+                    if answer.percentage_data:
+                        user_id = response_user_map.get(answer.response_id)
+                        user_age = user_age_groups.get(user_id, "Sin especificar")
+
+                        for key, value in answer.percentage_data.items():
+                            # Convertir UUID key a option_value
+                            option_info = option_id_map.get(key)
+                            if option_info:
+                                option_key = option_info["value"]
+                            else:
+                                option_key = key  # Fallback si no se encuentra
+
+                            # General
+                            percentage_totals[option_key] = percentage_totals.get(option_key, 0) + value
+                            percentage_counts[option_key] = percentage_counts.get(option_key, 0) + 1
+
+                            # Por edad
+                            if user_age not in percentage_by_age:
+                                percentage_by_age[user_age] = {}
+                            if option_key not in percentage_by_age[user_age]:
+                                percentage_by_age[user_age][option_key] = []
+                            percentage_by_age[user_age][option_key].append(value)
+
+                # Calcular promedios generales
+                results = {}
+                for key in percentage_totals:
+                    avg = percentage_totals[key] / percentage_counts[key] if percentage_counts[key] > 0 else 0
+                    # Buscar el texto de la opción por option_value
+                    option_text = key
+                    for opt in question.options:
+                        if opt.option_value == key:
+                            option_text = opt.option_text
+                            break
+                    results[key] = {
+                        "label": option_text,
+                        "percentage": round(avg, 1)
+                    }
+
+                question_data["results"] = results
+
+                # Calcular promedios por grupo de edad
+                results_by_age = {}
+                for age_grp, categories in percentage_by_age.items():
+                    results_by_age[age_grp] = {}
+                    for key, values in categories.items():
+                        avg = sum(values) / len(values) if values else 0
+                        option_text = key
+                        for opt in question.options:
+                            if opt.option_value == key:
+                                option_text = opt.option_text
+                                break
+                        results_by_age[age_grp][key] = {
+                            "label": option_text,
+                            "percentage": round(avg, 1)
+                        }
+
+                question_data["results_by_age"] = results_by_age
+
+            elif question.question_type == QuestionType.SINGLE_CHOICE:
+                # Contar votos por opción
+                vote_counts: Dict[str, int] = {}
+                votes_by_age: Dict[str, Dict[str, int]] = {}
+
+                for answer in question_answers:
+                    if answer.option_id:
+                        opt_id = str(answer.option_id)
+                        vote_counts[opt_id] = vote_counts.get(opt_id, 0) + 1
+
+                        # Por grupo de edad
+                        user_id = response_user_map.get(answer.response_id)
+                        user_age = user_age_groups.get(user_id, "Sin especificar")
+
+                        if user_age not in votes_by_age:
+                            votes_by_age[user_age] = {}
+                        votes_by_age[user_age][opt_id] = votes_by_age[user_age].get(opt_id, 0) + 1
+
+                total_votes = sum(vote_counts.values())
+
+                # Resultados generales
+                results = {}
+                for opt_id, count in vote_counts.items():
+                    opt_uuid = UUID(opt_id)
+                    if opt_uuid in options:
+                        opt_info = options[opt_uuid]
+                        percentage = (count / total_votes * 100) if total_votes > 0 else 0
+                        results[opt_info["value"]] = {
+                            "label": opt_info["text"],
+                            "votes": count,
+                            "percentage": round(percentage, 1)
+                        }
+
+                question_data["results"] = results
+
+                # Resultados por grupo de edad
+                results_by_age = {}
+                for age_grp, age_votes in votes_by_age.items():
+                    age_total = sum(age_votes.values())
+                    results_by_age[age_grp] = {}
+                    for opt_id, count in age_votes.items():
+                        opt_uuid = UUID(opt_id)
+                        if opt_uuid in options:
+                            opt_info = options[opt_uuid]
+                            percentage = (count / age_total * 100) if age_total > 0 else 0
+                            results_by_age[age_grp][opt_info["value"]] = {
+                                "label": opt_info["text"],
+                                "votes": count,
+                                "percentage": round(percentage, 1)
+                            }
+
+                question_data["results_by_age"] = results_by_age
+
+            elif question.question_type == QuestionType.RATING:
+                # Calcular promedio de calificaciones
+                ratings = [a.rating for a in question_answers if a.rating is not None]
+                avg_rating = sum(ratings) / len(ratings) if ratings else 0
+
+                # Distribución de calificaciones
+                rating_dist = {}
+                for r in range(1, 6):
+                    rating_dist[str(r)] = sum(1 for rating in ratings if rating == r)
+
+                question_data["results"] = {
+                    "average": round(avg_rating, 2),
+                    "total_ratings": len(ratings),
+                    "distribution": rating_dist
+                }
+
+                # Por grupo de edad
+                ratings_by_age: Dict[str, List[int]] = {}
+                for answer in question_answers:
+                    if answer.rating is not None:
+                        user_id = response_user_map.get(answer.response_id)
+                        user_age = user_age_groups.get(user_id, "Sin especificar")
+                        if user_age not in ratings_by_age:
+                            ratings_by_age[user_age] = []
+                        ratings_by_age[user_age].append(answer.rating)
+
+                results_by_age = {}
+                for age_grp, age_ratings in ratings_by_age.items():
+                    avg = sum(age_ratings) / len(age_ratings) if age_ratings else 0
+                    results_by_age[age_grp] = {
+                        "average": round(avg, 2),
+                        "total_ratings": len(age_ratings)
+                    }
+
+                question_data["results_by_age"] = results_by_age
+
+            questions_summary.append(question_data)
+
         return {
             "survey_id": str(survey_id),
             "total_responses": total_responses,
@@ -311,5 +511,6 @@ class SurveyService:
                 "by_age_group": age_groups,
                 "by_city": cities,
                 "by_neighborhood": neighborhoods
-            }
+            },
+            "questions_summary": questions_summary
         }

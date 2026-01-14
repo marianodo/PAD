@@ -10,11 +10,32 @@ interface Demographics {
   by_neighborhood: Record<string, number>;
 }
 
+interface PercentageResult {
+  label: string;
+  percentage: number;
+}
+
+interface SingleChoiceResult {
+  label: string;
+  votes: number;
+  percentage: number;
+}
+
+interface QuestionSummary {
+  question_id: string;
+  question_text: string;
+  question_type: string;
+  total_answers: number;
+  results: Record<string, PercentageResult | SingleChoiceResult>;
+  results_by_age: Record<string, Record<string, PercentageResult | SingleChoiceResult>>;
+}
+
 interface SurveyResults {
   survey_id: string;
   total_responses: number;
   monthly_responses: number;
   demographics: Demographics;
+  questions_summary: QuestionSummary[];
 }
 
 interface DashboardMetrics {
@@ -40,6 +61,10 @@ export default function SurveyResultsPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [budgetAgeFilter, setBudgetAgeFilter] = useState("General");
+  const [projectsAgeFilter, setProjectsAgeFilter] = useState("General");
+
+  const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -122,6 +147,315 @@ export default function SurveyResultsPage() {
 
   const calculatePercentage = (value: number, total: number) => {
     return total > 0 ? ((value / total) * 100).toFixed(1) : "0";
+  };
+
+  // Colores para el pie chart
+  const pieColors = [
+    "#3B82F6", // blue
+    "#10B981", // green
+    "#F59E0B", // amber
+    "#EF4444", // red
+    "#8B5CF6", // purple
+    "#EC4899", // pink
+    "#06B6D4", // cyan
+    "#84CC16", // lime
+  ];
+
+  // Helper para encontrar pregunta por tipo
+  const getQuestionByType = (type: string) => {
+    return results?.questions_summary.find(q => q.question_type === type);
+  };
+
+  // Renderizar Pie Chart para distribución de presupuesto
+  const renderBudgetPieChart = () => {
+    const question = getQuestionByType("percentage_distribution");
+    if (!question) return null;
+
+    const data = budgetAgeFilter === "General"
+      ? question.results
+      : question.results_by_age[budgetAgeFilter] || {};
+
+    const entries = Object.entries(data).sort((a, b) => {
+      const aPerc = (a[1] as PercentageResult).percentage;
+      const bPerc = (b[1] as PercentageResult).percentage;
+      return bPerc - aPerc;
+    });
+
+    const hasData = entries.length > 0;
+
+    const total = entries.reduce((sum, [_, val]) => sum + (val as PercentageResult).percentage, 0);
+
+    // Calcular segmentos del pie
+    let cumulativePercentage = 0;
+    const segments = entries.map(([key, val], index) => {
+      const result = val as PercentageResult;
+      const percentage = result.percentage;
+      const startAngle = (cumulativePercentage / total) * 360;
+      cumulativePercentage += percentage;
+      const endAngle = (cumulativePercentage / total) * 360;
+
+      return {
+        key,
+        label: result.label,
+        percentage,
+        color: pieColors[index % pieColors.length],
+        startAngle,
+        endAngle,
+      };
+    });
+
+    // SVG pie chart
+    const size = 200;
+    const center = size / 2;
+    const radius = 80;
+
+    const polarToCartesian = (angle: number) => {
+      const angleRad = ((angle - 90) * Math.PI) / 180;
+      return {
+        x: center + radius * Math.cos(angleRad),
+        y: center + radius * Math.sin(angleRad),
+      };
+    };
+
+    const topCategory = hasData ? entries[0] : null;
+    const topLabel = topCategory ? (topCategory[1] as PercentageResult).label : "";
+    const topPercentage = topCategory ? (topCategory[1] as PercentageResult).percentage : 0;
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-gray-900">Distribución de Presupuesto</h3>
+          <p className="text-sm text-gray-500">Preferencias promedio de inversión ciudadana</p>
+        </div>
+
+        {/* Age Filter Tabs */}
+        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+          {ageFilterOptions.map((option) => (
+            <button
+              key={option}
+              onClick={() => setBudgetAgeFilter(option)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
+                budgetAgeFilter === option
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        {!hasData ? (
+          <div className="text-center text-gray-500 py-12">
+            No hay datos para este grupo de edad
+          </div>
+        ) : (
+          <>
+            {/* Pie Chart and Legend */}
+            <div className="flex items-center gap-8">
+              {/* SVG Pie Chart */}
+              <div className="relative">
+                <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+                  {segments.map((segment, index) => {
+                    if (segment.endAngle - segment.startAngle >= 360) {
+                      // Full circle
+                      return (
+                        <circle
+                          key={index}
+                          cx={center}
+                          cy={center}
+                          r={radius}
+                          fill={segment.color}
+                        />
+                      );
+                    }
+
+                    const start = polarToCartesian(segment.startAngle);
+                    const end = polarToCartesian(segment.endAngle);
+                    const largeArc = segment.endAngle - segment.startAngle > 180 ? 1 : 0;
+
+                    const d = [
+                      `M ${center} ${center}`,
+                      `L ${start.x} ${start.y}`,
+                      `A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`,
+                      "Z",
+                    ].join(" ");
+
+                    return <path key={index} d={d} fill={segment.color} />;
+                  })}
+                </svg>
+
+                {/* Percentage labels on pie */}
+                {segments.map((segment, index) => {
+                  const midAngle = (segment.startAngle + segment.endAngle) / 2;
+                  const labelRadius = radius * 0.65;
+                  const angleRad = ((midAngle - 90) * Math.PI) / 180;
+                  const x = center + labelRadius * Math.cos(angleRad);
+                  const y = center + labelRadius * Math.sin(angleRad);
+
+                  if (segment.percentage < 5) return null;
+
+                  return (
+                    <div
+                      key={index}
+                      className="absolute text-white text-xs font-bold"
+                      style={{
+                        left: x,
+                        top: y,
+                        transform: "translate(-50%, -50%)",
+                      }}
+                    >
+                      {segment.percentage.toFixed(1)}%
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {segments.map((segment, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: segment.color }}
+                    />
+                    <span className="text-sm text-gray-600">{segment.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Insight */}
+            <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
+              <p className="text-sm font-semibold text-blue-900">Insight Principal</p>
+              <p className="text-sm text-blue-700">
+                {topLabel} es la prioridad #1 con {topPercentage.toFixed(1)}% del presupuesto preferido
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // Renderizar gráfico de Obras Públicas Prioritarias
+  const renderProjectsChart = () => {
+    const question = getQuestionByType("single_choice");
+    if (!question) return null;
+
+    const data = projectsAgeFilter === "General"
+      ? question.results
+      : question.results_by_age[projectsAgeFilter] || {};
+
+    const entries = Object.entries(data).sort((a, b) => {
+      const aResult = a[1] as SingleChoiceResult;
+      const bResult = b[1] as SingleChoiceResult;
+      return bResult.percentage - aResult.percentage;
+    });
+
+    const hasData = entries.length > 0;
+    const projectColors = ["#3B82F6", "#10B981", "#8B5CF6"];
+    const projectIcons = ["🏛️", "🌳", "🎭"];
+
+    const winner = hasData ? entries[0] : null;
+    const winnerResult = winner ? (winner[1] as SingleChoiceResult) : null;
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-gray-900">Obras Públicas Prioritarias</h3>
+          <p className="text-sm text-gray-500">Votación ciudadana sobre proyectos</p>
+        </div>
+
+        {/* Age Filter Tabs */}
+        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+          {ageFilterOptions.map((option) => (
+            <button
+              key={option}
+              onClick={() => setProjectsAgeFilter(option)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
+                projectsAgeFilter === option
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        {!hasData ? (
+          <div className="text-center text-gray-500 py-12">
+            No hay datos para este grupo de edad
+          </div>
+        ) : (
+          <>
+            {/* Projects List */}
+            <div className="space-y-4">
+              {entries.map(([key, val], index) => {
+                const result = val as SingleChoiceResult;
+                // Parse label para extraer nombre y ubicación
+                const labelParts = result.label.match(/^(.+?)\s*\((.+)\)$/);
+                const projectName = labelParts ? labelParts[1] : result.label;
+                const location = labelParts ? labelParts[2] : "";
+
+                return (
+                  <div
+                    key={key}
+                    className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                          style={{ backgroundColor: `${projectColors[index % 3]}20` }}
+                        >
+                          {projectIcons[index % 3]}
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{projectName}</h4>
+                          {location && (
+                            <p className="text-sm text-gray-500">{location}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-gray-900">
+                          {result.percentage.toFixed(1)}%
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {result.votes.toLocaleString()} votos
+                        </p>
+                      </div>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="mt-3 w-full bg-gray-100 rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${result.percentage}%`,
+                          backgroundColor: projectColors[index % 3],
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Winner Insight */}
+            {winnerResult && (
+              <div className="mt-6 bg-amber-50 border border-amber-100 rounded-lg p-4">
+                <p className="text-sm font-semibold text-amber-900">Proyecto Ganador</p>
+                <p className="text-sm text-amber-700">
+                  {winnerResult.label.split("(")[0].trim()} lidera con {winnerResult.percentage.toFixed(1)}% de preferencia ciudadana
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
   };
 
   const renderBarChart = (data: Record<string, number>, title: string, color: string) => {
@@ -358,7 +692,16 @@ export default function SurveyResultsPage() {
           </div>
         </div>
 
-        {/* Charts Grid */}
+        {/* Survey Results Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {renderBudgetPieChart()}
+          {renderProjectsChart()}
+        </div>
+
+        {/* Demographics Section Title */}
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Demografía de Participantes</h2>
+
+        {/* Demographics Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {renderBarChart(
             results.demographics.by_age_group,
