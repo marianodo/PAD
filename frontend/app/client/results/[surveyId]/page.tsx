@@ -13,6 +13,7 @@ interface Demographics {
 interface SurveyResults {
   survey_id: string;
   total_responses: number;
+  monthly_responses: number;
   demographics: Demographics;
 }
 
@@ -21,8 +22,7 @@ interface DashboardMetrics {
   totalResponsesChange: number;
   monthlyResponses: number;
   monthlyResponsesChange: number;
-  completionRate: number;
-  completionRateChange: number;
+  uniqueCities: number;
 }
 
 export default function SurveyResultsPage() {
@@ -32,12 +32,11 @@ export default function SurveyResultsPage() {
 
   const [results, setResults] = useState<SurveyResults | null>(null);
   const [metrics, setMetrics] = useState<DashboardMetrics>({
-    totalResponses: 12847,
-    totalResponsesChange: 18.2,
-    monthlyResponses: 2341,
-    monthlyResponsesChange: 12.5,
-    completionRate: 94.3,
-    completionRateChange: 2.4,
+    totalResponses: 0,
+    totalResponsesChange: 0,
+    monthlyResponses: 0,
+    monthlyResponsesChange: 0,
+    uniqueCities: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -66,6 +65,20 @@ export default function SurveyResultsPage() {
 
         const data = await response.json();
         setResults(data);
+
+        // Calcular métricas dinámicamente
+        const uniqueCities = Object.keys(data.demographics.by_city).filter(
+          city => city !== "Sin especificar"
+        ).length;
+
+        setMetrics({
+          totalResponses: data.total_responses,
+          totalResponsesChange: 0, // TODO: calcular del backend con datos históricos
+          monthlyResponses: data.monthly_responses,
+          monthlyResponsesChange: 0, // TODO: calcular del backend con datos históricos
+          uniqueCities: uniqueCities,
+        });
+
         setLoading(false);
       } catch (err: any) {
         setError(err.message);
@@ -306,18 +319,18 @@ export default function SurveyResultsPage() {
             </div>
           </div>
 
-          {/* Card 3: Tasa de Completado */}
+          {/* Card 3: Ciudades Participantes */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-sm text-gray-600 mb-2">
-                  Tasa de Completado
+                  Ciudades Participantes
                 </p>
                 <p className="text-4xl font-bold text-gray-900 mb-3">
-                  {metrics.completionRate}%
+                  {metrics.uniqueCities}
                 </p>
-                <p className="text-sm text-green-600 font-medium">
-                  +{metrics.completionRateChange}% vs. mes anterior
+                <p className="text-sm text-gray-500 font-medium">
+                  Cobertura geográfica
                 </p>
               </div>
               <div className="bg-green-100 rounded-full p-3">
@@ -331,7 +344,13 @@ export default function SurveyResultsPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                   />
                 </svg>
               </div>

@@ -239,10 +239,19 @@ class SurveyService:
 
         total_responses = len(responses)
 
+        # Calcular respuestas de este mes
+        now = datetime.now()
+        first_day_of_month = datetime(now.year, now.month, 1)
+        monthly_responses = sum(
+            1 for response, _ in responses
+            if response.started_at and response.started_at.replace(tzinfo=None) >= first_day_of_month
+        )
+
         if total_responses == 0:
             return {
                 "survey_id": str(survey_id),
                 "total_responses": 0,
+                "monthly_responses": 0,
                 "demographics": {
                     "by_age_group": {},
                     "by_city": {},
@@ -297,6 +306,7 @@ class SurveyService:
         return {
             "survey_id": str(survey_id),
             "total_responses": total_responses,
+            "monthly_responses": monthly_responses,
             "demographics": {
                 "by_age_group": age_groups,
                 "by_city": cities,
