@@ -21,6 +21,12 @@ interface SingleChoiceResult {
   percentage: number;
 }
 
+interface RatingResult {
+  average: number;
+  total_ratings: number;
+  distribution?: Record<string, number>;
+}
+
 interface QuestionSummary {
   question_id: string;
   question_text: string;
@@ -63,6 +69,7 @@ export default function SurveyResultsPage() {
   const [error, setError] = useState("");
   const [budgetAgeFilter, setBudgetAgeFilter] = useState("General");
   const [projectsAgeFilter, setProjectsAgeFilter] = useState("General");
+  const [ratingAgeFilter, setRatingAgeFilter] = useState("General");
 
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
 
@@ -458,6 +465,151 @@ export default function SurveyResultsPage() {
     );
   };
 
+  // Renderizar gráfico de Calificación de Gestión
+  const renderRatingChart = () => {
+    const question = getQuestionByType("rating");
+    if (!question) return null;
+
+    const generalResults = question.results as RatingResult;
+    const isGeneral = ratingAgeFilter === "General";
+
+    let average: number;
+    let totalRatings: number;
+    let distribution: Record<string, number> | undefined;
+
+    if (isGeneral) {
+      average = generalResults.average;
+      totalRatings = generalResults.total_ratings;
+      distribution = generalResults.distribution;
+    } else {
+      const ageResults = question.results_by_age[ratingAgeFilter] as RatingResult | undefined;
+      if (!ageResults) {
+        average = 0;
+        totalRatings = 0;
+        distribution = undefined;
+      } else {
+        average = ageResults.average;
+        totalRatings = ageResults.total_ratings;
+        distribution = undefined; // Age results don't have distribution
+      }
+    }
+
+    const hasData = totalRatings > 0;
+
+    // Colores para las barras de rating (1-5)
+    const ratingColors = ["#EF4444", "#F97316", "#EAB308", "#22C55E", "#3B82F6"];
+
+    // Calcular porcentaje de calificaciones buenas (4-5 estrellas)
+    let goodRatingPercentage = 0;
+    if (distribution && totalRatings > 0) {
+      const goodRatings = (distribution["4"] || 0) + (distribution["5"] || 0);
+      goodRatingPercentage = (goodRatings / totalRatings) * 100;
+    }
+
+    // Encontrar el máximo para escalar las barras
+    const maxCount = distribution
+      ? Math.max(...Object.values(distribution), 1)
+      : 1;
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-gray-900">Calificación de Gestión</h3>
+          <p className="text-sm text-gray-500">Satisfacción ciudadana general</p>
+        </div>
+
+        {/* Age Filter Tabs */}
+        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+          {ageFilterOptions.map((option) => (
+            <button
+              key={option}
+              onClick={() => setRatingAgeFilter(option)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
+                ratingAgeFilter === option
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        {!hasData ? (
+          <div className="text-center text-gray-500 py-12">
+            No hay datos para este grupo de edad
+          </div>
+        ) : (
+          <>
+            {/* Stars and Average */}
+            <div className="flex flex-col items-center mb-6">
+              <div className="flex gap-1 mb-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <svg
+                    key={star}
+                    className={`w-8 h-8 ${
+                      star <= Math.round(average)
+                        ? "text-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-4xl font-bold text-gray-900">{average.toFixed(1)}</p>
+              <p className="text-sm text-gray-500">de 5 estrellas</p>
+            </div>
+
+            {/* Distribution bars (only show for General) */}
+            {distribution && (
+              <div className="space-y-3 mb-6">
+                {[1, 2, 3, 4, 5].map((rating) => {
+                  const count = distribution[String(rating)] || 0;
+                  const percentage = totalRatings > 0 ? (count / totalRatings) * 100 : 0;
+
+                  return (
+                    <div key={rating} className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-gray-600 w-6">
+                        {rating}★
+                      </span>
+                      <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${(count / maxCount) * 100}%`,
+                            backgroundColor: ratingColors[rating - 1],
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm text-gray-500 w-20 text-right">
+                        {count.toLocaleString()} ({percentage.toFixed(1)}%)
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Insight */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <p className="text-sm text-gray-700">
+                <span className="font-semibold text-gray-900">
+                  {goodRatingPercentage > 0 ? `${goodRatingPercentage.toFixed(1)}%` : `${average.toFixed(1)} promedio`}
+                </span>
+                {goodRatingPercentage > 0
+                  ? " de ciudadanos califican la gestión como buena o excelente"
+                  : ` de calificación basado en ${totalRatings.toLocaleString()} respuestas`}
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const renderBarChart = (data: Record<string, number>, title: string, color: string) => {
     const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
     const maxValue = Math.max(...entries.map(([_, value]) => value), 1);
@@ -696,6 +848,11 @@ export default function SurveyResultsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {renderBudgetPieChart()}
           {renderProjectsChart()}
+        </div>
+
+        {/* Rating Chart - Full width */}
+        <div className="mb-8">
+          {renderRatingChart()}
         </div>
 
         {/* Demographics Section Title */}
