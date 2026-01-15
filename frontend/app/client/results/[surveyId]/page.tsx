@@ -70,6 +70,8 @@ export default function SurveyResultsPage() {
   const [budgetAgeFilter, setBudgetAgeFilter] = useState("General");
   const [projectsAgeFilter, setProjectsAgeFilter] = useState("General");
   const [ratingAgeFilter, setRatingAgeFilter] = useState("General");
+  const [budgetEvolutionAgeFilter, setBudgetEvolutionAgeFilter] = useState("General");
+  const [projectsEvolutionAgeFilter, setProjectsEvolutionAgeFilter] = useState("General");
 
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
 
@@ -610,6 +612,315 @@ export default function SurveyResultsPage() {
     );
   };
 
+  // Renderizar gráfico de Evolución de Preferencias Presupuestales
+  const renderBudgetEvolutionChart = () => {
+    // Datos de ejemplo - en producción vendrían del backend
+    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago"];
+    const categories = [
+      { name: "Infraestructura", color: "#3B82F6", data: [35, 32, 38, 36, 34, 37, 35, 36] },
+      { name: "Salud Pública", color: "#10B981", data: [25, 28, 24, 26, 28, 25, 27, 26] },
+      { name: "Seguridad", color: "#F59E0B", data: [20, 22, 19, 21, 20, 22, 21, 20] },
+      { name: "Servicios Públicos", color: "#8B5CF6", data: [20, 18, 19, 17, 18, 16, 17, 18] },
+    ];
+
+    const chartWidth = 600;
+    const chartHeight = 300;
+    const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+    const graphWidth = chartWidth - padding.left - padding.right;
+    const graphHeight = chartHeight - padding.top - padding.bottom;
+
+    const maxValue = 50;
+    const minValue = 0;
+
+    const xStep = graphWidth / (months.length - 1);
+    const yScale = (value: number) =>
+      graphHeight - ((value - minValue) / (maxValue - minValue)) * graphHeight;
+
+    // Generar path para cada categoría
+    const generatePath = (data: number[]) => {
+      return data
+        .map((value, index) => {
+          const x = padding.left + index * xStep;
+          const y = padding.top + yScale(value);
+          return `${index === 0 ? "M" : "L"} ${x} ${y}`;
+        })
+        .join(" ");
+    };
+
+    // Encontrar tendencias
+    const infraTrend = categories[0].data;
+    const startValue = infraTrend[0];
+    const endValue = infraTrend[infraTrend.length - 1];
+    const trendDirection = endValue > startValue ? "aumentó" : endValue < startValue ? "disminuyó" : "se mantuvo";
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-gray-900">Evolución de Preferencias Presupuestales</h3>
+          <p className="text-sm text-gray-500">Tendencias mensuales de asignación ciudadana</p>
+        </div>
+
+        {/* Age Filter Tabs */}
+        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+          {ageFilterOptions.map((option) => (
+            <button
+              key={option}
+              onClick={() => setBudgetEvolutionAgeFilter(option)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
+                budgetEvolutionAgeFilter === option
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        {/* Line Chart */}
+        <div className="overflow-x-auto">
+          <svg width={chartWidth} height={chartHeight} className="mx-auto">
+            {/* Grid lines */}
+            {[0, 10, 20, 30, 40, 50].map((value) => (
+              <g key={value}>
+                <line
+                  x1={padding.left}
+                  y1={padding.top + yScale(value)}
+                  x2={chartWidth - padding.right}
+                  y2={padding.top + yScale(value)}
+                  stroke="#E5E7EB"
+                  strokeDasharray="4,4"
+                />
+                <text
+                  x={padding.left - 10}
+                  y={padding.top + yScale(value) + 4}
+                  textAnchor="end"
+                  className="text-xs fill-gray-500"
+                >
+                  {value}%
+                </text>
+              </g>
+            ))}
+
+            {/* X-axis labels */}
+            {months.map((month, index) => (
+              <text
+                key={month}
+                x={padding.left + index * xStep}
+                y={chartHeight - 10}
+                textAnchor="middle"
+                className="text-xs fill-gray-500"
+              >
+                {month}
+              </text>
+            ))}
+
+            {/* Lines for each category */}
+            {categories.map((category) => (
+              <g key={category.name}>
+                <path
+                  d={generatePath(category.data)}
+                  fill="none"
+                  stroke={category.color}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                {/* Data points */}
+                {category.data.map((value, index) => (
+                  <circle
+                    key={index}
+                    cx={padding.left + index * xStep}
+                    cy={padding.top + yScale(value)}
+                    r={4}
+                    fill={category.color}
+                    stroke="white"
+                    strokeWidth={2}
+                  />
+                ))}
+              </g>
+            ))}
+          </svg>
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap justify-center gap-4 mt-4">
+          {categories.map((category) => (
+            <div key={category.name} className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: category.color }}
+              />
+              <span className="text-sm text-gray-600">{category.name}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Insight */}
+        <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
+          <p className="text-sm font-semibold text-blue-900">Tendencia Principal</p>
+          <p className="text-sm text-blue-700">
+            La preferencia por Infraestructura {trendDirection} de {startValue}% a {endValue}% en el período analizado
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  // Renderizar gráfico de Evolución de Votación de Obras
+  const renderProjectsEvolutionChart = () => {
+    // Datos de ejemplo - en producción vendrían del backend
+    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago"];
+    const projects = [
+      { name: "Centro Convenciones", color: "#3B82F6", data: [35, 38, 42, 40, 45, 43, 47, 48] },
+      { name: "Centro Cívico", color: "#10B981", data: [40, 38, 35, 37, 33, 35, 32, 30] },
+      { name: "Parque Público", color: "#8B5CF6", data: [25, 24, 23, 23, 22, 22, 21, 22] },
+    ];
+
+    const chartWidth = 600;
+    const chartHeight = 300;
+    const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+    const graphWidth = chartWidth - padding.left - padding.right;
+    const graphHeight = chartHeight - padding.top - padding.bottom;
+
+    const maxValue = 60;
+    const minValue = 0;
+
+    const xStep = graphWidth / (months.length - 1);
+    const yScale = (value: number) =>
+      graphHeight - ((value - minValue) / (maxValue - minValue)) * graphHeight;
+
+    const generatePath = (data: number[]) => {
+      return data
+        .map((value, index) => {
+          const x = padding.left + index * xStep;
+          const y = padding.top + yScale(value);
+          return `${index === 0 ? "M" : "L"} ${x} ${y}`;
+        })
+        .join(" ");
+    };
+
+    // Encontrar proyecto líder actual
+    const latestData = projects.map((p) => ({
+      name: p.name,
+      value: p.data[p.data.length - 1],
+    }));
+    const leader = latestData.sort((a, b) => b.value - a.value)[0];
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-gray-900">Evolución de Votación de Obras</h3>
+          <p className="text-sm text-gray-500">Cambios en preferencia de proyectos prioritarios</p>
+        </div>
+
+        {/* Age Filter Tabs */}
+        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+          {ageFilterOptions.map((option) => (
+            <button
+              key={option}
+              onClick={() => setProjectsEvolutionAgeFilter(option)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
+                projectsEvolutionAgeFilter === option
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        {/* Line Chart */}
+        <div className="overflow-x-auto">
+          <svg width={chartWidth} height={chartHeight} className="mx-auto">
+            {/* Grid lines */}
+            {[0, 15, 30, 45, 60].map((value) => (
+              <g key={value}>
+                <line
+                  x1={padding.left}
+                  y1={padding.top + yScale(value)}
+                  x2={chartWidth - padding.right}
+                  y2={padding.top + yScale(value)}
+                  stroke="#E5E7EB"
+                  strokeDasharray="4,4"
+                />
+                <text
+                  x={padding.left - 10}
+                  y={padding.top + yScale(value) + 4}
+                  textAnchor="end"
+                  className="text-xs fill-gray-500"
+                >
+                  {value}%
+                </text>
+              </g>
+            ))}
+
+            {/* X-axis labels */}
+            {months.map((month, index) => (
+              <text
+                key={month}
+                x={padding.left + index * xStep}
+                y={chartHeight - 10}
+                textAnchor="middle"
+                className="text-xs fill-gray-500"
+              >
+                {month}
+              </text>
+            ))}
+
+            {/* Lines for each project */}
+            {projects.map((project) => (
+              <g key={project.name}>
+                <path
+                  d={generatePath(project.data)}
+                  fill="none"
+                  stroke={project.color}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                {/* Data points */}
+                {project.data.map((value, index) => (
+                  <circle
+                    key={index}
+                    cx={padding.left + index * xStep}
+                    cy={padding.top + yScale(value)}
+                    r={4}
+                    fill={project.color}
+                    stroke="white"
+                    strokeWidth={2}
+                  />
+                ))}
+              </g>
+            ))}
+          </svg>
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap justify-center gap-4 mt-4">
+          {projects.map((project) => (
+            <div key={project.name} className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: project.color }}
+              />
+              <span className="text-sm text-gray-600">{project.name}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Insight */}
+        <div className="mt-6 bg-amber-50 border border-amber-100 rounded-lg p-4">
+          <p className="text-sm font-semibold text-amber-900">Cambio de Liderazgo</p>
+          <p className="text-sm text-amber-700">
+            {leader.name} lidera actualmente con {leader.value}% de preferencia, mostrando una tendencia creciente
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   const renderBarChart = (data: Record<string, number>, title: string, color: string) => {
     const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
     const maxValue = Math.max(...entries.map(([_, value]) => value), 1);
@@ -853,6 +1164,15 @@ export default function SurveyResultsPage() {
         {/* Rating Chart - Full width */}
         <div className="mb-8">
           {renderRatingChart()}
+        </div>
+
+        {/* Evolution Section Title */}
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Evolución Histórica</h2>
+
+        {/* Evolution Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {renderBudgetEvolutionChart()}
+          {renderProjectsEvolutionChart()}
         </div>
 
         {/* Demographics Section Title */}
