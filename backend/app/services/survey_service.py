@@ -503,6 +503,11 @@ class SurveyService:
 
             questions_summary.append(question_data)
 
+        # Calcular evolución histórica por mes
+        evolution_data = SurveyService._calculate_evolution_data(
+            responses, all_answers, questions, user_age_groups, response_user_map
+        )
+
         return {
             "survey_id": str(survey_id),
             "total_responses": total_responses,
@@ -512,5 +517,226 @@ class SurveyService:
                 "by_city": cities,
                 "by_neighborhood": neighborhoods
             },
-            "questions_summary": questions_summary
+            "questions_summary": questions_summary,
+            "evolution_data": evolution_data
         }
+
+    @staticmethod
+    def _calculate_evolution_data(
+        responses: List,
+        all_answers: List[Answer],
+        questions: List[Question],
+        user_age_groups: Dict[UUID, str],
+        response_user_map: Dict[UUID, UUID]
+    ) -> Dict[str, Any]:
+        """
+        Calcula la evolución histórica de respuestas por mes.
+        Agrupa los datos por mes para cada tipo de pregunta.
+        """
+        # Crear mapeo de response_id -> fecha de respuesta
+        response_dates = {r.id: r.started_at or r.completed_at for r, _ in responses}
+
+        # Agrupar respuestas por mes
+        from collections import defaultdict
+
+        # Estructura: {month_key: {question_id: [answers]}}
+        answers_by_month: Dict[str, Dict[UUID, List[Answer]]] = defaultdict(lambda: defaultdict(list))
+
+        # También por edad: {age_group: {month_key: {question_id: [answers]}}}
+        answers_by_age_month: Dict[str, Dict[str, Dict[UUID, List[Answer]]]] = defaultdict(
+            lambda: defaultdict(lambda: defaultdict(list))
+        )
+
+        for answer in all_answers:
+            response_date = response_dates.get(answer.response_id)
+            if response_date:
+                # Convertir a naive si tiene timezone
+                if hasattr(response_date, 'replace') and response_date.tzinfo:
+                    response_date = response_date.replace(tzinfo=None)
+
+                month_key = response_date.strftime("%Y-%m")
+                answers_by_month[month_key][answer.question_id].append(answer)
+
+                # Por grupo de edad
+                user_id = response_user_map.get(answer.response_id)
+                age_group = user_age_groups.get(user_id, "Sin especificar")
+                answers_by_age_month[age_group][month_key][answer.question_id].append(answer)
+
+        # Obtener los últimos 8 meses con datos (o los que haya)
+        sorted_months = sorted(answers_by_month.keys())[-8:]
+
+        # Formatear nombres de meses en español
+        month_names = {
+            "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
+            "05": "May", "06": "Jun", "07": "Jul", "08": "Ago",
+            "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic"
+        }
+
+        def get_month_label(month_key: str) -> str:
+            month_num = month_key.split("-")[1]
+            return month_names.get(month_num, month_num)
+
+        months_labels = [get_month_label(m) for m in sorted_months]
+
+        # Calcular datos de evolución por tipo de pregunta
+        evolution_result = {
+            "months": months_labels,
+            "percentage_distribution": {},
+            "single_choice": {},
+            "by_age": {}
+        }
+
+        for question in questions:
+            if question.question_type == QuestionType.PERCENTAGE_DISTRIBUTION:
+                # Crear mapeo option_id -> option_value
+                option_id_map = {str(opt.id): opt.option_value for opt in question.options}
+                option_labels = {opt.option_value: opt.option_text for opt in question.options}
+
+                # Calcular promedio por mes para cada opción
+                option_data: Dict[str, List[float]] = {opt.option_value: [] for opt in question.options}
+
+                for month_key in sorted_months:
+                    month_answers = answers_by_month[month_key].get(question.id, [])
+
+                    # Agregar porcentajes por opción
+                    month_totals: Dict[str, List[float]] = defaultdict(list)
+
+                    for answer in month_answers:
+                        if answer.percentage_data:
+                            for key, value in answer.percentage_data.items():
+                                option_value = option_id_map.get(key, key)
+                                month_totals[option_value].append(value)
+
+                    # Calcular promedio de este mes para cada opción
+                    for opt_value in option_data.keys():
+                        values = month_totals.get(opt_value, [])
+                        avg = sum(values) / len(values) if values else 0
+                        option_data[opt_value].append(round(avg, 1))
+
+                evolution_result["percentage_distribution"] = {
+                    "question_id": str(question.id),
+                    "question_text": question.question_text,
+                    "categories": [
+                        {
+                            "name": option_labels.get(opt_value, opt_value),
+                            "key": opt_value,
+                            "data": data
+                        }
+                        for opt_value, data in option_data.items()
+                    ]
+                }
+
+            elif question.question_type == QuestionType.SINGLE_CHOICE:
+                option_labels = {str(opt.id): opt.option_text for opt in question.options}
+                option_values = {str(opt.id): opt.option_value for opt in question.options}
+
+                # Calcular porcentaje de votos por mes para cada opción
+                option_data: Dict[str, List[float]] = {str(opt.id): [] for opt in question.options}
+
+                for month_key in sorted_months:
+                    month_answers = answers_by_month[month_key].get(question.id, [])
+
+                    # Contar votos por opción
+                    vote_counts: Dict[str, int] = defaultdict(int)
+                    for answer in month_answers:
+                        if answer.option_id:
+                            vote_counts[str(answer.option_id)] += 1
+
+                    total_votes = sum(vote_counts.values())
+
+                    # Calcular porcentaje para cada opción
+                    for opt_id in option_data.keys():
+                        count = vote_counts.get(opt_id, 0)
+                        percentage = (count / total_votes * 100) if total_votes > 0 else 0
+                        option_data[opt_id].append(round(percentage, 1))
+
+                evolution_result["single_choice"] = {
+                    "question_id": str(question.id),
+                    "question_text": question.question_text,
+                    "projects": [
+                        {
+                            "name": option_labels.get(opt_id, ""),
+                            "key": option_values.get(opt_id, opt_id),
+                            "data": data
+                        }
+                        for opt_id, data in option_data.items()
+                    ]
+                }
+
+        # Calcular evolución por grupo de edad
+        age_groups_list = ["18-30", "31-45", "46-60", "60+"]
+
+        for age_group in age_groups_list:
+            age_evolution = {
+                "percentage_distribution": {},
+                "single_choice": {}
+            }
+
+            age_months_data = answers_by_age_month.get(age_group, {})
+
+            for question in questions:
+                if question.question_type == QuestionType.PERCENTAGE_DISTRIBUTION:
+                    option_id_map = {str(opt.id): opt.option_value for opt in question.options}
+                    option_labels = {opt.option_value: opt.option_text for opt in question.options}
+                    option_data: Dict[str, List[float]] = {opt.option_value: [] for opt in question.options}
+
+                    for month_key in sorted_months:
+                        month_answers = age_months_data.get(month_key, {}).get(question.id, [])
+                        month_totals: Dict[str, List[float]] = defaultdict(list)
+
+                        for answer in month_answers:
+                            if answer.percentage_data:
+                                for key, value in answer.percentage_data.items():
+                                    option_value = option_id_map.get(key, key)
+                                    month_totals[option_value].append(value)
+
+                        for opt_value in option_data.keys():
+                            values = month_totals.get(opt_value, [])
+                            avg = sum(values) / len(values) if values else 0
+                            option_data[opt_value].append(round(avg, 1))
+
+                    age_evolution["percentage_distribution"] = {
+                        "categories": [
+                            {
+                                "name": option_labels.get(opt_value, opt_value),
+                                "key": opt_value,
+                                "data": data
+                            }
+                            for opt_value, data in option_data.items()
+                        ]
+                    }
+
+                elif question.question_type == QuestionType.SINGLE_CHOICE:
+                    option_labels = {str(opt.id): opt.option_text for opt in question.options}
+                    option_values = {str(opt.id): opt.option_value for opt in question.options}
+                    option_data: Dict[str, List[float]] = {str(opt.id): [] for opt in question.options}
+
+                    for month_key in sorted_months:
+                        month_answers = age_months_data.get(month_key, {}).get(question.id, [])
+                        vote_counts: Dict[str, int] = defaultdict(int)
+
+                        for answer in month_answers:
+                            if answer.option_id:
+                                vote_counts[str(answer.option_id)] += 1
+
+                        total_votes = sum(vote_counts.values())
+
+                        for opt_id in option_data.keys():
+                            count = vote_counts.get(opt_id, 0)
+                            percentage = (count / total_votes * 100) if total_votes > 0 else 0
+                            option_data[opt_id].append(round(percentage, 1))
+
+                    age_evolution["single_choice"] = {
+                        "projects": [
+                            {
+                                "name": option_labels.get(opt_id, ""),
+                                "key": option_values.get(opt_id, opt_id),
+                                "data": data
+                            }
+                            for opt_id, data in option_data.items()
+                        ]
+                    }
+
+            evolution_result["by_age"][age_group] = age_evolution
+
+        return evolution_result

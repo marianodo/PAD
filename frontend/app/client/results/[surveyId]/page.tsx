@@ -36,12 +36,37 @@ interface QuestionSummary {
   results_by_age: Record<string, Record<string, PercentageResult | SingleChoiceResult>>;
 }
 
+interface EvolutionCategory {
+  name: string;
+  key: string;
+  data: number[];
+}
+
+interface EvolutionData {
+  months: string[];
+  percentage_distribution: {
+    question_id: string;
+    question_text: string;
+    categories: EvolutionCategory[];
+  };
+  single_choice: {
+    question_id: string;
+    question_text: string;
+    projects: EvolutionCategory[];
+  };
+  by_age: Record<string, {
+    percentage_distribution: { categories: EvolutionCategory[] };
+    single_choice: { projects: EvolutionCategory[] };
+  }>;
+}
+
 interface SurveyResults {
   survey_id: string;
   total_responses: number;
   monthly_responses: number;
   demographics: Demographics;
   questions_summary: QuestionSummary[];
+  evolution_data: EvolutionData;
 }
 
 interface DashboardMetrics {
@@ -614,14 +639,36 @@ export default function SurveyResultsPage() {
 
   // Renderizar gráfico de Evolución de Preferencias Presupuestales
   const renderBudgetEvolutionChart = () => {
-    // Datos de ejemplo - en producción vendrían del backend
-    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago"];
-    const categories = [
-      { name: "Infraestructura", color: "#3B82F6", data: [35, 32, 38, 36, 34, 37, 35, 36] },
-      { name: "Salud Pública", color: "#10B981", data: [25, 28, 24, 26, 28, 25, 27, 26] },
-      { name: "Seguridad", color: "#F59E0B", data: [20, 22, 19, 21, 20, 22, 21, 20] },
-      { name: "Servicios Públicos", color: "#8B5CF6", data: [20, 18, 19, 17, 18, 16, 17, 18] },
-    ];
+    const evolutionData = results?.evolution_data;
+    if (!evolutionData || !evolutionData.percentage_distribution?.categories) {
+      return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-gray-900">Evolución de Preferencias Presupuestales</h3>
+            <p className="text-sm text-gray-500">Tendencias mensuales de asignación ciudadana</p>
+          </div>
+          <div className="text-center text-gray-500 py-12">
+            No hay datos históricos disponibles
+          </div>
+        </div>
+      );
+    }
+
+    const months = evolutionData.months;
+
+    // Obtener categorías según filtro de edad
+    const rawCategories = budgetEvolutionAgeFilter === "General"
+      ? evolutionData.percentage_distribution.categories
+      : evolutionData.by_age[budgetEvolutionAgeFilter]?.percentage_distribution?.categories || [];
+
+    // Asignar colores a las categorías
+    const categoryColors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#EC4899", "#06B6D4"];
+    const categories = rawCategories.map((cat, index) => ({
+      ...cat,
+      color: categoryColors[index % categoryColors.length]
+    }));
+
+    const hasData = months.length > 0 && categories.length > 0;
 
     const chartWidth = 600;
     const chartHeight = 300;
@@ -629,10 +676,12 @@ export default function SurveyResultsPage() {
     const graphWidth = chartWidth - padding.left - padding.right;
     const graphHeight = chartHeight - padding.top - padding.bottom;
 
-    const maxValue = 50;
+    // Calcular max dinámicamente
+    const allValues = categories.flatMap(c => c.data);
+    const maxValue = Math.max(50, Math.ceil(Math.max(...allValues, 1) / 10) * 10);
     const minValue = 0;
 
-    const xStep = graphWidth / (months.length - 1);
+    const xStep = months.length > 1 ? graphWidth / (months.length - 1) : graphWidth;
     const yScale = (value: number) =>
       graphHeight - ((value - minValue) / (maxValue - minValue)) * graphHeight;
 
@@ -647,11 +696,13 @@ export default function SurveyResultsPage() {
         .join(" ");
     };
 
-    // Encontrar tendencias
-    const infraTrend = categories[0].data;
-    const startValue = infraTrend[0];
-    const endValue = infraTrend[infraTrend.length - 1];
+    // Encontrar tendencias (primera categoría con datos)
+    const firstCategoryWithData = categories.find(c => c.data.some(v => v > 0));
+    const trendData = firstCategoryWithData?.data || [];
+    const startValue = trendData[0] || 0;
+    const endValue = trendData[trendData.length - 1] || 0;
     const trendDirection = endValue > startValue ? "aumentó" : endValue < startValue ? "disminuyó" : "se mantuvo";
+    const trendCategoryName = firstCategoryWithData?.name || "";
 
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
@@ -678,104 +729,137 @@ export default function SurveyResultsPage() {
         </div>
 
         {/* Line Chart */}
-        <div className="overflow-x-auto">
-          <svg width={chartWidth} height={chartHeight} className="mx-auto">
-            {/* Grid lines */}
-            {[0, 10, 20, 30, 40, 50].map((value) => (
-              <g key={value}>
-                <line
-                  x1={padding.left}
-                  y1={padding.top + yScale(value)}
-                  x2={chartWidth - padding.right}
-                  y2={padding.top + yScale(value)}
-                  stroke="#E5E7EB"
-                  strokeDasharray="4,4"
-                />
-                <text
-                  x={padding.left - 10}
-                  y={padding.top + yScale(value) + 4}
-                  textAnchor="end"
-                  className="text-xs fill-gray-500"
-                >
-                  {value}%
-                </text>
-              </g>
-            ))}
-
-            {/* X-axis labels */}
-            {months.map((month, index) => (
-              <text
-                key={month}
-                x={padding.left + index * xStep}
-                y={chartHeight - 10}
-                textAnchor="middle"
-                className="text-xs fill-gray-500"
-              >
-                {month}
-              </text>
-            ))}
-
-            {/* Lines for each category */}
-            {categories.map((category) => (
-              <g key={category.name}>
-                <path
-                  d={generatePath(category.data)}
-                  fill="none"
-                  stroke={category.color}
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                {/* Data points */}
-                {category.data.map((value, index) => (
-                  <circle
-                    key={index}
-                    cx={padding.left + index * xStep}
-                    cy={padding.top + yScale(value)}
-                    r={4}
-                    fill={category.color}
-                    stroke="white"
-                    strokeWidth={2}
-                  />
+        {!hasData ? (
+          <div className="text-center text-gray-500 py-12">
+            No hay datos para este grupo de edad
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <svg width={chartWidth} height={chartHeight} className="mx-auto">
+                {/* Grid lines */}
+                {Array.from({ length: 5 }, (_, i) => Math.round((maxValue / 4) * i)).map((value) => (
+                  <g key={value}>
+                    <line
+                      x1={padding.left}
+                      y1={padding.top + yScale(value)}
+                      x2={chartWidth - padding.right}
+                      y2={padding.top + yScale(value)}
+                      stroke="#E5E7EB"
+                      strokeDasharray="4,4"
+                    />
+                    <text
+                      x={padding.left - 10}
+                      y={padding.top + yScale(value) + 4}
+                      textAnchor="end"
+                      className="text-xs fill-gray-500"
+                    >
+                      {value}%
+                    </text>
+                  </g>
                 ))}
-              </g>
-            ))}
-          </svg>
-        </div>
 
-        {/* Legend */}
-        <div className="flex flex-wrap justify-center gap-4 mt-4">
-          {categories.map((category) => (
-            <div key={category.name} className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: category.color }}
-              />
-              <span className="text-sm text-gray-600">{category.name}</span>
+                {/* X-axis labels */}
+                {months.map((month, index) => (
+                  <text
+                    key={month}
+                    x={padding.left + index * xStep}
+                    y={chartHeight - 10}
+                    textAnchor="middle"
+                    className="text-xs fill-gray-500"
+                  >
+                    {month}
+                  </text>
+                ))}
+
+                {/* Lines for each category */}
+                {categories.map((category) => (
+                  <g key={category.name}>
+                    <path
+                      d={generatePath(category.data)}
+                      fill="none"
+                      stroke={category.color}
+                      strokeWidth={2.5}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    {/* Data points */}
+                    {category.data.map((value, index) => (
+                      <circle
+                        key={index}
+                        cx={padding.left + index * xStep}
+                        cy={padding.top + yScale(value)}
+                        r={4}
+                        fill={category.color}
+                        stroke="white"
+                        strokeWidth={2}
+                      />
+                    ))}
+                  </g>
+                ))}
+              </svg>
             </div>
-          ))}
-        </div>
 
-        {/* Insight */}
-        <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
-          <p className="text-sm font-semibold text-blue-900">Tendencia Principal</p>
-          <p className="text-sm text-blue-700">
-            La preferencia por Infraestructura {trendDirection} de {startValue}% a {endValue}% en el período analizado
-          </p>
-        </div>
+            {/* Legend */}
+            <div className="flex flex-wrap justify-center gap-4 mt-4">
+              {categories.map((category) => (
+                <div key={category.name} className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  <span className="text-sm text-gray-600">{category.name}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Insight */}
+            {trendCategoryName && (
+              <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
+                <p className="text-sm font-semibold text-blue-900">Tendencia Principal</p>
+                <p className="text-sm text-blue-700">
+                  La preferencia por {trendCategoryName} {trendDirection} de {startValue}% a {endValue}% en el período analizado
+                </p>
+              </div>
+            )}
+          </>
+        )}
       </div>
     );
   };
 
   // Renderizar gráfico de Evolución de Votación de Obras
   const renderProjectsEvolutionChart = () => {
-    // Datos de ejemplo - en producción vendrían del backend
-    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago"];
-    const projects = [
-      { name: "Centro Convenciones", color: "#3B82F6", data: [35, 38, 42, 40, 45, 43, 47, 48] },
-      { name: "Centro Cívico", color: "#10B981", data: [40, 38, 35, 37, 33, 35, 32, 30] },
-      { name: "Parque Público", color: "#8B5CF6", data: [25, 24, 23, 23, 22, 22, 21, 22] },
-    ];
+    const evolutionData = results?.evolution_data;
+    if (!evolutionData || !evolutionData.single_choice?.projects) {
+      return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold text-gray-900">Evolución de Votación de Obras</h3>
+            <p className="text-sm text-gray-500">Cambios en preferencia de proyectos prioritarios</p>
+          </div>
+          <div className="text-center text-gray-500 py-12">
+            No hay datos históricos disponibles
+          </div>
+        </div>
+      );
+    }
+
+    const months = evolutionData.months;
+
+    // Obtener proyectos según filtro de edad
+    const rawProjects = projectsEvolutionAgeFilter === "General"
+      ? evolutionData.single_choice.projects
+      : evolutionData.by_age[projectsEvolutionAgeFilter]?.single_choice?.projects || [];
+
+    // Asignar colores a los proyectos
+    const projectColors = ["#3B82F6", "#10B981", "#8B5CF6", "#F59E0B", "#EF4444"];
+    const projects = rawProjects.map((proj, index) => ({
+      ...proj,
+      color: projectColors[index % projectColors.length]
+    }));
+
+    const hasData = months.length > 0 && projects.length > 0;
 
     const chartWidth = 600;
     const chartHeight = 300;
@@ -783,10 +867,12 @@ export default function SurveyResultsPage() {
     const graphWidth = chartWidth - padding.left - padding.right;
     const graphHeight = chartHeight - padding.top - padding.bottom;
 
-    const maxValue = 60;
+    // Calcular max dinámicamente
+    const allValues = projects.flatMap(p => p.data);
+    const maxValue = Math.max(60, Math.ceil(Math.max(...allValues, 1) / 10) * 10);
     const minValue = 0;
 
-    const xStep = graphWidth / (months.length - 1);
+    const xStep = months.length > 1 ? graphWidth / (months.length - 1) : graphWidth;
     const yScale = (value: number) =>
       graphHeight - ((value - minValue) / (maxValue - minValue)) * graphHeight;
 
@@ -832,45 +918,51 @@ export default function SurveyResultsPage() {
         </div>
 
         {/* Line Chart */}
-        <div className="overflow-x-auto">
-          <svg width={chartWidth} height={chartHeight} className="mx-auto">
-            {/* Grid lines */}
-            {[0, 15, 30, 45, 60].map((value) => (
-              <g key={value}>
-                <line
-                  x1={padding.left}
-                  y1={padding.top + yScale(value)}
-                  x2={chartWidth - padding.right}
-                  y2={padding.top + yScale(value)}
-                  stroke="#E5E7EB"
-                  strokeDasharray="4,4"
-                />
-                <text
-                  x={padding.left - 10}
-                  y={padding.top + yScale(value) + 4}
-                  textAnchor="end"
-                  className="text-xs fill-gray-500"
-                >
-                  {value}%
-                </text>
-              </g>
-            ))}
+        {!hasData ? (
+          <div className="text-center text-gray-500 py-12">
+            No hay datos para este grupo de edad
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <svg width={chartWidth} height={chartHeight} className="mx-auto">
+                {/* Grid lines */}
+                {Array.from({ length: 5 }, (_, i) => Math.round((maxValue / 4) * i)).map((value) => (
+                  <g key={value}>
+                    <line
+                      x1={padding.left}
+                      y1={padding.top + yScale(value)}
+                      x2={chartWidth - padding.right}
+                      y2={padding.top + yScale(value)}
+                      stroke="#E5E7EB"
+                      strokeDasharray="4,4"
+                    />
+                    <text
+                      x={padding.left - 10}
+                      y={padding.top + yScale(value) + 4}
+                      textAnchor="end"
+                      className="text-xs fill-gray-500"
+                    >
+                      {value}%
+                    </text>
+                  </g>
+                ))}
 
-            {/* X-axis labels */}
-            {months.map((month, index) => (
-              <text
-                key={month}
-                x={padding.left + index * xStep}
-                y={chartHeight - 10}
-                textAnchor="middle"
-                className="text-xs fill-gray-500"
-              >
-                {month}
-              </text>
-            ))}
+                {/* X-axis labels */}
+                {months.map((month, index) => (
+                  <text
+                    key={month}
+                    x={padding.left + index * xStep}
+                    y={chartHeight - 10}
+                    textAnchor="middle"
+                    className="text-xs fill-gray-500"
+                  >
+                    {month}
+                  </text>
+                ))}
 
-            {/* Lines for each project */}
-            {projects.map((project) => (
+                {/* Lines for each project */}
+                {projects.map((project) => (
               <g key={project.name}>
                 <path
                   d={generatePath(project.data)}
@@ -893,30 +985,34 @@ export default function SurveyResultsPage() {
                   />
                 ))}
               </g>
-            ))}
-          </svg>
-        </div>
-
-        {/* Legend */}
-        <div className="flex flex-wrap justify-center gap-4 mt-4">
-          {projects.map((project) => (
-            <div key={project.name} className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: project.color }}
-              />
-              <span className="text-sm text-gray-600">{project.name}</span>
+              ))}
+              </svg>
             </div>
-          ))}
-        </div>
 
-        {/* Insight */}
-        <div className="mt-6 bg-amber-50 border border-amber-100 rounded-lg p-4">
-          <p className="text-sm font-semibold text-amber-900">Cambio de Liderazgo</p>
-          <p className="text-sm text-amber-700">
-            {leader.name} lidera actualmente con {leader.value}% de preferencia, mostrando una tendencia creciente
-          </p>
-        </div>
+            {/* Legend */}
+            <div className="flex flex-wrap justify-center gap-4 mt-4">
+              {projects.map((project) => (
+                <div key={project.name} className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: project.color }}
+                  />
+                  <span className="text-sm text-gray-600">{project.name}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Insight */}
+            {leader && leader.value > 0 && (
+              <div className="mt-6 bg-amber-50 border border-amber-100 rounded-lg p-4">
+                <p className="text-sm font-semibold text-amber-900">Proyecto Líder</p>
+                <p className="text-sm text-amber-700">
+                  {leader.name} lidera actualmente con {leader.value}% de preferencia
+                </p>
+              </div>
+            )}
+          </>
+        )}
       </div>
     );
   };
