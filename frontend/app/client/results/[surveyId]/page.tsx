@@ -517,7 +517,7 @@ export default function SurveyResultsPage() {
       } else {
         average = ageResults.average;
         totalRatings = ageResults.total_ratings;
-        distribution = undefined; // Age results don't have distribution
+        distribution = ageResults.distribution;
       }
     }
 
@@ -590,7 +590,7 @@ export default function SurveyResultsPage() {
               <p className="text-sm text-gray-500">de 5 estrellas</p>
             </div>
 
-            {/* Distribution bars (only show for General) */}
+            {/* Distribution bars */}
             {distribution && (
               <div className="space-y-3 mb-6">
                 {[1, 2, 3, 4, 5].map((rating) => {

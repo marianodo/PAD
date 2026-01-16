@@ -494,9 +494,14 @@ class SurveyService:
                 results_by_age = {}
                 for age_grp, age_ratings in ratings_by_age.items():
                     avg = sum(age_ratings) / len(age_ratings) if age_ratings else 0
+                    # Distribución por grupo de edad
+                    age_rating_dist = {}
+                    for r in range(1, 6):
+                        age_rating_dist[str(r)] = sum(1 for rating in age_ratings if rating == r)
                     results_by_age[age_grp] = {
                         "average": round(avg, 2),
-                        "total_ratings": len(age_ratings)
+                        "total_ratings": len(age_ratings),
+                        "distribution": age_rating_dist
                     }
 
                 question_data["results_by_age"] = results_by_age
