@@ -588,6 +588,7 @@ class SurveyService:
             "months": months_labels,
             "percentage_distribution": {},
             "single_choice": {},
+            "rating": {},
             "by_age": {}
         }
 
@@ -668,13 +669,30 @@ class SurveyService:
                     ]
                 }
 
+            elif question.question_type == QuestionType.RATING:
+                # Calcular promedio de calificación por mes
+                rating_data: List[float] = []
+
+                for month_key in sorted_months:
+                    month_answers = answers_by_month[month_key].get(question.id, [])
+                    ratings = [a.rating for a in month_answers if a.rating is not None]
+                    avg = sum(ratings) / len(ratings) if ratings else 0
+                    rating_data.append(round(avg, 2))
+
+                evolution_result["rating"] = {
+                    "question_id": str(question.id),
+                    "question_text": question.question_text,
+                    "data": rating_data
+                }
+
         # Calcular evolución por grupo de edad
         age_groups_list = ["18-30", "31-45", "46-60", "60+"]
 
         for age_group in age_groups_list:
             age_evolution = {
                 "percentage_distribution": {},
-                "single_choice": {}
+                "single_choice": {},
+                "rating": {}
             }
 
             age_months_data = answers_by_age_month.get(age_group, {})
@@ -740,6 +758,19 @@ class SurveyService:
                             }
                             for opt_id, data in option_data.items()
                         ]
+                    }
+
+                elif question.question_type == QuestionType.RATING:
+                    rating_data: List[float] = []
+
+                    for month_key in sorted_months:
+                        month_answers = age_months_data.get(month_key, {}).get(question.id, [])
+                        ratings = [a.rating for a in month_answers if a.rating is not None]
+                        avg = sum(ratings) / len(ratings) if ratings else 0
+                        rating_data.append(round(avg, 2))
+
+                    age_evolution["rating"] = {
+                        "data": rating_data
                     }
 
             evolution_result["by_age"][age_group] = age_evolution

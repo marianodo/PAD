@@ -54,9 +54,15 @@ interface EvolutionData {
     question_text: string;
     projects: EvolutionCategory[];
   };
+  rating: {
+    question_id: string;
+    question_text: string;
+    data: number[];
+  };
   by_age: Record<string, {
     percentage_distribution: { categories: EvolutionCategory[] };
     single_choice: { projects: EvolutionCategory[] };
+    rating: { data: number[] };
   }>;
 }
 
@@ -97,6 +103,8 @@ export default function SurveyResultsPage() {
   const [ratingAgeFilter, setRatingAgeFilter] = useState("General");
   const [budgetEvolutionAgeFilter, setBudgetEvolutionAgeFilter] = useState("General");
   const [projectsEvolutionAgeFilter, setProjectsEvolutionAgeFilter] = useState("General");
+  const [ratingEvolutionAgeFilter, setRatingEvolutionAgeFilter] = useState("General");
+  const [hoveredRatingPoint, setHoveredRatingPoint] = useState<{index: number, value: number, month: string} | null>(null);
 
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
 
@@ -1017,6 +1025,278 @@ export default function SurveyResultsPage() {
     );
   };
 
+  // Renderizar gráfico de Evolución de Satisfacción Ciudadana (Rating)
+  const renderRatingEvolutionChart = () => {
+    const evolutionData = results?.evolution_data;
+    if (!evolutionData || !evolutionData.rating?.data) {
+      return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-1">
+            <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            <h3 className="text-xl font-bold text-gray-900">Evolución de Satisfacción Ciudadana</h3>
+          </div>
+          <p className="text-sm text-gray-500 mb-4">Calificación promedio mensual</p>
+          <div className="text-center text-gray-500 py-12">
+            No hay datos históricos disponibles
+          </div>
+        </div>
+      );
+    }
+
+    const months = evolutionData.months;
+
+    // Obtener datos según filtro de edad
+    const ratingData = ratingEvolutionAgeFilter === "General"
+      ? evolutionData.rating.data
+      : evolutionData.by_age[ratingEvolutionAgeFilter]?.rating?.data || [];
+
+    const hasData = months.length > 0 && ratingData.length > 0 && ratingData.some(v => v > 0);
+
+    const chartWidth = 800;
+    const chartHeight = 300;
+    const padding = { top: 30, right: 30, bottom: 50, left: 50 };
+    const graphWidth = chartWidth - padding.left - padding.right;
+    const graphHeight = chartHeight - padding.top - padding.bottom;
+
+    // Rating scale: 0 to 5
+    const maxValue = 5;
+    const minValue = 0;
+
+    const xStep = months.length > 1 ? graphWidth / (months.length - 1) : graphWidth;
+    const yScale = (value: number) =>
+      graphHeight - ((value - minValue) / (maxValue - minValue)) * graphHeight;
+
+    // Generar path para la línea
+    const generatePath = (data: number[]) => {
+      return data
+        .map((value, index) => {
+          const x = padding.left + index * xStep;
+          const y = padding.top + yScale(value);
+          return `${index === 0 ? "M" : "L"} ${x} ${y}`;
+        })
+        .join(" ");
+    };
+
+    // Generar área bajo la curva
+    const generateAreaPath = (data: number[]) => {
+      const linePath = data
+        .map((value, index) => {
+          const x = padding.left + index * xStep;
+          const y = padding.top + yScale(value);
+          return `${index === 0 ? "M" : "L"} ${x} ${y}`;
+        })
+        .join(" ");
+
+      const lastX = padding.left + (data.length - 1) * xStep;
+      const firstX = padding.left;
+      const bottomY = padding.top + graphHeight;
+
+      return `${linePath} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
+    };
+
+    // Calcular métricas de tendencia
+    const startValue = ratingData[0] || 0;
+    const endValue = ratingData[ratingData.length - 1] || 0;
+    const improvement = startValue > 0 ? ((endValue - startValue) / startValue) * 100 : 0;
+    const isPositive = improvement >= 0;
+
+    // Calcular tendencia de los últimos 3 meses
+    const last3Months = ratingData.slice(-3);
+    const trend3Months = last3Months.length >= 2
+      ? last3Months[last3Months.length - 1] >= last3Months[0] ? "Positiva" : "Negativa"
+      : "Estable";
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+          <h3 className="text-xl font-bold text-gray-900">Evolución de Satisfacción Ciudadana</h3>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">Calificación promedio mensual</p>
+
+        {/* Age Filter Tabs */}
+        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+          {ageFilterOptions.map((option) => (
+            <button
+              key={option}
+              onClick={() => setRatingEvolutionAgeFilter(option)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
+                ratingEvolutionAgeFilter === option
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        {!hasData ? (
+          <div className="text-center text-gray-500 py-12">
+            No hay datos para este grupo de edad
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto relative">
+              <svg width={chartWidth} height={chartHeight} className="mx-auto">
+                {/* Grid lines */}
+                {[0, 1, 2, 3, 4, 5].map((value) => (
+                  <g key={value}>
+                    <line
+                      x1={padding.left}
+                      y1={padding.top + yScale(value)}
+                      x2={chartWidth - padding.right}
+                      y2={padding.top + yScale(value)}
+                      stroke="#E5E7EB"
+                      strokeDasharray="4,4"
+                    />
+                    <text
+                      x={padding.left - 15}
+                      y={padding.top + yScale(value) + 4}
+                      textAnchor="end"
+                      className="text-xs fill-gray-500"
+                    >
+                      {value}
+                    </text>
+                  </g>
+                ))}
+
+                {/* X-axis labels */}
+                {months.map((month, index) => (
+                  <text
+                    key={month}
+                    x={padding.left + index * xStep}
+                    y={chartHeight - 15}
+                    textAnchor="middle"
+                    className="text-xs fill-gray-500"
+                  >
+                    {month}
+                  </text>
+                ))}
+
+                {/* Area under the curve */}
+                <path
+                  d={generateAreaPath(ratingData)}
+                  fill="url(#ratingGradient)"
+                  opacity={0.3}
+                />
+
+                {/* Gradient definition */}
+                <defs>
+                  <linearGradient id="ratingGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#F59E0B" />
+                    <stop offset="100%" stopColor="#FEF3C7" />
+                  </linearGradient>
+                </defs>
+
+                {/* Line */}
+                <path
+                  d={generatePath(ratingData)}
+                  fill="none"
+                  stroke="#F59E0B"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {/* Data points with hover interaction */}
+                {ratingData.map((value, index) => (
+                  <g key={index}>
+                    {/* Invisible larger circle for easier hover */}
+                    <circle
+                      cx={padding.left + index * xStep}
+                      cy={padding.top + yScale(value)}
+                      r={15}
+                      fill="transparent"
+                      className="cursor-pointer"
+                      onMouseEnter={() => setHoveredRatingPoint({ index, value, month: months[index] })}
+                      onMouseLeave={() => setHoveredRatingPoint(null)}
+                    />
+                    {/* Visible point */}
+                    <circle
+                      cx={padding.left + index * xStep}
+                      cy={padding.top + yScale(value)}
+                      r={hoveredRatingPoint?.index === index ? 8 : 6}
+                      fill="#F59E0B"
+                      stroke="white"
+                      strokeWidth={3}
+                      className="transition-all duration-150"
+                    />
+                  </g>
+                ))}
+
+                {/* Tooltip */}
+                {hoveredRatingPoint && (
+                  <g>
+                    {/* Vertical line */}
+                    <line
+                      x1={padding.left + hoveredRatingPoint.index * xStep}
+                      y1={padding.top}
+                      x2={padding.left + hoveredRatingPoint.index * xStep}
+                      y2={padding.top + graphHeight}
+                      stroke="#9CA3AF"
+                      strokeWidth={1}
+                      strokeDasharray="4,4"
+                    />
+                    {/* Tooltip box */}
+                    <rect
+                      x={padding.left + hoveredRatingPoint.index * xStep - 60}
+                      y={padding.top + yScale(hoveredRatingPoint.value) - 50}
+                      width={120}
+                      height={40}
+                      fill="white"
+                      stroke="#E5E7EB"
+                      strokeWidth={1}
+                      rx={6}
+                    />
+                    <text
+                      x={padding.left + hoveredRatingPoint.index * xStep}
+                      y={padding.top + yScale(hoveredRatingPoint.value) - 35}
+                      textAnchor="middle"
+                      className="text-sm font-medium fill-gray-900"
+                    >
+                      {hoveredRatingPoint.month}
+                    </text>
+                    <text
+                      x={padding.left + hoveredRatingPoint.index * xStep}
+                      y={padding.top + yScale(hoveredRatingPoint.value) - 18}
+                      textAnchor="middle"
+                      className="text-sm fill-amber-600"
+                    >
+                      Calificación : {hoveredRatingPoint.value.toFixed(1)} estrellas
+                    </text>
+                  </g>
+                )}
+              </svg>
+            </div>
+
+            {/* Metrics Cards */}
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="bg-amber-50 border border-amber-100 rounded-lg p-4">
+                <p className="text-sm text-amber-700">Mejora</p>
+                <p className={`text-xl font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                  {isPositive ? '+' : ''}{improvement.toFixed(1)}%
+                </p>
+                <p className="text-xs text-amber-600">desde {months[0] || 'inicio'}</p>
+              </div>
+              <div className="bg-amber-50 border border-amber-100 rounded-lg p-4">
+                <p className="text-sm text-amber-700">Tendencia</p>
+                <p className={`text-xl font-bold ${trend3Months === 'Positiva' ? 'text-green-600' : trend3Months === 'Negativa' ? 'text-red-600' : 'text-gray-600'}`}>
+                  {trend3Months}
+                </p>
+                <p className="text-xs text-amber-600">últimos 3 meses</p>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const renderBarChart = (data: Record<string, number>, title: string, color: string) => {
     const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
     const maxValue = Math.max(...entries.map(([_, value]) => value), 1);
@@ -1266,9 +1546,14 @@ export default function SurveyResultsPage() {
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Evolución Histórica</h2>
 
         {/* Evolution Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {renderBudgetEvolutionChart()}
           {renderProjectsEvolutionChart()}
+        </div>
+
+        {/* Rating Evolution Chart - Full width */}
+        <div className="mb-8">
+          {renderRatingEvolutionChart()}
         </div>
 
         {/* Demographics Section Title */}
