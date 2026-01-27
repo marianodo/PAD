@@ -505,7 +505,7 @@ export default function SurveyResultsPage() {
     const question = getQuestionByType("rating");
     if (!question) return null;
 
-    const generalResults = question.results as RatingResult;
+    const generalResults = question.results as unknown as RatingResult;
     const isGeneral = ratingAgeFilter === "General";
 
     let average: number;
@@ -517,7 +517,7 @@ export default function SurveyResultsPage() {
       totalRatings = generalResults.total_ratings;
       distribution = generalResults.distribution;
     } else {
-      const ageResults = question.results_by_age[ratingAgeFilter] as RatingResult | undefined;
+      const ageResults = question.results_by_age[ratingAgeFilter] as unknown as RatingResult | undefined;
       if (!ageResults) {
         average = 0;
         totalRatings = 0;
@@ -1297,6 +1297,335 @@ export default function SurveyResultsPage() {
     );
   };
 
+  // Generar insights inteligentes basados en los datos
+  const generateInsights = () => {
+    const insights: Array<{
+      id: string;
+      title: string;
+      description: string;
+      recommendation: string;
+      impact: "Alta" | "Media" | "Baja";
+      icon: string;
+      color: string;
+      bgColor: string;
+      borderColor: string;
+    }> = [];
+
+    // 1. Demanda Ciudadana Clara - Analizar distribución presupuestaria
+    const budgetQuestion = results?.questions_summary.find(
+      q => q.question_type === "percentage_distribution"
+    );
+    if (budgetQuestion?.results) {
+      const budgetResults = budgetQuestion.results as unknown as {
+        averages: Record<string, { average: number; label: string }>
+      };
+      const averages = Object.entries(budgetResults.averages || {});
+      if (averages.length > 0) {
+        const sorted = averages.sort((a, b) => b[1].average - a[1].average);
+        const topCategory = sorted[0];
+        if (topCategory && topCategory[1].average > 15) {
+          insights.push({
+            id: "demanda-ciudadana",
+            title: "Demanda Ciudadana Clara",
+            description: `${topCategory[1].average.toFixed(0)}% de ciudadanos priorizó ${topCategory[1].label} en su distribución presupuestal ideal - la categoría con mayor demanda`,
+            recommendation: `Comunicar planes concretos de ${topCategory[1].label.toLowerCase()} y considerar ajustar asignaciones según preferencias expresadas`,
+            impact: "Alta",
+            icon: "target",
+            color: "text-red-600",
+            bgColor: "bg-red-50",
+            borderColor: "border-red-100"
+          });
+        }
+      }
+    }
+
+    // 2. Tendencia de Participación - Analizar crecimiento mensual
+    const evolutionData = results?.evolution_data;
+    if (evolutionData?.months && evolutionData.months.length >= 2) {
+      const months = evolutionData.months;
+      const lastMonth = months[months.length - 1];
+      const firstMonth = months[0];
+
+      // Calcular tendencia basada en rating evolution
+      if (evolutionData.rating?.data && evolutionData.rating.data.length >= 2) {
+        const ratingData = evolutionData.rating.data;
+        const validData = ratingData.filter(v => v > 0);
+        if (validData.length >= 2) {
+          const firstRating = validData[0];
+          const lastRating = validData[validData.length - 1];
+          const growth = ((lastRating - firstRating) / firstRating) * 100;
+
+          if (growth > 5) {
+            insights.push({
+              id: "tendencia-participacion",
+              title: "Tendencia de Participación Positiva",
+              description: `Participación ciudadana creció ${growth.toFixed(0)}% desde ${firstMonth} - los ciudadanos están cada vez más comprometidos`,
+              recommendation: "Mantener frecuencia de encuestas mensuales y comunicar cómo sus respuestas impactan decisiones reales",
+              impact: "Alta",
+              icon: "trending-up",
+              color: "text-green-600",
+              bgColor: "bg-green-50",
+              borderColor: "border-green-100"
+            });
+          }
+        }
+      }
+    }
+
+    // 3. Brecha Generacional - Comparar preferencias por edad
+    if (budgetQuestion?.results_by_age) {
+      const ageGroups = Object.keys(budgetQuestion.results_by_age);
+      if (ageGroups.length >= 2) {
+        const youngGroup = budgetQuestion.results_by_age["18-30"] as {
+          averages?: Record<string, { average: number; label: string }>
+        } | undefined;
+        const olderGroup = budgetQuestion.results_by_age["60+"] as {
+          averages?: Record<string, { average: number; label: string }>
+        } | undefined;
+
+        if (youngGroup?.averages && olderGroup?.averages) {
+          // Buscar la mayor diferencia en preferencias
+          let maxDiff = 0;
+          let diffCategory = "";
+          let youngValue = 0;
+          let olderValue = 0;
+
+          for (const [key, youngData] of Object.entries(youngGroup.averages)) {
+            const olderData = olderGroup.averages[key];
+            if (olderData) {
+              const diff = Math.abs(youngData.average - olderData.average);
+              if (diff > maxDiff) {
+                maxDiff = diff;
+                diffCategory = youngData.label;
+                youngValue = youngData.average;
+                olderValue = olderData.average;
+              }
+            }
+          }
+
+          if (maxDiff > 5) {
+            insights.push({
+              id: "brecha-generacional",
+              title: "Brecha Generacional Detectada",
+              description: `Ciudadanos menores de 35 años asignan ${youngValue.toFixed(0)}% a ${diffCategory} vs ${olderValue.toFixed(0)}% de mayores de 55 años - preferencias muy distintas`,
+              recommendation: "Diseñar programas diferenciados por edad y crear espacios de diálogo intergeneracional",
+              impact: "Media",
+              icon: "users",
+              color: "text-amber-600",
+              bgColor: "bg-amber-50",
+              borderColor: "border-amber-100"
+            });
+          }
+        }
+      }
+    }
+
+    // 4. Desigualdad Geográfica - Analizar participación por barrio
+    const demographics = results?.demographics;
+    if (demographics?.by_neighborhood) {
+      const neighborhoods = Object.entries(demographics.by_neighborhood);
+      if (neighborhoods.length >= 2) {
+        const sorted = neighborhoods.sort((a, b) => b[1] - a[1]);
+        const highest = sorted[0];
+        const lowest = sorted[sorted.length - 1];
+
+        if (highest[1] > lowest[1] * 2 && lowest[1] > 0) {
+          insights.push({
+            id: "desigualdad-geografica",
+            title: "Desigualdad en Participación Geográfica",
+            description: `${highest[0]} registra ${highest[1].toLocaleString()} respuestas vs ${lowest[1].toLocaleString()} en ${lowest[0]} - posible brecha en alcance o accesibilidad`,
+            recommendation: "Implementar estrategia de difusión dirigida en zonas con baja participación y evaluar barreras de acceso",
+            impact: "Alta",
+            icon: "map-pin",
+            color: "text-blue-600",
+            bgColor: "bg-blue-50",
+            borderColor: "border-blue-100"
+          });
+        }
+      }
+    }
+
+    // 5. Consenso en Obra Prioritaria - Analizar proyecto líder
+    const projectQuestion = results?.questions_summary.find(
+      q => q.question_type === "single_choice"
+    );
+    if (projectQuestion?.results) {
+      const projectResults = projectQuestion.results as unknown as {
+        options: Array<{ option_text: string; count: number; percentage: number }>;
+        total_responses: number;
+      };
+
+      if (projectResults.options && projectResults.options.length > 0) {
+        const sorted = [...projectResults.options].sort((a, b) => b.percentage - a.percentage);
+        const leader = sorted[0];
+
+        if (leader.percentage >= 30) {
+          insights.push({
+            id: "consenso-obra",
+            title: "Consenso en Obra Prioritaria",
+            description: `${leader.percentage.toFixed(0)}% de ciudadanos votó por ${leader.option_text} como obra más importante - clara convergencia de preferencias`,
+            recommendation: `Priorizar comunicación de avances del ${leader.option_text} y establecer cronograma público de ejecución`,
+            impact: "Alta",
+            icon: "building",
+            color: "text-indigo-600",
+            bgColor: "bg-indigo-50",
+            borderColor: "border-indigo-100"
+          });
+        }
+      }
+    }
+
+    // 6. Mejora en Percepción de Gestión - Analizar evolución del rating
+    if (evolutionData?.rating?.data) {
+      const ratingData = evolutionData.rating.data;
+      const validData = ratingData.filter(v => v > 0);
+
+      if (validData.length >= 2) {
+        const firstRating = validData[0];
+        const lastRating = validData[validData.length - 1];
+        const improvement = ((lastRating - firstRating) / firstRating) * 100;
+
+        if (improvement > 5) {
+          insights.push({
+            id: "mejora-percepcion",
+            title: "Mejora en Percepción de Gestión",
+            description: `Calificación promedio mejoró de ${firstRating.toFixed(1)} a ${lastRating.toFixed(1)} estrellas (${improvement.toFixed(1)}% de incremento) - ciudadanos perciben avances`,
+            recommendation: "Comunicar logros específicos conseguidos y mantener transparencia en ejecución de proyectos",
+            impact: "Alta",
+            icon: "thumbs-up",
+            color: "text-emerald-600",
+            bgColor: "bg-emerald-50",
+            borderColor: "border-emerald-100"
+          });
+        }
+      }
+    }
+
+    return insights;
+  };
+
+  // Renderizar sección de insights
+  const renderInsightsSection = () => {
+    const insights = generateInsights();
+
+    if (insights.length === 0) {
+      return null;
+    }
+
+    const getIcon = (iconName: string) => {
+      switch (iconName) {
+        case "target":
+          return (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" strokeWidth={2} />
+              <circle cx="12" cy="12" r="6" strokeWidth={2} />
+              <circle cx="12" cy="12" r="2" fill="currentColor" />
+            </svg>
+          );
+        case "trending-up":
+          return (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          );
+        case "users":
+          return (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+            </svg>
+          );
+        case "map-pin":
+          return (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          );
+        case "building":
+          return (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          );
+        case "thumbs-up":
+          return (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+            </svg>
+          );
+        default:
+          return (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          );
+      }
+    };
+
+    return (
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Análisis Inteligente y Recomendaciones</h2>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Insights de IA para Toma de Decisiones</h3>
+              <p className="text-sm text-gray-500">Análisis inteligente basado en respuestas ciudadanas</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {insights.map((insight) => (
+              <div
+                key={insight.id}
+                className={`${insight.bgColor} ${insight.borderColor} border rounded-xl p-4`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className={`${insight.color}`}>
+                      {getIcon(insight.icon)}
+                    </div>
+                    <h4 className="font-semibold text-gray-900">{insight.title}</h4>
+                  </div>
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                    insight.impact === "Alta"
+                      ? "bg-red-100 text-red-700"
+                      : insight.impact === "Media"
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-gray-100 text-gray-700"
+                  }`}>
+                    Impacto: {insight.impact}
+                  </span>
+                </div>
+
+                <p className="text-sm text-gray-700 mb-3 ml-8">
+                  {insight.description}
+                </p>
+
+                <div className="ml-8 bg-white/60 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <p className="text-xs font-medium text-amber-700">Recomendación</p>
+                      <p className="text-sm text-gray-700">{insight.recommendation}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderBarChart = (data: Record<string, number>, title: string, color: string) => {
     const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
     const maxValue = Math.max(...entries.map(([_, value]) => value), 1);
@@ -1555,6 +1884,9 @@ export default function SurveyResultsPage() {
         <div className="mb-8">
           {renderRatingEvolutionChart()}
         </div>
+
+        {/* AI Insights Section */}
+        {renderInsightsSection()}
 
         {/* Demographics Section Title */}
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Demografía de Participantes</h2>
