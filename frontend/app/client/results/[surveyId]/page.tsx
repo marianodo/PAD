@@ -1316,18 +1316,16 @@ export default function SurveyResultsPage() {
       q => q.question_type === "percentage_distribution"
     );
     if (budgetQuestion?.results) {
-      const budgetResults = budgetQuestion.results as unknown as {
-        averages: Record<string, { average: number; label: string }>
-      };
-      const averages = Object.entries(budgetResults.averages || {});
-      if (averages.length > 0) {
-        const sorted = averages.sort((a, b) => b[1].average - a[1].average);
+      const budgetResults = budgetQuestion.results as unknown as Record<string, { percentage: number; label: string }>;
+      const entries = Object.entries(budgetResults);
+      if (entries.length > 0) {
+        const sorted = entries.sort((a, b) => b[1].percentage - a[1].percentage);
         const topCategory = sorted[0];
-        if (topCategory && topCategory[1].average > 15) {
+        if (topCategory && topCategory[1].percentage > 10) {
           insights.push({
             id: "demanda-ciudadana",
             title: "Demanda Ciudadana Clara",
-            description: `${topCategory[1].average.toFixed(0)}% de ciudadanos priorizó ${topCategory[1].label} en su distribución presupuestal ideal - la categoría con mayor demanda`,
+            description: `${topCategory[1].percentage.toFixed(0)}% de ciudadanos priorizó ${topCategory[1].label} en su distribución presupuestal ideal - la categoría con mayor demanda`,
             recommendation: `Comunicar planes concretos de ${topCategory[1].label.toLowerCase()} y considerar ajustar asignaciones según preferencias expresadas`,
             impact: "Alta",
             icon: "target",
@@ -1355,11 +1353,11 @@ export default function SurveyResultsPage() {
           const lastRating = validData[validData.length - 1];
           const growth = ((lastRating - firstRating) / firstRating) * 100;
 
-          if (growth > 5) {
+          if (growth > 0) {
             insights.push({
               id: "tendencia-participacion",
               title: "Tendencia de Participación Positiva",
-              description: `Participación ciudadana creció ${growth.toFixed(0)}% desde ${firstMonth} - los ciudadanos están cada vez más comprometidos`,
+              description: `Satisfacción ciudadana creció ${growth.toFixed(1)}% desde ${firstMonth} - los ciudadanos están cada vez más comprometidos`,
               recommendation: "Mantener frecuencia de encuestas mensuales y comunicar cómo sus respuestas impactan decisiones reales",
               impact: "Alta",
               icon: "trending-up",
@@ -1376,34 +1374,30 @@ export default function SurveyResultsPage() {
     if (budgetQuestion?.results_by_age) {
       const ageGroups = Object.keys(budgetQuestion.results_by_age);
       if (ageGroups.length >= 2) {
-        const youngGroup = budgetQuestion.results_by_age["18-30"] as {
-          averages?: Record<string, { average: number; label: string }>
-        } | undefined;
-        const olderGroup = budgetQuestion.results_by_age["60+"] as {
-          averages?: Record<string, { average: number; label: string }>
-        } | undefined;
+        const youngGroup = budgetQuestion.results_by_age["18-30"] as unknown as Record<string, { percentage: number; label: string }> | undefined;
+        const olderGroup = budgetQuestion.results_by_age["60+"] as unknown as Record<string, { percentage: number; label: string }> | undefined;
 
-        if (youngGroup?.averages && olderGroup?.averages) {
+        if (youngGroup && olderGroup) {
           // Buscar la mayor diferencia en preferencias
           let maxDiff = 0;
           let diffCategory = "";
           let youngValue = 0;
           let olderValue = 0;
 
-          for (const [key, youngData] of Object.entries(youngGroup.averages)) {
-            const olderData = olderGroup.averages[key];
-            if (olderData) {
-              const diff = Math.abs(youngData.average - olderData.average);
+          for (const [key, youngData] of Object.entries(youngGroup)) {
+            const olderData = olderGroup[key];
+            if (olderData && youngData.percentage !== undefined) {
+              const diff = Math.abs(youngData.percentage - olderData.percentage);
               if (diff > maxDiff) {
                 maxDiff = diff;
                 diffCategory = youngData.label;
-                youngValue = youngData.average;
-                olderValue = olderData.average;
+                youngValue = youngData.percentage;
+                olderValue = olderData.percentage;
               }
             }
           }
 
-          if (maxDiff > 5) {
+          if (maxDiff > 3) {
             insights.push({
               id: "brecha-generacional",
               title: "Brecha Generacional Detectada",
@@ -1459,12 +1453,12 @@ export default function SurveyResultsPage() {
         const sorted = [...projectResults.options].sort((a, b) => b.percentage - a.percentage);
         const leader = sorted[0];
 
-        if (leader.percentage >= 30) {
+        if (leader.percentage >= 15) {
           insights.push({
             id: "consenso-obra",
             title: "Consenso en Obra Prioritaria",
             description: `${leader.percentage.toFixed(0)}% de ciudadanos votó por ${leader.option_text} como obra más importante - clara convergencia de preferencias`,
-            recommendation: `Priorizar comunicación de avances del ${leader.option_text} y establecer cronograma público de ejecución`,
+            recommendation: `Priorizar comunicación de avances de ${leader.option_text} y establecer cronograma público de ejecución`,
             impact: "Alta",
             icon: "building",
             color: "text-indigo-600",
@@ -1485,7 +1479,7 @@ export default function SurveyResultsPage() {
         const lastRating = validData[validData.length - 1];
         const improvement = ((lastRating - firstRating) / firstRating) * 100;
 
-        if (improvement > 5) {
+        if (improvement > 0) {
           insights.push({
             id: "mejora-percepcion",
             title: "Mejora en Percepción de Gestión",
@@ -1885,9 +1879,6 @@ export default function SurveyResultsPage() {
           {renderRatingEvolutionChart()}
         </div>
 
-        {/* AI Insights Section */}
-        {renderInsightsSection()}
-
         {/* Demographics Section Title */}
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Demografía de Participantes</h2>
 
@@ -1913,6 +1904,9 @@ export default function SurveyResultsPage() {
             "bg-teal-600"
           )}
         </div>
+
+        {/* AI Insights Section */}
+        {renderInsightsSection()}
 
         {/* Empty state */}
         {results.total_responses === 0 && (
