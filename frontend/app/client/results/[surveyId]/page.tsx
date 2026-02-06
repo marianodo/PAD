@@ -120,6 +120,9 @@ export default function SurveyResultsPage() {
   const [participationTrendAgeFilter, setParticipationTrendAgeFilter] = useState("General");
   const [hoveredRatingPoint, setHoveredRatingPoint] = useState<{index: number, value: number, month: string} | null>(null);
   const [activeTab, setActiveTab] = useState<"datos" | "ai-insights">("datos");
+  const [aiInsights, setAiInsights] = useState<any[] | null>(null);
+  const [loadingAiInsights, setLoadingAiInsights] = useState(false);
+  const [aiInsightsError, setAiInsightsError] = useState("");
 
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
 
