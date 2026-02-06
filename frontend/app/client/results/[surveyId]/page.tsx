@@ -119,6 +119,7 @@ export default function SurveyResultsPage() {
   const [ratingEvolutionAgeFilter, setRatingEvolutionAgeFilter] = useState("General");
   const [participationTrendAgeFilter, setParticipationTrendAgeFilter] = useState("General");
   const [hoveredRatingPoint, setHoveredRatingPoint] = useState<{index: number, value: number, month: string} | null>(null);
+  const [activeTab, setActiveTab] = useState<"datos" | "ai-insights">("datos");
 
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
 
@@ -2283,52 +2284,90 @@ export default function SurveyResultsPage() {
           </div>
         </div>
 
-        {/* Survey Results Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {renderBudgetPieChart()}
-          {renderProjectsChart()}
-        </div>
-
-        {/* Rating Chart - Full width */}
+        {/* Tabs Navigation */}
         <div className="mb-8">
-          {renderRatingChart()}
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab("datos")}
+                className={`${
+                  activeTab === "datos"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              >
+                📊 Datos
+              </button>
+              <button
+                onClick={() => setActiveTab("ai-insights")}
+                className={`${
+                  activeTab === "ai-insights"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              >
+                🤖 AI Insights
+              </button>
+            </nav>
+          </div>
         </div>
 
-        {/* Evolution Section Title */}
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Evolución Histórica</h2>
+        {/* Tab Content: Datos */}
+        {activeTab === "datos" && (
+          <>
+            {/* Survey Results Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {renderBudgetPieChart()}
+              {renderProjectsChart()}
+            </div>
 
-        {/* Evolution Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {renderBudgetEvolutionChart()}
-          {renderProjectsEvolutionChart()}
-        </div>
+            {/* Rating Chart - Full width */}
+            <div className="mb-8">
+              {renderRatingChart()}
+            </div>
 
-        {/* Rating Evolution Chart - Full width */}
-        <div className="mb-8">
-          {renderRatingEvolutionChart()}
-        </div>
+            {/* Evolution Section Title */}
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Evolución Histórica</h2>
 
-        {/* Participation Trend Chart - Full width */}
-        <div className="mb-8">
-          {renderParticipationTrendChart()}
-        </div>
+            {/* Evolution Charts Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {renderBudgetEvolutionChart()}
+              {renderProjectsEvolutionChart()}
+            </div>
 
-        {/* Demographic Breakdown Section */}
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Desglose Demográfico</h2>
+            {/* Rating Evolution Chart - Full width */}
+            <div className="mb-8">
+              {renderRatingEvolutionChart()}
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Age Distribution Chart */}
-          {renderAgeDistributionChart()}
+            {/* Participation Trend Chart - Full width */}
+            <div className="mb-8">
+              {renderParticipationTrendChart()}
+            </div>
 
-          {/* Geographic Heat Map */}
-          {renderGeographicHeatMap()}
-        </div>
+            {/* Demographic Breakdown Section */}
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Desglose Demográfico</h2>
 
-        {/* Predictions and Projections Section */}
-        {renderPredictionsSection()}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* Age Distribution Chart */}
+              {renderAgeDistributionChart()}
 
-        {/* AI Insights Section */}
-        {renderInsightsSection()}
+              {/* Geographic Heat Map */}
+              {renderGeographicHeatMap()}
+            </div>
+          </>
+        )}
+
+        {/* Tab Content: AI Insights */}
+        {activeTab === "ai-insights" && (
+          <>
+            {/* AI Insights Section */}
+            {renderInsightsSection()}
+
+            {/* Predictions and Projections Section */}
+            {renderPredictionsSection()}
+          </>
+        )}
 
         {/* Empty state */}
         {results.total_responses === 0 && (
