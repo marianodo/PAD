@@ -10,9 +10,13 @@ from typing import List, Dict, Any
 from datetime import datetime
 
 from app.db.base import get_db
-from app.api.dependencies import get_current_admin
+from app.api.dependencies import get_current_user
 from app.services.survey_service import SurveyService
 from uuid import UUID
+from typing import Union
+from app.models.admin import Admin
+from app.models.client import Client
+from app.models.user import User
 
 router = APIRouter()
 
@@ -21,7 +25,7 @@ router = APIRouter()
 async def generate_ai_insights(
     survey_id: str,
     db: Session = Depends(get_db),
-    current_admin = Depends(get_current_admin)
+    current_user: Union[User, Admin, Client] = Depends(get_current_user)
 ):
     """
     Genera insights inteligentes usando Claude AI basándose en los datos de la encuesta.
