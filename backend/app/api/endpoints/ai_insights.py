@@ -104,7 +104,7 @@ Responde SOLO con el JSON, sin texto adicional:
         client = Anthropic(api_key=api_key)
 
         message = client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model="claude-3-haiku-20240307",  # Usando Haiku porque es el único disponible con esta API key
             max_tokens=2500,
             temperature=0.3,  # Más determinístico para análisis
             messages=[{
@@ -193,7 +193,7 @@ Responde SOLO con el JSON, sin texto adicional:
         return {
             "insights": insights,
             "generated_at": datetime.utcnow().isoformat(),
-            "model": "claude-3-5-sonnet-20241022",
+            "model": "claude-3-haiku-20240307",
             "total_responses_analyzed": results.get('total_responses', 0)
         }
 
