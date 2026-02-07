@@ -18,18 +18,54 @@ from typing import Union
 from app.models.admin import Admin
 from app.models.client import Client
 from app.models.user import User
+from app.models.ai_insight import AIInsight
+import hashlib
 
 router = APIRouter()
 
 
-@router.post("/surveys/{survey_id}/ai-insights")
-async def generate_ai_insights(
+@router.get("/surveys/{survey_id}/ai-insights")
+async def get_ai_insights(
     survey_id: str,
     db: Session = Depends(get_db),
     current_user: Union[User, Admin, Client] = Depends(get_current_user)
 ):
     """
+    Obtiene los insights de IA cacheados para una encuesta.
+    Retorna None si no hay insights generados aún.
+    """
+    cached_insight = db.query(AIInsight).filter(
+        AIInsight.survey_id == UUID(survey_id)
+    ).order_by(AIInsight.created_at.desc()).first()
+
+    if not cached_insight:
+        return {
+            "insights": None,
+            "from_cache": False,
+            "message": "No hay insights generados para esta encuesta"
+        }
+
+    return {
+        "insights": cached_insight.insights,
+        "generated_at": cached_insight.generated_at.isoformat(),
+        "model": cached_insight.model,
+        "total_responses_analyzed": cached_insight.total_responses,
+        "from_cache": True
+    }
+
+
+@router.post("/surveys/{survey_id}/ai-insights")
+async def generate_ai_insights(
+    survey_id: str,
+    force_regenerate: bool = False,  # Parámetro para forzar regeneración
+    db: Session = Depends(get_db),
+    current_user: Union[User, Admin, Client] = Depends(get_current_user)
+):
+    """
     Genera insights inteligentes usando Claude AI basándose en los datos de la encuesta.
+    Usa cache de la base de datos para evitar regenerar si los datos no cambiaron.
+
+    - force_regenerate: Si es True, regenera los insights aunque exista cache
     """
 
     # 1. Verificar que existe la API key
@@ -42,6 +78,36 @@ async def generate_ai_insights(
 
     try:
         # 2. Obtener datos de la encuesta
+        results = SurveyService.get_survey_results(db, UUID(survey_id))
+
+        if not results:
+            raise HTTPException(
+                status_code=404,
+                detail="No se encontraron resultados para esta encuesta"
+            )
+
+        # 3. Calcular hash de las respuestas para detectar cambios
+        total_responses = results.get('total_responses', 0)
+        responses_data = json.dumps(results, sort_keys=True)
+        responses_hash = hashlib.md5(responses_data.encode()).hexdigest()
+
+        # 4. Buscar insights en cache
+        if not force_regenerate:
+            cached_insight = db.query(AIInsight).filter(
+                AIInsight.survey_id == UUID(survey_id),
+                AIInsight.responses_hash == responses_hash
+            ).first()
+
+            if cached_insight:
+                return {
+                    "insights": cached_insight.insights,
+                    "generated_at": cached_insight.generated_at.isoformat(),
+                    "model": cached_insight.model,
+                    "total_responses_analyzed": cached_insight.total_responses,
+                    "from_cache": True
+                }
+
+        # 5. Si no hay cache o se forzó regeneración, generar nuevos insights
         results = SurveyService.get_survey_results(db, UUID(survey_id))
 
         if not results:
@@ -86,7 +152,8 @@ REQUISITOS IMPORTANTES:
 - Detecta patrones, tendencias, brechas, oportunidades
 - Sé crítico: menciona tanto fortalezas como áreas de mejora
 - Prioriza insights NO OBVIOS que un humano podría pasar por alto
-- Habla en español de Argentina (vos, che, etc.)
+- Usa un tono profesional pero accesible, en español neutro
+- Las recomendaciones deben ser directas y accionables, sin muletillas informales
 
 Responde SOLO con el JSON, sin texto adicional:
 
@@ -190,11 +257,31 @@ Responde SOLO con el JSON, sin texto adicional:
                 "borderColor": config["borderColor"]
             })
 
+        # 8. Guardar insights en cache (base de datos)
+        model_used = "claude-3-haiku-20240307"
+        generated_at = datetime.utcnow()
+
+        # Eliminar insights anteriores de esta encuesta
+        db.query(AIInsight).filter(AIInsight.survey_id == UUID(survey_id)).delete()
+
+        # Crear nuevo registro
+        new_insight = AIInsight(
+            survey_id=UUID(survey_id),
+            responses_hash=responses_hash,
+            total_responses=total_responses,
+            insights=insights,
+            model=model_used,
+            generated_at=generated_at
+        )
+        db.add(new_insight)
+        db.commit()
+
         return {
             "insights": insights,
-            "generated_at": datetime.utcnow().isoformat(),
-            "model": "claude-3-haiku-20240307",
-            "total_responses_analyzed": results.get('total_responses', 0)
+            "generated_at": generated_at.isoformat(),
+            "model": model_used,
+            "total_responses_analyzed": total_responses,
+            "from_cache": False
         }
 
     except HTTPException:

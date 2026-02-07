@@ -165,9 +165,37 @@ export default function SurveyResultsPage() {
         });
 
         setLoading(false);
+
+        // Cargar insights cacheados automáticamente
+        loadCachedInsights();
       } catch (err: any) {
         setError(err.message);
         setLoading(false);
+      }
+    };
+
+    const loadCachedInsights = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/ai-insights`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.insights) {
+            setAiInsights(data.insights);
+          }
+        }
+      } catch (error) {
+        // Silencioso - no mostrar error si no hay insights cacheados
+        console.log("No cached insights available");
       }
     };
 
