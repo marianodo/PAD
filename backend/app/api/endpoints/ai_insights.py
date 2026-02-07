@@ -12,6 +12,7 @@ from datetime import datetime
 from app.db.base import get_db
 from app.api.dependencies import get_current_user
 from app.services.survey_service import SurveyService
+from app.core.config import settings
 from uuid import UUID
 from typing import Union
 from app.models.admin import Admin
@@ -32,8 +33,8 @@ async def generate_ai_insights(
     """
 
     # 1. Verificar que existe la API key
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
+    api_key = settings.ANTHROPIC_API_KEY
+    if not api_key or api_key == "":
         raise HTTPException(
             status_code=500,
             detail="ANTHROPIC_API_KEY no configurada en el servidor"
