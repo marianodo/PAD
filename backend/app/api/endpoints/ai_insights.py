@@ -9,9 +9,10 @@ import os
 from typing import List, Dict, Any
 from datetime import datetime
 
-from app.core.database import get_db
-from app.core.security import verify_admin_token
-from app.api.endpoints.results import get_survey_results
+from app.db.base import get_db
+from app.api.dependencies import get_current_admin
+from app.services.survey_service import SurveyService
+from uuid import UUID
 
 router = APIRouter()
 
@@ -20,7 +21,7 @@ router = APIRouter()
 async def generate_ai_insights(
     survey_id: str,
     db: Session = Depends(get_db),
-    current_admin: dict = Depends(verify_admin_token)
+    current_admin = Depends(get_current_admin)
 ):
     """
     Genera insights inteligentes usando Claude AI basándose en los datos de la encuesta.
@@ -36,7 +37,7 @@ async def generate_ai_insights(
 
     try:
         # 2. Obtener datos de la encuesta
-        results = get_survey_results(db, survey_id)
+        results = SurveyService.get_survey_results(db, UUID(survey_id))
 
         if not results:
             raise HTTPException(
