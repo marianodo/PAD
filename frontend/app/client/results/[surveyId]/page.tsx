@@ -123,6 +123,8 @@ export default function SurveyResultsPage() {
   const [aiInsights, setAiInsights] = useState<any[] | null>(null);
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
   const [aiInsightsError, setAiInsightsError] = useState("");
+  const [aiPredictions, setAiPredictions] = useState<any[] | null>(null);
+  const [loadingAiPredictions, setLoadingAiPredictions] = useState(false);
 
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
 
@@ -1651,61 +1653,64 @@ export default function SurveyResultsPage() {
   const renderPredictionsSection = () => {
     if (!results) return null;
 
-    // Calcular métricas para predicciones
-    const totalResponses = results.total_responses;
-    const monthlyGrowth = 12; // Porcentaje de crecimiento mensual estimado
-    const projectedResponses = Math.round(totalResponses * 1.12);
+    // Usar predicciones de IA si están disponibles, sino usar las calculadas localmente
+    let predictions = aiPredictions;
 
-    // Calcular satisfacción promedio actual
-    const ratingQuestion = results.questions_summary.find(
-      q => q.question_type === "rating"
-    );
-    let currentRating = 3.8;
-    if (ratingQuestion?.results) {
-      const ratingResults = ratingQuestion.results as unknown as Record<string, number>;
-      const totalRatings = Object.values(ratingResults).reduce((sum, val) => sum + val, 0);
-      const weightedSum = Object.entries(ratingResults).reduce(
-        (sum, [rating, count]) => sum + parseInt(rating) * count,
-        0
+    // Si no hay predicciones de IA, usar predicciones básicas calculadas
+    if (!predictions) {
+      const totalResponses = results.total_responses;
+      const monthlyGrowth = 12;
+      const projectedResponses = Math.round(totalResponses * 1.12);
+
+      const ratingQuestion = results.questions_summary.find(
+        q => q.question_type === "rating"
       );
-      currentRating = totalRatings > 0 ? weightedSum / totalRatings : 3.8;
-    }
-    const projectedRating = Math.min(5, currentRating + 0.4);
-
-    // Identificar principal prioridad de infraestructura
-    const budgetQuestion = results.questions_summary.find(
-      q => q.question_type === "percentage_distribution"
-    );
-    let topInfraPriority = "obras viales";
-    if (budgetQuestion?.results) {
-      const budgetResults = budgetQuestion.results as unknown as Record<string, { percentage: number; label: string }>;
-      const entries = Object.entries(budgetResults);
-      if (entries.length > 0) {
-        const sorted = entries.sort((a, b) => b[1].percentage - a[1].percentage);
-        topInfraPriority = sorted[0][1].label.toLowerCase();
+      let currentRating = 3.8;
+      if (ratingQuestion?.results) {
+        const ratingResults = ratingQuestion.results as unknown as Record<string, number>;
+        const totalRatings = Object.values(ratingResults).reduce((sum, val) => sum + val, 0);
+        const weightedSum = Object.entries(ratingResults).reduce(
+          (sum, [rating, count]) => sum + parseInt(rating) * count,
+          0
+        );
+        currentRating = totalRatings > 0 ? weightedSum / totalRatings : 3.8;
       }
-    }
+      const projectedRating = Math.min(5, currentRating + 0.4);
 
-    const predictions = [
-      {
-        icon: "👥",
-        title: "Participación Proyectada",
-        description: `Basado en tendencia actual, se espera alcanzar ${projectedResponses.toLocaleString()} respuestas mensuales en septiembre (+${monthlyGrowth}%)`,
-        confidence: 87,
-      },
-      {
-        icon: "📈",
-        title: "Evolución de Satisfacción",
-        description: `Si la tendencia de mejora continúa, la calificación podría alcanzar ${projectedRating.toFixed(1)} estrellas en 6 meses`,
-        confidence: 82,
-      },
-      {
-        icon: "🏗️",
-        title: "Preferencias de Infraestructura",
-        description: `La demanda por ${topInfraPriority} seguirá siendo alta mientras no se comuniquen proyectos concretos`,
-        confidence: 79,
-      },
-    ];
+      const budgetQuestion = results.questions_summary.find(
+        q => q.question_type === "percentage_distribution"
+      );
+      let topInfraPriority = "obras viales";
+      if (budgetQuestion?.results) {
+        const budgetResults = budgetQuestion.results as unknown as Record<string, { percentage: number; label: string }>;
+        const entries = Object.entries(budgetResults);
+        if (entries.length > 0) {
+          const sorted = entries.sort((a, b) => b[1].percentage - a[1].percentage);
+          topInfraPriority = sorted[0][1].label.toLowerCase();
+        }
+      }
+
+      predictions = [
+        {
+          icon: "👥",
+          title: "Participación Proyectada",
+          description: `Basado en tendencia actual, se espera alcanzar ${projectedResponses.toLocaleString()} respuestas mensuales en septiembre (+${monthlyGrowth}%)`,
+          confidence: 87,
+        },
+        {
+          icon: "📈",
+          title: "Evolución de Satisfacción",
+          description: `Si la tendencia de mejora continúa, la calificación podría alcanzar ${projectedRating.toFixed(1)} estrellas en 6 meses`,
+          confidence: 82,
+        },
+        {
+          icon: "🏗️",
+          title: "Preferencias de Infraestructura",
+          description: `La demanda por ${topInfraPriority} seguirá siendo alta mientras no se comuniquen proyectos concretos`,
+          confidence: 79,
+        },
+      ];
+    }
 
     return (
       <div className="mb-8">
@@ -1748,10 +1753,27 @@ export default function SurveyResultsPage() {
 
           <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-gray-500 pt-4 border-t border-gray-200">
             <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
-              Modelo: GPT-4 + Análisis Predictivo
+              {aiPredictions ? "Generado con Claude AI" : "Análisis Predictivo"}
             </span>
-            <span>Última actualización: Hace 2 horas</span>
-            <span>Basado en: {totalResponses.toLocaleString()} respuestas</span>
+            {aiPredictions && (
+              <button
+                onClick={generateAIPredictions}
+                disabled={loadingAiPredictions}
+                className="text-blue-600 hover:text-blue-700 font-medium underline"
+              >
+                {loadingAiPredictions ? "Regenerando..." : "Regenerar"}
+              </button>
+            )}
+            {!aiPredictions && (
+              <button
+                onClick={generateAIPredictions}
+                disabled={loadingAiPredictions}
+                className="bg-blue-600 text-white px-3 py-1 rounded-full font-medium hover:bg-blue-700 transition-colors"
+              >
+                {loadingAiPredictions ? "Generando..." : "Generar con IA"}
+              </button>
+            )}
+            <span>Basado en: {results.total_responses.toLocaleString()} respuestas</span>
           </div>
         </div>
       </div>
@@ -1957,6 +1979,35 @@ export default function SurveyResultsPage() {
     }
 
     return insights;
+  };
+
+  // Función para generar predicciones con Claude AI
+  const generateAIPredictions = async () => {
+    setLoadingAiPredictions(true);
+
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/ai-predictions`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Error al generar predicciones con IA");
+      }
+
+      const data = await response.json();
+      setAiPredictions(data.predictions);
+    } catch (error: any) {
+      console.error("Error generating AI predictions:", error);
+    } finally {
+      setLoadingAiPredictions(false);
+    }
   };
 
   // Función para generar insights con Claude AI

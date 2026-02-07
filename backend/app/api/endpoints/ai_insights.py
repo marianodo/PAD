@@ -292,3 +292,159 @@ Responde SOLO con el JSON, sin texto adicional:
             status_code=500,
             detail=f"Error al generar insights con Claude AI: {str(e)}"
         )
+
+
+@router.post("/surveys/{survey_id}/ai-predictions")
+async def generate_ai_predictions(
+    survey_id: str,
+    db: Session = Depends(get_db),
+    current_user: Union[User, Admin, Client] = Depends(get_current_user)
+):
+    """
+    Genera predicciones y proyecciones usando Claude AI basándose en los datos de la encuesta.
+    """
+
+    # 1. Verificar que existe la API key
+    api_key = settings.ANTHROPIC_API_KEY
+    if not api_key or api_key == "":
+        raise HTTPException(
+            status_code=500,
+            detail="ANTHROPIC_API_KEY no configurada en el servidor"
+        )
+
+    try:
+        # 2. Obtener datos de la encuesta
+        results = SurveyService.get_survey_results(db, UUID(survey_id))
+
+        if not results:
+            raise HTTPException(
+                status_code=404,
+                detail="No se encontraron resultados para esta encuesta"
+            )
+
+        # 3. Preparar el prompt para predicciones
+        total_responses = results.get('total_responses', 0)
+
+        prompt = f"""Eres un analista de datos experto en proyecciones estadísticas para gobiernos municipales.
+
+Analiza estos datos de una encuesta ciudadana de Alta Gracia, Córdoba, Argentina:
+
+📊 DATOS GENERALES:
+- Total de respuestas: {total_responses}
+
+📈 EVOLUCIÓN TEMPORAL:
+{json.dumps(results.get('evolution_data', {}), indent=2, ensure_ascii=False)}
+
+👥 DEMOGRAFÍA:
+{json.dumps(results.get('demographics', {}), indent=2, ensure_ascii=False)}
+
+📊 RESPUESTAS:
+{json.dumps(results.get('questions_summary', []), indent=2, ensure_ascii=False)}
+
+---
+
+Genera EXACTAMENTE 3 predicciones en formato JSON.
+
+Cada predicción debe tener:
+1. **icon**: Un emoji representativo (ej: "👥", "📈", "🏗️")
+2. **title**: Título corto (max 50 caracteres)
+3. **description**: Proyección específica con números concretos (2-3 oraciones)
+4. **confidence**: Número entre 70-95 representando % de confianza
+
+REQUISITOS:
+- Usa SOLO datos reales de la encuesta para calcular proyecciones
+- Incluye números específicos en las proyecciones (ej: "alcanzar X respuestas")
+- Proyecciones deben ser realizables en 3-6 meses
+- Confidence basado en cantidad de datos disponibles
+- Tono profesional y preciso
+
+Responde SOLO con el JSON:
+
+[
+  {{
+    "icon": "👥",
+    "title": "Título corto",
+    "description": "Proyección con datos específicos...",
+    "confidence": 85
+  }}
+]"""
+
+        # 4. Llamar a Claude AI
+        client = Anthropic(api_key=api_key)
+
+        message = client.messages.create(
+            model="claude-3-haiku-20240307",
+            max_tokens=1500,
+            temperature=0.3,
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }]
+        )
+
+        # 5. Parsear respuesta
+        response_text = message.content[0].text
+
+        try:
+            start = response_text.find('[')
+            end = response_text.rfind(']') + 1
+            if start != -1 and end > start:
+                json_text = response_text[start:end]
+                predictions = json.loads(json_text)
+            else:
+                predictions = json.loads(response_text)
+        except json.JSONDecodeError as e:
+            print(f"Error parsing predictions JSON: {e}")
+            print(f"Response: {response_text}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error al parsear predicciones de Claude AI: {str(e)}"
+            )
+
+        # 6. Validar estructura
+        required_fields = ["icon", "title", "description", "confidence"]
+        for prediction in predictions:
+            for field in required_fields:
+                if field not in prediction:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Predicción inválida: falta el campo '{field}'"
+                    )
+
+        # 7. Guardar en cache junto con insights
+        cached_insight = db.query(AIInsight).filter(
+            AIInsight.survey_id == UUID(survey_id)
+        ).order_by(AIInsight.created_at.desc()).first()
+
+        if cached_insight:
+            cached_insight.predictions = predictions
+            db.commit()
+        else:
+            # Crear nuevo registro si no existe
+            new_insight = AIInsight(
+                survey_id=UUID(survey_id),
+                responses_hash=hashlib.md5(json.dumps(results, sort_keys=True).encode()).hexdigest(),
+                total_responses=total_responses,
+                insights=[],  # Vacío por ahora
+                predictions=predictions,
+                model="claude-3-haiku-20240307",
+                generated_at=datetime.utcnow()
+            )
+            db.add(new_insight)
+            db.commit()
+
+        return {
+            "predictions": predictions,
+            "generated_at": datetime.utcnow().isoformat(),
+            "model": "claude-3-haiku-20240307",
+            "total_responses_analyzed": total_responses
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error generando AI predictions: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al generar predicciones con Claude AI: {str(e)}"
+        )

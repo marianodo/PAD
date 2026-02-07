@@ -20,6 +20,9 @@ class AIInsight(Base):
     # Insights generados (JSON array)
     insights = Column(JSON, nullable=False)
 
+    # Predicciones generadas (JSON array) - opcional
+    predictions = Column(JSON, nullable=True)
+
     # Metadata
     model = Column(String, nullable=False)  # ej: "claude-3-haiku-20240307"
     generated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
