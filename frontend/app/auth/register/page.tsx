@@ -14,6 +14,7 @@ export default function RegisterPage() {
     email: "",
     name: "",
     phone: "",
+    gender: "",
     address: "",
     neighborhood: "",
     city: "",
@@ -22,7 +23,7 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === "cuil") {
       const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -199,8 +200,8 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Email y Teléfono */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Email, Teléfono y Sexo */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label
                   htmlFor="email"
@@ -236,6 +237,27 @@ export default function RegisterPage() {
                   placeholder="11 1234 5678"
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
                 />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="gender"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Sexo
+                </label>
+                <select
+                  id="gender"
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition bg-white"
+                >
+                  <option value="">Sin especificar</option>
+                  <option value="masculino">Masculino</option>
+                  <option value="femenino">Femenino</option>
+                  <option value="otro">Otro</option>
+                </select>
               </div>
             </div>
 

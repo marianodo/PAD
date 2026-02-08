@@ -19,6 +19,7 @@ class User(Base):
     # Información personal
     phone = Column(String(50))
     birth_date = Column(Date)
+    gender = Column(String(20))  # "masculino", "femenino", "otro"
 
     # Dirección residencial (para análisis demográfico)
     address = Column(String)

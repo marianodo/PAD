@@ -150,6 +150,7 @@ def generate_users(db, num_users: int = 1000) -> List[User]:
             name=f"{nombre} {apellido}",
             phone=f"3547{random.randint(100000, 999999)}",
             birth_date=birth_date,
+            gender="masculino" if is_male else "femenino",
             address=f"Calle {random.randint(1, 200)} #{random.randint(100, 9999)}",
             neighborhood=random.choice(BARRIOS_ALTA_GRACIA),
             city="Alta Gracia",

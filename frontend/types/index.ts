@@ -66,6 +66,7 @@ export interface User {
   name?: string;
   phone?: string;
   birth_date?: string;
+  gender?: string;
   address?: string;
   neighborhood?: string;
   city?: string;
@@ -78,6 +79,7 @@ export interface UserCreate {
   name?: string;
   phone?: string;
   birth_date?: string;
+  gender?: string;
   address?: string;
   neighborhood?: string;
   city?: string;
