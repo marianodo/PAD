@@ -25,6 +25,7 @@ class RegisterRequest(BaseModel):
     name: str = Field(..., min_length=1, description="Nombre completo")
     phone: Optional[str] = None
     birth_date: Optional[date] = None
+    gender: Optional[str] = None
     address: Optional[str] = None
     neighborhood: Optional[str] = None
     city: Optional[str] = None

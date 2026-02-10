@@ -35,6 +35,7 @@ class Survey(Base):
     client = relationship("Client", back_populates="surveys")
     questions = relationship("Question", back_populates="survey", cascade="all, delete-orphan")
     responses = relationship("SurveyResponse", back_populates="survey")
+    ai_insights = relationship("AIInsight", back_populates="survey", cascade="all, delete-orphan")
 
 
 class Question(Base):

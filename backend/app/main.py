@@ -3,6 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.api import api_router
 from app.db.base import engine, Base
+from dotenv import load_dotenv
+import os
+
+# Cargar .env file
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+load_dotenv(env_path)
 
 # Crear tablas
 Base.metadata.create_all(bind=engine)

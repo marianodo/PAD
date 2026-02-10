@@ -10,6 +10,7 @@ class UserBase(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     birth_date: Optional[date] = None
+    gender: Optional[str] = None
     address: Optional[str] = None
     neighborhood: Optional[str] = None
     city: Optional[str] = None
@@ -27,6 +28,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     birth_date: Optional[date] = None
+    gender: Optional[str] = None
     address: Optional[str] = None
     neighborhood: Optional[str] = None
     city: Optional[str] = None
