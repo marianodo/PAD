@@ -34,6 +34,31 @@ interface UserData {
   postal_code?: string;
 }
 
+interface Answer {
+  id: string;
+  question_id: string;
+  question_text: string;
+  question_type: string;
+  option_id?: string;
+  option_text?: string;
+  answer_text?: string;
+  rating?: number;
+  percentage_data?: Record<string, number>;
+  created_at: string;
+}
+
+interface ResponseDetail {
+  id: string;
+  survey_id: string;
+  survey_title: string;
+  survey_description?: string;
+  completed: boolean;
+  points_earned: number;
+  started_at: string;
+  completed_at?: string;
+  answers: Answer[];
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
@@ -54,10 +79,62 @@ export default function DashboardPage() {
   const [passwordData, setPasswordData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [passwordError, setPasswordError] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedResponse, setSelectedResponse] = useState<ResponseDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     router.push("/auth/login");
+  };
+
+  const fetchResponseDetail = async (responseId: string) => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    setLoadingDetail(true);
+    try {
+      const res = await fetch(`${API_URL}/api/v1/responses/my-responses/${responseId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedResponse(data);
+      }
+    } catch (err) {
+      console.error("Error fetching response detail", err);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const renderAnswer = (answer: Answer) => {
+    switch (answer.question_type) {
+      case "single_choice":
+        return <p className="text-gray-800 text-sm"><span className="font-medium text-gray-500">Respuesta:</span> {answer.option_text}</p>;
+      case "rating":
+        return (
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <span key={star} className={`text-xl ${star <= (answer.rating || 0) ? "text-yellow-400" : "text-gray-300"}`}>★</span>
+            ))}
+          </div>
+        );
+      case "open_text":
+        return <div className="bg-gray-50 p-3 rounded-lg"><p className="text-gray-800 text-sm whitespace-pre-wrap">{answer.answer_text}</p></div>;
+      case "percentage_distribution":
+        return (
+          <div className="space-y-1.5">
+            {answer.percentage_data && Object.entries(answer.percentage_data).map(([key, value]) => (
+              <div key={key} className="flex items-center gap-3">
+                <span className="text-gray-600 text-sm flex-1">{key}</span>
+                <div className="w-32 bg-gray-100 rounded-full h-2"><div className="bg-blue-500 h-2 rounded-full" style={{ width: `${value}%` }} /></div>
+                <span className="text-blue-600 font-semibold text-sm w-10 text-right">{value}%</span>
+              </div>
+            ))}
+          </div>
+        );
+      default:
+        return <p className="text-gray-500 text-sm">Sin respuesta</p>;
+    }
   };
 
   const handleEditClick = () => { setEditData(userData); setIsEditing(true); };
@@ -426,13 +503,14 @@ export default function DashboardPage() {
                           </span>
                           <span className="md:hidden text-emerald-600 font-bold text-sm">{response.completed ? `+${response.points_earned}` : ""}</span>
                           {response.completed ? (
-                            <Link
-                              href={`/dashboard/response/${response.id}`}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg text-xs font-medium hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all duration-200"
+                            <button
+                              onClick={() => fetchResponseDetail(response.id)}
+                              disabled={loadingDetail}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg text-xs font-medium hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all duration-200 disabled:opacity-50"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                               Ver Detalles
-                            </Link>
+                            </button>
                           ) : (
                             <Link
                               href={`/survey/${response.survey_id}`}
@@ -641,6 +719,65 @@ export default function DashboardPage() {
             <div className="flex gap-2.5">
               <button onClick={() => { setIsChangingPassword(false); setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" }); setPasswordError(""); }} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition text-sm">Cancelar</button>
               <button onClick={handlePasswordChange} className="flex-1 px-4 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition text-sm shadow-sm">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Detalle de Respuesta */}
+      {selectedResponse && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedResponse(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+            {/* Modal header */}
+            <div className="px-6 py-5 border-b border-gray-100 shrink-0">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{selectedResponse.survey_title}</h3>
+                  {selectedResponse.survey_description && <p className="text-gray-500 text-sm mb-3">{selectedResponse.survey_description}</p>}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${selectedResponse.completed ? "bg-green-50 text-green-700 border border-green-200/60" : "bg-amber-50 text-amber-700 border border-amber-200/60"}`}>
+                      {selectedResponse.completed ? "Completada" : "En progreso"}
+                    </span>
+                    <span className="text-emerald-600 font-bold text-sm">{selectedResponse.points_earned} <span className="text-xs font-normal text-gray-400">puntos</span></span>
+                    <span className="text-gray-400 text-xs">
+                      {selectedResponse.completed && selectedResponse.completed_at
+                        ? new Date(selectedResponse.completed_at).toLocaleDateString("es-AR", { year: "numeric", month: "long", day: "numeric", timeZone: "America/Argentina/Buenos_Aires" })
+                        : new Date(selectedResponse.started_at).toLocaleDateString("es-AR", { year: "numeric", month: "long", day: "numeric", timeZone: "America/Argentina/Buenos_Aires" })}
+                    </span>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedResponse(null)} className="ml-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition shrink-0">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </div>
+            {/* Modal body - scrollable */}
+            <div className="p-6 overflow-y-auto flex-1">
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Tus Respuestas</h4>
+              {selectedResponse.answers.length === 0 ? (
+                <p className="text-gray-500 text-center py-8 text-sm">No hay respuestas registradas</p>
+              ) : (
+                <div className="space-y-3">
+                  {selectedResponse.answers.map((answer, index) => (
+                    <div key={answer.id} className="p-4 border border-gray-100 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <span className="flex-shrink-0 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">{index + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-sm font-semibold text-gray-900 mb-2">{answer.question_text}</h5>
+                          {renderAnswer(answer)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Modal footer */}
+            <div className="px-6 py-4 border-t border-gray-100 shrink-0">
+              <button onClick={() => setSelectedResponse(null)} className="w-full px-4 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition text-sm">
+                Cerrar
+              </button>
             </div>
           </div>
         </div>
