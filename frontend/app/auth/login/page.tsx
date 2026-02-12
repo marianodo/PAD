@@ -29,6 +29,7 @@ function LoginForm() {
     email: "",
     name: "",
     phone: "",
+    gender: "",
     address: "",
     neighborhood: "",
     city: "",
@@ -86,6 +87,9 @@ function LoginForm() {
 
     try {
       const { confirmPassword, ...registerPayload } = registerData;
+      const cleanPayload = Object.fromEntries(
+        Object.entries(registerPayload).map(([k, v]) => [k, v === "" ? null : v])
+      );
 
       const response = await fetch(
         `${API_URL}/api/v1/auth/register`,
@@ -94,7 +98,7 @@ function LoginForm() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(registerPayload),
+          body: JSON.stringify(cleanPayload),
         }
       );
 
@@ -189,20 +193,43 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-b from-[#0d1b33] via-[#152452] to-[#2a4494] relative overflow-hidden flex-col">
-        {/* Title - positioned in upper third, horizontally centered */}
-        <div className="relative z-10 text-center px-12 pt-[12vh]">
-          <h1 className="text-5xl font-bold text-white italic tracking-wide" style={{ fontFamily: "'Georgia', serif" }}>
-            Tú Decides{" "}
-            <svg xmlns="http://www.w3.org/2000/svg" className="inline-block h-10 w-10 mb-1 text-white/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+      {/* Left Panel - Branding (fixed height, doesn't move with right panel) */}
+      <div className="hidden lg:block lg:w-1/2 lg:fixed lg:inset-y-0 lg:left-0 bg-gradient-to-b from-[#0d1b33] via-[#152452] to-[#2a4494] overflow-hidden">
+        {/* Top: Title + subtitle */}
+        <div className="relative z-10 text-center px-12 pt-[10vh]">
+          <h1 className="text-5xl font-bold text-white italic tracking-wide mb-3" style={{ fontFamily: "'Georgia', serif" }}>
+            Tú Decides
           </h1>
+          <p className="text-blue-200 text-lg font-medium">Participación Activa Digital</p>
         </div>
 
-        {/* Gears and circles - background decoration */}
+        {/* Bottom: Description + Feature bullets */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 px-12 pb-[8vh]">
+          <div className="max-w-sm mx-auto">
+            <p className="text-blue-100/80 text-base leading-relaxed text-center mb-8">
+              Tu voz importa. Participá en encuestas, sumá puntos y contribuí a mejorar tu comunidad.
+            </p>
+          </div>
+          <div className="max-w-sm mx-auto space-y-4">
+            {[
+              { icon: <><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></>, text: "Respondé encuestas sobre tu comunidad" },
+              { icon: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" /></>, text: "Acumulá puntos por tu participación" },
+              { icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>, text: "Conectá con otros ciudadanos" },
+              { icon: <><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>, text: "Tus datos protegidos y seguros" },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {item.icon}
+                  </svg>
+                </div>
+                <span className="text-blue-100/90 text-sm">{item.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Gears and circles - background decoration (centered) */}
         <div className="absolute inset-0">
           {/* Orbit rings */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px]">
@@ -343,7 +370,7 @@ function LoginForm() {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-4 py-8 lg:py-12">
+      <div className="flex-1 lg:ml-[50%] flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-4 py-8 lg:py-12 min-h-screen">
         <div className="w-full max-w-md">
           {/* Portal badge - visible on mobile too */}
           <div className="text-center mb-6">
@@ -633,24 +660,52 @@ function LoginForm() {
                   </div>
                 </div>
 
-                <div>
-                  <label htmlFor="reg-phone" className={labelClass}>
-                    Teléfono
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                      <PhoneIcon />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="reg-phone" className={labelClass}>
+                      Teléfono
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
+                        <PhoneIcon />
+                      </div>
+                      <input
+                        id="reg-phone"
+                        type="tel"
+                        value={registerData.phone}
+                        onChange={(e) =>
+                          setRegisterData({ ...registerData, phone: e.target.value })
+                        }
+                        placeholder="11 1234 5678"
+                        className={inputClass}
+                      />
                     </div>
-                    <input
-                      id="reg-phone"
-                      type="tel"
-                      value={registerData.phone}
-                      onChange={(e) =>
-                        setRegisterData({ ...registerData, phone: e.target.value })
-                      }
-                      placeholder="11 1234 5678"
-                      className={inputClass}
-                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="reg-gender" className={labelClass}>
+                      Sexo
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="8" r="5" />
+                          <path d="M20 21a8 8 0 1 0-16 0" />
+                        </svg>
+                      </div>
+                      <select
+                        id="reg-gender"
+                        value={registerData.gender}
+                        onChange={(e) =>
+                          setRegisterData({ ...registerData, gender: e.target.value })
+                        }
+                        className={inputClass + " appearance-none"}
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="masculino">Masculino</option>
+                        <option value="femenino">Femenino</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 

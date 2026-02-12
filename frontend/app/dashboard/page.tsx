@@ -27,6 +27,7 @@ interface UserData {
   name: string;
   email: string;
   phone?: string;
+  gender?: string;
   address?: string;
   neighborhood?: string;
   city?: string;
@@ -70,7 +71,7 @@ export default function DashboardPage() {
       const response = await fetch(`${API_URL}/api/v1/users/me`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: editData.name, email: editData.email, phone: editData.phone, address: editData.address, neighborhood: editData.neighborhood, city: editData.city, postal_code: editData.postal_code }),
+        body: JSON.stringify({ name: editData.name, email: editData.email, phone: editData.phone, gender: editData.gender, address: editData.address, neighborhood: editData.neighborhood, city: editData.city, postal_code: editData.postal_code }),
       });
       if (response.ok) {
         const updatedUser = await response.json();
@@ -557,6 +558,7 @@ export default function DashboardPage() {
                     { label: "Nombre Completo", key: "name", span: true, editable: true },
                     { label: "Correo electrónico", key: "email", editable: true },
                     { label: "Teléfono", key: "phone", editable: true },
+                    { label: "Sexo", key: "gender", editable: true, type: "select", options: [{ value: "", label: "Seleccionar..." }, { value: "masculino", label: "Masculino" }, { value: "femenino", label: "Femenino" }], format: (v: string) => ({ masculino: "Masculino", femenino: "Femenino" }[v] || "—") },
                     { label: "Barrio", key: "neighborhood", editable: true },
                     { label: "Ciudad", key: "city", editable: true },
                     { label: "Dirección", key: "address", span: true, editable: true },
@@ -566,12 +568,24 @@ export default function DashboardPage() {
                     <div key={field.key} className={field.span ? "md:col-span-2" : ""}>
                       <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">{field.label}</label>
                       {isEditing && field.editable ? (
-                        <input
-                          type={field.key === "email" ? "email" : field.key === "phone" ? "tel" : "text"}
-                          value={(editData as any)?.[field.key] || ""}
-                          onChange={(e) => setEditData({ ...editData!, [field.key]: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition-all"
-                        />
+                        field.type === "select" ? (
+                          <select
+                            value={(editData as any)?.[field.key] || ""}
+                            onChange={(e) => setEditData({ ...editData!, [field.key]: e.target.value })}
+                            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition-all bg-white"
+                          >
+                            {field.options?.map((opt) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type={field.key === "email" ? "email" : field.key === "phone" ? "tel" : "text"}
+                            value={(editData as any)?.[field.key] || ""}
+                            onChange={(e) => setEditData({ ...editData!, [field.key]: e.target.value })}
+                            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition-all"
+                          />
+                        )
                       ) : (
                         <p className="text-gray-900 text-sm font-medium py-2.5">
                           {field.format ? field.format((userData as any)?.[field.key] || "") : (userData as any)?.[field.key] || "—"}

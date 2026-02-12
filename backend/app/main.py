@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text, inspect
 from app.core.config import settings
 from app.api.api import api_router
 from app.db.base import engine, Base
@@ -12,6 +13,14 @@ load_dotenv(env_path)
 
 # Crear tablas
 Base.metadata.create_all(bind=engine)
+
+# Migraciones manuales: agregar columnas nuevas a tablas existentes
+with engine.connect() as conn:
+    inspector = inspect(engine)
+    columns = [col["name"] for col in inspector.get_columns("users")]
+    if "gender" not in columns:
+        conn.execute(text("ALTER TABLE users ADD COLUMN gender VARCHAR(20)"))
+        conn.commit()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
