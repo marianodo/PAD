@@ -7,7 +7,7 @@ from app.db.base import get_db
 from app.services.survey_service import SurveyService
 from app.schemas.survey import SurveyResponse, SurveyCreate
 from app.schemas.response import SurveyResponseCreate, SurveyResponseResponse
-from app.api.dependencies import get_current_user, get_current_admin
+from app.api.dependencies import get_current_user, get_current_admin, get_current_account
 from app.models.user import User
 from app.models.admin import Admin
 from app.models.client import Client
@@ -91,6 +91,19 @@ def submit_survey_response(
 ):
     """Envía una respuesta de encuesta"""
     try:
+        # Verificar que la encuesta esté activa
+        survey = SurveyService.get_survey_by_id(db, response_data.survey_id)
+        if not survey:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Encuesta no encontrada"
+            )
+        if not survey.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Esta encuesta no está disponible actualmente"
+            )
+
         # Capturar IP y User Agent
         ip_address = request.client.host if request.client else None
         user_agent = request.headers.get("user-agent")
@@ -168,13 +181,19 @@ def get_survey_results(
 def toggle_survey_status(
     survey_id: UUID,
     toggle_data: ToggleSurveyRequest,
-    current_admin: Admin = Depends(get_current_admin),
+    current_account: Union[Admin, Client] = Depends(get_current_account),
     db: Session = Depends(get_db)
 ):
     """
     Activa o desactiva una encuesta.
-    Solo accesible para admin.
+    Accesible para admin y client.
     """
+    if not isinstance(current_account, (Admin, Client)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permisos para esta acción"
+        )
+
     # Verificar que la encuesta existe
     survey = SurveyService.get_survey_by_id(db, survey_id)
     if not survey:
@@ -185,6 +204,7 @@ def toggle_survey_status(
 
     # Actualizar estado
     survey.is_active = toggle_data.is_active
+    survey.status = "active" if toggle_data.is_active else "inactive"
     db.commit()
     db.refresh(survey)
 
