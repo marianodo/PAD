@@ -49,13 +49,13 @@ export default function QuestionsPage() {
         );
 
         if (!surveyResponse.ok) {
-          throw new Error("Encuesta no encontrada");
+          throw new Error("Consulta no encontrada");
         }
 
         const data = await surveyResponse.json();
 
         if (data.is_active === false) {
-          setError("Esta encuesta no está disponible actualmente");
+          setError("Esta consulta no está disponible actualmente");
           setLoading(false);
           return;
         }
@@ -83,7 +83,7 @@ export default function QuestionsPage() {
               <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Encuesta no disponible</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Consulta no disponible</h2>
           <p className="text-gray-500 mb-6">{error}</p>
           <button
             onClick={() => router.push("/dashboard")}
@@ -101,7 +101,7 @@ export default function QuestionsPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
           <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-          <p className="mt-4 text-gray-600">Cargando encuesta...</p>
+          <p className="mt-4 text-gray-600">Cargando consulta...</p>
         </div>
       </div>
     );
@@ -193,7 +193,7 @@ export default function QuestionsPage() {
       router.push("/survey/success");
     } catch (err: any) {
       setError(
-        err.response?.data?.detail || "Error al enviar la encuesta"
+        err.response?.data?.detail || "Error al enviar la consulta"
       );
     } finally {
       setSubmitting(false);

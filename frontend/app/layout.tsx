@@ -3,7 +3,7 @@ import "./globals.css";
 import "leaflet/dist/leaflet.css";
 
 export const metadata: Metadata = {
-  title: "Tú Decides - Participación Ciudadana",
+  title: "P.A.D. - Participación Activa Digital",
   description: "Plataforma de participación activa digital",
 };
 

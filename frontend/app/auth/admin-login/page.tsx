@@ -84,7 +84,7 @@ export default function AdminLoginPage() {
         </svg>
       ),
       title: "Resultados",
-      desc: "Datos de encuestas en vivo",
+      desc: "Datos de consultas en vivo",
     },
     {
       icon: (
@@ -147,7 +147,7 @@ export default function AdminLoginPage() {
             Analizá la voz de tus ciudadanos en tiempo real
           </h1>
           <p className="text-blue-200/60 text-base leading-relaxed max-w-md mb-10">
-            Accedé al dashboard de tu municipio para visualizar resultados de encuestas, tendencias y participación ciudadana.
+            Accedé al dashboard de tu municipio para visualizar resultados de consultas, tendencias y participación.
           </p>
 
           {/* Feature cards 2x2 */}
@@ -166,7 +166,7 @@ export default function AdminLoginPage() {
         <div className="flex items-center justify-between text-xs text-blue-200/40">
           <span>PAD &copy; 2026 &mdash; Participación Activa Digital</span>
           <Link href="/auth/login" className="text-blue-300/60 hover:text-blue-300 transition-colors">
-            Portal Ciudadano
+            Portal de Participación
           </Link>
         </div>
       </div>

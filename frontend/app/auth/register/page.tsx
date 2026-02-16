@@ -102,7 +102,7 @@ export default function RegisterPage() {
               Crear Cuenta
             </h1>
             <p className="text-gray-600">
-              Completá tus datos para participar en las encuestas
+              Completá tus datos para participar en las consultas
             </p>
           </div>
 

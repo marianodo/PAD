@@ -253,7 +253,7 @@ export default function DashboardPage() {
   }
 
   const navItems = [
-    { id: "surveys" as const, label: "Mis Encuestas", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg> },
+    { id: "surveys" as const, label: "Mis Consultas", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg> },
     { id: "points" as const, label: "Mis Puntos", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg> },
     { id: "profile" as const, label: "Mi Perfil", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> },
   ];
@@ -285,7 +285,7 @@ export default function DashboardPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white truncate">{userName}</p>
-              <p className="text-[11px] text-blue-200/70">{stats.total_responses} encuesta{stats.total_responses !== 1 ? "s" : ""} completada{stats.total_responses !== 1 ? "s" : ""}</p>
+              <p className="text-[11px] text-blue-200/70">{stats.total_responses} consulta{stats.total_responses !== 1 ? "s" : ""} completada{stats.total_responses !== 1 ? "s" : ""}</p>
             </div>
           </div>
         </div>
@@ -342,11 +342,11 @@ export default function DashboardPage() {
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>
             <span className="inline-block bg-blue-100 text-blue-700 rounded-full px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
-              Portal Ciudadano
+              Portal de Participación
             </span>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Dashboard de Participacion Ciudadana</h2>
-          <p className="text-sm text-gray-400 mt-1">Bienvenido, {userName.split(" ")[0]}. Aqui podes ver tu actividad y progreso.</p>
+          <h2 className="text-2xl font-bold text-gray-900">Tu participación en números</h2>
+          <p className="text-sm text-gray-400 mt-1">Bienvenido, <span className="text-gray-700 font-semibold">{userName.split(" ")[0]}</span>. Aquí podés ver tu actividad y progreso.</p>
         </div>
 
         <div className="p-6 sm:p-8">
@@ -355,7 +355,7 @@ export default function DashboardPage() {
             {/* Encuestas Respondidas */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
               <div className="flex items-start justify-between mb-4">
-                <p className="text-sm text-gray-500 font-medium">Encuestas Respondidas</p>
+                <p className="text-sm text-gray-500 font-medium">Consultas Respondidas</p>
                 <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
                   <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                 </div>
@@ -435,8 +435,8 @@ export default function DashboardPage() {
           {activeTab === "surveys" && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-900">Historial de Encuestas</h3>
-                <span className="text-xs text-gray-400 border border-gray-200 rounded-full px-3 py-1 font-medium">{responses.length} encuesta{responses.length !== 1 ? "s" : ""}</span>
+                <h3 className="text-lg font-bold text-gray-900">Historial de Consultas</h3>
+                <span className="text-xs text-gray-400 border border-gray-200 rounded-full px-3 py-1 font-medium">{responses.length} consulta{responses.length !== 1 ? "s" : ""}</span>
               </div>
 
               {responses.length === 0 ? (
@@ -444,18 +444,18 @@ export default function DashboardPage() {
                   <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                   </div>
-                  <p className="text-gray-900 font-semibold mb-1">Sin encuestas todavía</p>
-                  <p className="text-gray-400 text-sm mb-4">Completá tu primera encuesta para ganar puntos</p>
+                  <p className="text-gray-900 font-semibold mb-1">Sin consultas todavía</p>
+                  <p className="text-gray-400 text-sm mb-4">Completá tu primera consulta para ganar puntos</p>
                   <Link href="/" className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200 font-medium">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                    Explorar Encuestas
+                    Explorar Consultas
                   </Link>
                 </div>
               ) : (
                 <>
                   {/* Table header */}
                   <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50/80 text-[11px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
-                    <div className="col-span-4">Encuesta</div>
+                    <div className="col-span-4">Consulta</div>
                     <div className="col-span-2">Fecha</div>
                     <div className="col-span-2">Estado</div>
                     <div className="col-span-2">Puntos</div>
@@ -536,7 +536,7 @@ export default function DashboardPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h2 className="text-lg font-bold text-gray-900 mb-1">Nivel Actual</h2>
-                    <p className="text-gray-500 text-sm">Tu progreso en participación ciudadana</p>
+                    <p className="text-gray-500 text-sm">Tu progreso en participación</p>
                   </div>
                   <div className="w-12 h-12 rounded-xl bg-white/80 flex items-center justify-center shadow-sm">
                     <LevelIcon level={stats.level} className="w-7 h-7" />

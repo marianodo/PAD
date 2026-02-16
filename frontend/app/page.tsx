@@ -76,7 +76,7 @@ export default function Home() {
         <div className="text-center mb-8">
           <div className="inline-block bg-blue-100 rounded-full px-4 py-2 mb-4">
             <span className="text-blue-800 font-semibold text-sm">
-              Participación Ciudadana
+              Participación Activa Digital
             </span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -101,7 +101,7 @@ export default function Home() {
                 ¡Gana puntos por participar!
               </p>
               <p className="mt-1 text-sm text-yellow-700">
-                Completa la encuesta y obtén{" "}
+                Completá la consulta y obtené{" "}
                 <strong>
                   {survey.questions.length * survey.points_per_question +
                     survey.bonus_points}{" "}
@@ -118,7 +118,7 @@ export default function Home() {
             onClick={() => router.push(`/survey/${survey.id}`)}
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
           >
-            Comenzar Encuesta
+            Comenzar Consulta
           </button>
 
           <button
@@ -135,7 +135,7 @@ export default function Home() {
 
           <div className="pt-6 border-t border-gray-200">
             <p className="text-center text-sm text-gray-600 mb-4">
-              Comparte esta encuesta:
+              Compartí esta consulta:
             </p>
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-xs text-gray-500 mb-2 text-center">

@@ -198,7 +198,7 @@ function LoginForm() {
         {/* Top: Title + subtitle */}
         <div className="relative z-10 text-center px-12 pt-[10vh]">
           <h1 className="text-5xl font-bold text-white italic tracking-wide mb-3" style={{ fontFamily: "'Georgia', serif" }}>
-            Tú Decides
+            P.A.D.
           </h1>
           <p className="text-blue-200 text-lg font-medium">Participación Activa Digital</p>
         </div>
@@ -207,15 +207,14 @@ function LoginForm() {
         <div className="absolute bottom-0 left-0 right-0 z-10 px-12 pb-[8vh]">
           <div className="max-w-sm mx-auto">
             <p className="text-blue-100/80 text-base leading-relaxed text-center mb-8">
-              Tu voz importa. Participá en encuestas, sumá puntos y contribuí a mejorar tu comunidad.
+              Tu voz importa. Participá, accedé a beneficios y transformá la democracia.
             </p>
           </div>
           <div className="max-w-sm mx-auto space-y-4">
             {[
-              { icon: <><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></>, text: "Respondé encuestas sobre tu comunidad" },
-              { icon: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" /></>, text: "Acumulá puntos por tu participación" },
-              { icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>, text: "Conectá con otros ciudadanos" },
-              { icon: <><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>, text: "Tus datos protegidos y seguros" },
+              { icon: <><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></>, text: "En solo 1 minuto" },
+              { icon: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" /></>, text: "Accedé a beneficios por participar" },
+              { icon: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></>, text: "Tu decisión vale" },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
@@ -375,7 +374,7 @@ function LoginForm() {
           {/* Portal badge - visible on mobile too */}
           <div className="text-center mb-6">
             <span className="inline-block bg-gray-100 border border-gray-200 rounded-full px-5 py-1.5 text-gray-600 text-xs font-medium tracking-wide uppercase">
-              Portal Ciudadano
+              P.A.D.
             </span>
           </div>
 
@@ -386,7 +385,7 @@ function LoginForm() {
                 Bienvenido
               </h2>
               <p className="text-gray-500 text-sm">
-                Accede a tu portal de participación ciudadana
+                Accede a tu portal de participación
               </p>
             </div>
 
