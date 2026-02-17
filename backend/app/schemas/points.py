@@ -25,6 +25,7 @@ class PointTransactionResponse(BaseModel):
     amount: int
     description: Optional[str] = None
     related_response_id: Optional[UUID] = None
+    survey_title: Optional[str] = None
     created_at: datetime
 
     class Config:

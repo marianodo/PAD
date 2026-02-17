@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Date, DateTime, func
+from sqlalchemy import Column, String, Date, DateTime, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -16,6 +16,9 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False)
 
+    # Vinculación con municipio (nullable hasta que se confirme en padrón)
+    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)
+
     # Información personal
     phone = Column(String(50))
     birth_date = Column(Date)
@@ -31,6 +34,7 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
     # Relationships
+    client = relationship("Client", back_populates="users")
     responses = relationship("SurveyResponse", back_populates="user")
     points = relationship("UserPoints", back_populates="user", uselist=False)
     point_transactions = relationship("PointTransaction", back_populates="user")

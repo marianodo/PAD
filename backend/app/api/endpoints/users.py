@@ -2,12 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from uuid import UUID
 
+from typing import List
+
 from app.db.base import get_db
 from app.services.user_service import UserService
 from app.schemas.user import UserCreate, UserResponse, UserUpdate, PasswordChange
-from app.schemas.points import UserPointsResponse
+from app.schemas.points import UserPointsResponse, PointTransactionResponse
 from app.api.dependencies import get_current_user
 from app.models.user import User
+from app.models.points import PointTransaction
 from app.core.security import verify_password, get_password_hash
 
 router = APIRouter()
@@ -58,6 +61,22 @@ def get_user_points(user_id: UUID, db: Session = Depends(get_db)):
     if not points:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Puntos no encontrados")
     return points
+
+
+@router.get("/{user_id}/transactions", response_model=List[PointTransactionResponse])
+def get_user_transactions(user_id: UUID, db: Session = Depends(get_db)):
+    """Obtiene el historial de transacciones de puntos de un usuario."""
+    transactions = db.query(PointTransaction).filter(
+        PointTransaction.user_id == user_id
+    ).order_by(PointTransaction.created_at.desc()).all()
+
+    result = []
+    for tx in transactions:
+        data = PointTransactionResponse.model_validate(tx)
+        if tx.related_response and tx.related_response.survey:
+            data.survey_title = tx.related_response.survey.title
+        result.append(data)
+    return result
 
 
 @router.put("/me", response_model=UserResponse)

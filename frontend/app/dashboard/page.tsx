@@ -18,8 +18,19 @@ interface SurveyResponse {
 interface UserStats {
   total_responses: number;
   total_points: number;
+  available_points: number;
+  redeemed_points: number;
   level: string;
   points_to_next_level: number;
+}
+
+interface PointTransaction {
+  id: string;
+  transaction_type: string;
+  amount: number;
+  description: string | null;
+  survey_title: string | null;
+  created_at: string;
 }
 
 interface UserData {
@@ -65,8 +76,10 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<UserStats>({
     total_responses: 0,
     total_points: 0,
-    level: "Plata",
-    points_to_next_level: 250,
+    available_points: 0,
+    redeemed_points: 0,
+    level: "Bronce",
+    points_to_next_level: 500,
   });
   const [userName, setUserName] = useState("Usuario");
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -79,6 +92,7 @@ export default function DashboardPage() {
   const [passwordData, setPasswordData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [passwordError, setPasswordError] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [transactions, setTransactions] = useState<PointTransaction[]>([]);
   const [selectedResponse, setSelectedResponse] = useState<ResponseDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -190,14 +204,33 @@ export default function DashboardPage() {
     const fetchData = async () => {
       try {
         const userResponse = await fetch(`${API_URL}/api/v1/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
-        if (userResponse.ok) { const ud = await userResponse.json(); setUserName(ud.name || "Usuario"); setUserData(ud); }
+        let ud: any = null;
+        if (userResponse.ok) { ud = await userResponse.json(); setUserName(ud.name || "Usuario"); setUserData(ud); }
         const responsesResponse = await fetch(`${API_URL}/api/v1/responses/my-responses`, { headers: { Authorization: `Bearer ${token}` } });
         if (!responsesResponse.ok) { if (responsesResponse.status === 401) { localStorage.removeItem("access_token"); router.push("/auth/login"); return; } throw new Error("Error al cargar las respuestas"); }
         const data = await responsesResponse.json();
         setResponses(data);
         const completedResponses = data.filter((r: SurveyResponse) => r.completed);
         const totalPoints = completedResponses.reduce((sum: number, r: SurveyResponse) => sum + r.points_earned, 0);
-        setStats({ total_responses: completedResponses.length, total_points: totalPoints, level: totalPoints >= 1000 ? "Oro" : totalPoints >= 500 ? "Plata" : "Bronce", points_to_next_level: totalPoints >= 1000 ? 0 : totalPoints >= 500 ? 1000 - totalPoints : 500 - totalPoints });
+        let availablePoints = totalPoints;
+        let redeemedPoints = 0;
+        // Fetch real points balance from API
+        if (ud?.id) {
+          try {
+            const pointsRes = await fetch(`${API_URL}/api/v1/users/${ud.id}/points`, { headers: { Authorization: `Bearer ${token}` } });
+            if (pointsRes.ok) {
+              const pointsData = await pointsRes.json();
+              availablePoints = pointsData.available_points ?? totalPoints;
+              redeemedPoints = pointsData.redeemed_points ?? 0;
+            }
+          } catch (err) { /* fallback to calculated values */ }
+          // Fetch transaction history
+          try {
+            const txRes = await fetch(`${API_URL}/api/v1/users/${ud.id}/transactions`, { headers: { Authorization: `Bearer ${token}` } });
+            if (txRes.ok) { setTransactions(await txRes.json()); }
+          } catch (err) { /* ignore */ }
+        }
+        setStats({ total_responses: completedResponses.length, total_points: totalPoints, available_points: availablePoints, redeemed_points: redeemedPoints, level: totalPoints >= 1000 ? "Oro" : totalPoints >= 500 ? "Plata" : "Bronce", points_to_next_level: totalPoints >= 1000 ? 0 : totalPoints >= 500 ? 1000 - totalPoints : 500 - totalPoints });
       } catch (err: any) { setError(err.message); } finally { setLoading(false); }
     };
     fetchData();
@@ -364,16 +397,39 @@ export default function DashboardPage() {
               <p className="text-sm text-gray-400 mt-1">Total completadas</p>
             </div>
 
-            {/* Puntos Totales */}
+            {/* Mis Puntos */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
               <div className="flex items-start justify-between mb-4">
-                <p className="text-sm text-gray-500 font-medium">Puntos Totales</p>
+                <p className="text-sm text-gray-500 font-medium">Mis Puntos</p>
                 <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+                  <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
               </div>
-              <div className="text-3xl font-bold text-gray-900">{stats.total_points}</div>
-              <p className="text-sm text-gray-400 mt-1">Puntos acumulados</p>
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="text-3xl font-bold text-gray-900">{stats.available_points}</span>
+                <span className="text-sm text-gray-400">disponibles</span>
+              </div>
+              {/* Progress bar */}
+              <div className="w-full bg-gray-100 rounded-full h-2 mb-4">
+                <div className="bg-gradient-to-r from-amber-400 to-amber-500 h-2 rounded-full transition-all duration-700" style={{ width: `${stats.total_points > 0 ? (stats.available_points / stats.total_points) * 100 : 0}%` }} />
+              </div>
+              {/* Acumulados / Canjeados */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+                  <div>
+                    <span className="text-sm font-bold text-gray-900">{stats.total_points}</span>
+                    <p className="text-[11px] text-gray-400">acumulados</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                  <div>
+                    <span className="text-sm font-bold text-gray-900">{stats.redeemed_points}</span>
+                    <p className="text-[11px] text-gray-400">canjeados</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Nivel de Participacion */}
@@ -542,8 +598,15 @@ export default function DashboardPage() {
                     <LevelIcon level={stats.level} className="w-7 h-7" />
                   </div>
                 </div>
-                <div className="text-5xl font-bold text-gray-900 mb-1">{stats.total_points}</div>
-                <p className="text-gray-500 text-sm mb-4">puntos totales</p>
+                <div className="text-5xl font-bold text-gray-900 mb-1">{stats.available_points}</div>
+                <p className="text-gray-500 text-sm mb-4">puntos disponibles</p>
+                {stats.redeemed_points > 0 && (
+                  <div className="flex items-center gap-4 mb-4 text-sm">
+                    <span className="text-gray-500">{stats.total_points} acumulados</span>
+                    <span className="text-gray-300">|</span>
+                    <span className="text-orange-500 font-medium">{stats.redeemed_points} canjeados</span>
+                  </div>
+                )}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-medium text-gray-600">{stats.level}</span>
@@ -583,27 +646,68 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* History */}
+              {/* Movimientos de Puntos */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-base font-bold text-gray-900 mb-4">Historial de Puntos</h3>
-                {responses.filter((r) => r.completed).length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-8">Aún no tenés puntos acumulados</p>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-base font-bold text-gray-900">Movimientos de Puntos</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-600 border border-green-100">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 17l9.2-9.2M17 17V7H7" /></svg>
+                      +{transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0)}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-500 border border-red-100">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 7l-9.2 9.2M7 7v10h10" /></svg>
+                      {transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0)}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-400 mb-5">Historial de puntos ganados y canjeados</p>
+
+                {transactions.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">Aún no tenés movimientos de puntos</p>
                 ) : (
-                  <div className="space-y-2">
-                    {responses.filter((r) => r.completed).map((response) => (
-                      <div key={response.id} className="flex items-center justify-between p-3.5 border border-gray-100 rounded-xl hover:border-gray-200 hover:shadow-sm transition-all duration-200">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-                            <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                  <div className="relative">
+                    {/* Timeline line */}
+                    <div className="absolute left-5 top-0 bottom-0 w-px bg-gray-100" />
+                    <div className="space-y-1">
+                      {transactions.map((tx) => {
+                        const isEarned = tx.amount > 0;
+                        const label = tx.transaction_type === "earned" ? "Completaste consulta"
+                          : tx.transaction_type === "redeemed" ? "Canje de puntos"
+                          : tx.transaction_type === "bonus" ? "Bonus de bienvenida"
+                          : tx.description || "Movimiento";
+                        const subtitle = tx.survey_title || tx.description || null;
+                        return (
+                          <div key={tx.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50/60 transition-colors relative">
+                            {/* Icon */}
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 ${isEarned ? "bg-green-50 border-2 border-green-100" : "bg-red-50 border-2 border-red-100"}`}>
+                              {tx.transaction_type === "earned" ? (
+                                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                              ) : tx.transaction_type === "bonus" ? (
+                                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>
+                              ) : (
+                                <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                              )}
+                            </div>
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-gray-900 text-sm">{label}</h4>
+                              {subtitle && <p className="text-gray-500 text-sm truncate">&quot;{subtitle}&quot;</p>}
+                              <p className="text-xs text-gray-400 mt-0.5">{formatDate(tx.created_at)}</p>
+                            </div>
+                            {/* Amount badge */}
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 ${isEarned ? "bg-green-50 text-green-600 border border-green-100" : "bg-red-50 text-red-500 border border-red-100"}`}>
+                              {isEarned ? (
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 17l9.2-9.2M17 17V7H7" /></svg>
+                              ) : (
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 7l-9.2 9.2M7 7v10h10" /></svg>
+                              )}
+                              {isEarned ? "+" : ""}{tx.amount} pts
+                            </span>
                           </div>
-                          <div>
-                            <h4 className="font-medium text-gray-900 text-sm">{response.survey_title}</h4>
-                            <p className="text-xs text-gray-400 mt-0.5">{formatDate(response.completed_at!)}</p>
-                          </div>
-                        </div>
-                        <span className="text-emerald-600 font-bold text-sm">+{response.points_earned} pts</span>
-                      </div>
-                    ))}
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>

@@ -36,3 +36,6 @@ class Client(Base):
 
     # Relationships
     surveys = relationship("Survey", back_populates="client")
+    users = relationship("User", back_populates="client")
+    provider_clients = relationship("ProviderClient", back_populates="client")
+    electoral_roll_entries = relationship("ElectoralRoll", back_populates="client", cascade="all, delete-orphan")
