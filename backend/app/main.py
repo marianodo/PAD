@@ -11,16 +11,37 @@ import os
 env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
 load_dotenv(env_path)
 
-# Crear tablas
-Base.metadata.create_all(bind=engine)
+# Crear tablas y ejecutar migraciones solo si no estamos en modo testing
+_TESTING = os.environ.get("TESTING", "").lower() in ("1", "true", "yes")
 
-# Migraciones manuales: agregar columnas nuevas a tablas existentes
-with engine.connect() as conn:
-    inspector = inspect(engine)
-    columns = [col["name"] for col in inspector.get_columns("users")]
-    if "gender" not in columns:
-        conn.execute(text("ALTER TABLE users ADD COLUMN gender VARCHAR(20)"))
-        conn.commit()
+if not _TESTING:
+    Base.metadata.create_all(bind=engine)
+
+    # Migraciones manuales: agregar columnas nuevas a tablas existentes
+    with engine.connect() as conn:
+        inspector = inspect(engine)
+
+        # Migración: agregar gender a users
+        user_columns = [col["name"] for col in inspector.get_columns("users")]
+        if "gender" not in user_columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN gender VARCHAR(20)"))
+            conn.commit()
+
+        # Migración: agregar client_id a users
+        if "client_id" not in user_columns:
+            conn.execute(text(
+                "ALTER TABLE users ADD COLUMN client_id UUID REFERENCES clients(id)"
+            ))
+            conn.commit()
+
+        # Migración: agregar reference_id a point_transactions
+        if inspector.has_table("point_transactions"):
+            pt_columns = [col["name"] for col in inspector.get_columns("point_transactions")]
+            if "reference_id" not in pt_columns:
+                conn.execute(text(
+                    "ALTER TABLE point_transactions ADD COLUMN reference_id VARCHAR(255) UNIQUE"
+                ))
+                conn.commit()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

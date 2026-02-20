@@ -28,8 +28,10 @@ class PointTransaction(Base):
     transaction_type = Column(String(50), nullable=False)  # earned, redeemed, expired
     amount = Column(Integer, nullable=False)
     description = Column(Text)
+    reference_id = Column(String(255), unique=True, nullable=True, index=True)  # Idempotencia para canjeos
     related_response_id = Column(UUID(as_uuid=True), ForeignKey("survey_responses.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     user = relationship("User", back_populates="point_transactions")
+    related_response = relationship("SurveyResponse", foreign_keys=[related_response_id])
