@@ -119,3 +119,15 @@ def change_password(
     db.commit()
 
     return {"message": "Contraseña actualizada exitosamente"}
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_current_user(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Elimina la cuenta del usuario actual y todos sus datos"""
+    try:
+        UserService.delete_user(db, current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

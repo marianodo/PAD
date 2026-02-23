@@ -28,12 +28,6 @@ function LoginForm() {
     confirmPassword: "",
     email: "",
     name: "",
-    phone: "",
-    gender: "",
-    address: "",
-    neighborhood: "",
-    city: "",
-    postal_code: "",
   });
 
   const [error, setError] = useState("");
@@ -178,12 +172,6 @@ function LoginForm() {
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
       <polyline points="22,6 12,13 2,6" />
-    </svg>
-  );
-
-  const PhoneIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
     </svg>
   );
 
@@ -656,138 +644,6 @@ function LoginForm() {
                         <EyeIcon open={showRegConfirmPassword} />
                       </button>
                     </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="reg-phone" className={labelClass}>
-                      Teléfono
-                    </label>
-                    <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                        <PhoneIcon />
-                      </div>
-                      <input
-                        id="reg-phone"
-                        type="tel"
-                        value={registerData.phone}
-                        onChange={(e) =>
-                          setRegisterData({ ...registerData, phone: e.target.value })
-                        }
-                        placeholder="11 1234 5678"
-                        className={inputClass}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="reg-gender" className={labelClass}>
-                      Sexo
-                    </label>
-                    <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="8" r="5" />
-                          <path d="M20 21a8 8 0 1 0-16 0" />
-                        </svg>
-                      </div>
-                      <select
-                        id="reg-gender"
-                        value={registerData.gender}
-                        onChange={(e) =>
-                          setRegisterData({ ...registerData, gender: e.target.value })
-                        }
-                        className={inputClass + " appearance-none"}
-                      >
-                        <option value="">Seleccionar...</option>
-                        <option value="masculino">Masculino</option>
-                        <option value="femenino">Femenino</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="reg-address" className={labelClass}>
-                    Dirección
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                        <circle cx="12" cy="10" r="3" />
-                      </svg>
-                    </div>
-                    <input
-                      id="reg-address"
-                      type="text"
-                      value={registerData.address}
-                      onChange={(e) =>
-                        setRegisterData({
-                          ...registerData,
-                          address: e.target.value,
-                        })
-                      }
-                      placeholder="Calle 123"
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <label htmlFor="reg-neighborhood" className={labelClass}>
-                      Barrio
-                    </label>
-                    <input
-                      id="reg-neighborhood"
-                      type="text"
-                      value={registerData.neighborhood}
-                      onChange={(e) =>
-                        setRegisterData({
-                          ...registerData,
-                          neighborhood: e.target.value,
-                        })
-                      }
-                      placeholder="Centro"
-                      className="w-full px-3.5 py-3.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-gray-50 focus:bg-white text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="reg-city" className={labelClass}>
-                      Ciudad
-                    </label>
-                    <input
-                      id="reg-city"
-                      type="text"
-                      value={registerData.city}
-                      onChange={(e) =>
-                        setRegisterData({ ...registerData, city: e.target.value })
-                      }
-                      placeholder="Buenos Aires"
-                      className="w-full px-3.5 py-3.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-gray-50 focus:bg-white text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="reg-postal-code" className={labelClass}>
-                      C. Postal
-                    </label>
-                    <input
-                      id="reg-postal-code"
-                      type="text"
-                      value={registerData.postal_code}
-                      onChange={(e) =>
-                        setRegisterData({
-                          ...registerData,
-                          postal_code: e.target.value,
-                        })
-                      }
-                      placeholder="1000"
-                      className="w-full px-3.5 py-3.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-gray-50 focus:bg-white text-sm"
-                    />
                   </div>
                 </div>
 
