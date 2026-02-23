@@ -91,6 +91,7 @@ export default function DashboardPage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordData, setPasswordData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [passwordError, setPasswordError] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
   const [selectedResponse, setSelectedResponse] = useState<ResponseDetail | null>(null);
@@ -162,7 +163,7 @@ export default function DashboardPage() {
       const response = await fetch(`${API_URL}/api/v1/users/me`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: editData.name, email: editData.email, phone: editData.phone, gender: editData.gender, address: editData.address, neighborhood: editData.neighborhood, city: editData.city, postal_code: editData.postal_code }),
+        body: JSON.stringify({ name: editData.name, email: editData.email }),
       });
       if (response.ok) {
         const updatedUser = await response.json();
@@ -196,6 +197,21 @@ export default function DashboardPage() {
         setPasswordError(data.detail || "Error al cambiar la contraseña");
       }
     } catch (err) { setPasswordError("Error al cambiar la contraseña"); }
+  };
+
+  const handleDeleteAccount = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_URL}/api/v1/users/me`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        localStorage.removeItem("access_token");
+        router.push("/auth/login");
+      }
+    } catch (err) { /* silencio */ }
   };
 
   useEffect(() => {
@@ -735,41 +751,23 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[
-                    { label: "Nombre Completo", key: "name", span: true, editable: true },
-                    { label: "Correo electrónico", key: "email", editable: true },
-                    { label: "Teléfono", key: "phone", editable: true },
-                    { label: "Sexo", key: "gender", editable: true, type: "select", options: [{ value: "", label: "Seleccionar..." }, { value: "masculino", label: "Masculino" }, { value: "femenino", label: "Femenino" }], format: (v: string) => ({ masculino: "Masculino", femenino: "Femenino" }[v] || "—") },
-                    { label: "Barrio", key: "neighborhood", editable: true },
-                    { label: "Ciudad", key: "city", editable: true },
-                    { label: "Dirección", key: "address", span: true, editable: true },
                     { label: "CUIL", key: "cuil", editable: false, format: (v: string) => v ? `${v.slice(0, 2)}-${v.slice(2, 10)}-${v.slice(10)}` : "-" },
-                    { label: "Código Postal", key: "postal_code", editable: true },
+                    { label: "Nombre Completo", key: "name", editable: true },
+                    { label: "Correo electrónico", key: "email", editable: true },
                   ].map((field) => (
-                    <div key={field.key} className={field.span ? "md:col-span-2" : ""}>
+                    <div key={field.key} className="flex flex-col">
                       <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">{field.label}</label>
                       {isEditing && field.editable ? (
-                        field.type === "select" ? (
-                          <select
-                            value={(editData as any)?.[field.key] || ""}
-                            onChange={(e) => setEditData({ ...editData!, [field.key]: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition-all bg-white"
-                          >
-                            {field.options?.map((opt) => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type={field.key === "email" ? "email" : field.key === "phone" ? "tel" : "text"}
-                            value={(editData as any)?.[field.key] || ""}
-                            onChange={(e) => setEditData({ ...editData!, [field.key]: e.target.value })}
-                            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition-all"
-                          />
-                        )
+                        <input
+                          type={field.key === "email" ? "email" : "text"}
+                          value={(editData as any)?.[field.key] || ""}
+                          onChange={(e) => setEditData({ ...editData!, [field.key]: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition-all"
+                        />
                       ) : (
-                        <p className="text-gray-900 text-sm font-medium py-2.5">
+                        <p className="text-gray-900 text-sm font-medium py-2.5 px-4 bg-gray-50 rounded-xl border border-gray-100">
                           {field.format ? field.format((userData as any)?.[field.key] || "") : (userData as any)?.[field.key] || "—"}
                         </p>
                       )}
@@ -785,6 +783,19 @@ export default function DashboardPage() {
                 <button onClick={() => setIsChangingPassword(true)} className="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 text-sm">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                   Cambiar Contraseña
+                </button>
+              </div>
+
+              {/* Danger zone */}
+              <div className="bg-white rounded-2xl shadow-sm border border-red-100 p-6">
+                <h2 className="text-base font-bold text-red-600 mb-0.5">Zona de peligro</h2>
+                <p className="text-gray-400 text-sm mb-4">Una vez eliminada tu cuenta, no hay vuelta atrás</p>
+                <button
+                  onClick={() => setIsDeletingAccount(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 font-medium rounded-xl hover:bg-red-50 hover:border-red-400 transition-all duration-200 text-sm"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  Eliminar cuenta
                 </button>
               </div>
             </div>
@@ -823,6 +834,40 @@ export default function DashboardPage() {
             <div className="flex gap-2.5">
               <button onClick={() => { setIsChangingPassword(false); setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" }); setPasswordError(""); }} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition text-sm">Cancelar</button>
               <button onClick={handlePasswordChange} className="flex-1 px-4 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition text-sm shadow-sm">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete account modal */}
+      {isDeletingAccount && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-7 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">¿Eliminar cuenta?</h2>
+            </div>
+            <p className="text-gray-600 text-sm mb-2">Esta acción es <span className="font-semibold text-red-600">permanente e irreversible</span>. Se eliminarán:</p>
+            <ul className="text-sm text-gray-500 space-y-1 mb-6 ml-4 list-disc">
+              <li>Tu perfil y datos personales</li>
+              <li>Tu historial de participación en encuestas</li>
+              <li>Todos tus puntos acumulados y canjes</li>
+            </ul>
+            <div className="flex gap-2.5">
+              <button
+                onClick={() => setIsDeletingAccount(false)}
+                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition text-sm shadow-sm"
+              >
+                Sí, eliminar cuenta
+              </button>
             </div>
           </div>
         </div>

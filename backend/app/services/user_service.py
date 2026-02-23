@@ -3,7 +3,8 @@ from typing import Optional
 from uuid import UUID
 
 from app.models.user import User
-from app.models.points import UserPoints
+from app.models.points import UserPoints, PointTransaction
+from app.models.response import SurveyResponse
 from app.schemas.user import UserCreate, UserUpdate
 
 
@@ -61,3 +62,20 @@ class UserService:
     def get_user_points(db: Session, user_id: UUID) -> Optional[UserPoints]:
         """Obtiene los puntos de un usuario"""
         return db.query(UserPoints).filter(UserPoints.user_id == user_id).first()
+
+    @staticmethod
+    def delete_user(db: Session, user_id: UUID) -> None:
+        """Elimina un usuario y todos sus datos relacionados"""
+        user = UserService.get_by_id(db, user_id)
+        if not user:
+            raise ValueError("Usuario no encontrado")
+
+        # Borrar transacciones de puntos (sin cascade en FK)
+        db.query(PointTransaction).filter(PointTransaction.user_id == user_id).delete()
+
+        # Borrar respuestas de encuestas (answers se eliminan en cascade por la relación)
+        db.query(SurveyResponse).filter(SurveyResponse.user_id == user_id).delete()
+
+        # Borrar el usuario (user_points se elimina en cascade por la FK)
+        db.delete(user)
+        db.commit()
