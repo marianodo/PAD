@@ -95,6 +95,7 @@ function createPieSvg(segments: { label: string; value: number; color: string }[
 export default function GeographicHeatMap({ neighborhoodData, questions }: GeographicHeatMapProps) {
   const [mounted, setMounted] = useState(false);
   const mapRef = useRef<any>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<any[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("participation");
   const [selectedQuestionId, setSelectedQuestionId] = useState<string>("");
@@ -120,12 +121,14 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
 
   // Initialize map once
   useEffect(() => {
-    if (!mounted || mapRef.current) return;
+    if (!mounted || mapRef.current || !mapContainerRef.current) return;
 
     import("leaflet").then((L) => {
-      if (entries.length === 0) return;
+      if (entries.length === 0 || !mapContainerRef.current) return;
+      // Guard against double init
+      if (mapRef.current) return;
 
-      const mapInstance = L.map("leaflet-map").setView([-31.6553, -64.4330], 14);
+      const mapInstance = L.map(mapContainerRef.current).setView([-31.6553, -64.4330], 14);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -146,8 +149,12 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
   }, [mounted]);
 
   const updateMarkers = useCallback((L: any, mapInstance: any) => {
+    if (!mapInstance) return;
+
     // Clear existing markers
-    markersRef.current.forEach((m) => m.remove());
+    markersRef.current.forEach((m) => {
+      try { m.remove(); } catch (_) { /* already removed */ }
+    });
     markersRef.current = [];
 
     if (entries.length === 0) return;
@@ -279,8 +286,11 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
   // Re-render markers when mode/question changes
   useEffect(() => {
     if (!mapRef.current || !mounted) return;
+    const currentMap = mapRef.current;
     import("leaflet").then((L) => {
-      updateMarkers(L, mapRef.current);
+      if (mapRef.current === currentMap) {
+        updateMarkers(L, currentMap);
+      }
     });
   }, [viewMode, selectedQuestionId, mounted, updateMarkers]);
 
@@ -380,7 +390,7 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
       )}
 
       {/* Map */}
-      <div id="leaflet-map" className="h-[500px] rounded-lg overflow-hidden border border-gray-200 mb-4"></div>
+      <div ref={mapContainerRef} className="h-[500px] rounded-lg overflow-hidden border border-gray-200 mb-4"></div>
 
       {/* Legend */}
       {viewMode === "participation" ? (

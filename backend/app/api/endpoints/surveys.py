@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import Optional, List, Union
+from datetime import date
 
 from app.db.base import get_db
 from app.services.survey_service import SurveyService
@@ -144,12 +145,15 @@ def check_can_respond(
 @router.get("/{survey_id}/results")
 def get_survey_results(
     survey_id: UUID,
+    date_from: Optional[date] = Query(None, description="Fecha inicio del período (YYYY-MM-DD)"),
+    date_to: Optional[date] = Query(None, description="Fecha fin del período (YYYY-MM-DD)"),
     current_user: Union[User, Admin, Client] = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Obtiene los resultados y estadísticas de una encuesta.
     Solo accesible para admin y cliente dueño de la encuesta.
+    Opcionalmente filtra por período con date_from y date_to.
     """
     # Verificar que la encuesta existe
     survey = SurveyService.get_survey_by_id(db, survey_id)
@@ -173,7 +177,7 @@ def get_survey_results(
         )
 
     # Obtener resultados
-    results = SurveyService.get_survey_results(db, survey_id)
+    results = SurveyService.get_survey_results(db, survey_id, date_from=date_from, date_to=date_to)
     return results
 
 

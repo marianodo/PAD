@@ -224,18 +224,27 @@ class SurveyService:
         db.add(transaction)
 
     @staticmethod
-    def get_survey_results(db: Session, survey_id: UUID) -> Dict[str, Any]:
+    def get_survey_results(db: Session, survey_id: UUID, date_from: Optional[date] = None, date_to: Optional[date] = None) -> Dict[str, Any]:
         """
         Obtiene los resultados y estadísticas demográficas de una encuesta.
         Retorna KPIs por edad, ciudad y barrio, más resumen de respuestas por pregunta.
+        Opcionalmente filtra por período con date_from y date_to.
         """
         # Obtener todas las respuestas completadas con datos del usuario
-        responses = db.query(SurveyResponse, User).join(
+        query = db.query(SurveyResponse, User).join(
             User, SurveyResponse.user_id == User.id
         ).filter(
             SurveyResponse.survey_id == survey_id,
             SurveyResponse.completed == True
-        ).all()
+        )
+
+        # Filtro por período
+        if date_from:
+            query = query.filter(SurveyResponse.completed_at >= datetime.combine(date_from, datetime.min.time()))
+        if date_to:
+            query = query.filter(SurveyResponse.completed_at <= datetime.combine(date_to, datetime.max.time()))
+
+        responses = query.all()
 
         total_responses = len(responses)
 

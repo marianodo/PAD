@@ -25,3 +25,34 @@ body {
     text-wrap: balance;
   }
 }
+
+@media print {
+  /* Hide non-printable elements */
+  nav, .no-print, button, .print-hide {
+    display: none !important;
+  }
+
+  /* Reset backgrounds for clean print */
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Ensure charts and colors print correctly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Remove shadows and borders for cleaner look */
+  .shadow-sm, .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  /* Avoid page breaks inside cards */
+  .bg-white.rounded-2xl {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

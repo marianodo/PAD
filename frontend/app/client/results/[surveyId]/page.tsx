@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { API_URL } from "@/lib/config";
 import dynamic from "next/dynamic";
@@ -133,6 +133,12 @@ export default function SurveyResultsPage() {
   const [projectsEvolutionGenderFilter, setProjectsEvolutionGenderFilter] = useState("Todos");
   const [ratingEvolutionGenderFilter, setRatingEvolutionGenderFilter] = useState("Todos");
   const [hoveredRatingPoint, setHoveredRatingPoint] = useState<{index: number, value: number, month: string} | null>(null);
+  const [crossAnalysisTab, setCrossAnalysisTab] = useState<"neighborhood" | "age" | "gender">("gender");
+  const [showPeriodPicker, setShowPeriodPicker] = useState(false);
+  const [periodFrom, setPeriodFrom] = useState("");
+  const [periodTo, setPeriodTo] = useState("");
+  const [activePeriodLabel, setActivePeriodLabel] = useState("");
+  const periodPickerRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<"datos" | "ai-insights">("datos");
   const [aiInsights, setAiInsights] = useState<any[] | null>(null);
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
@@ -143,6 +149,74 @@ export default function SurveyResultsPage() {
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
   const genderFilterOptions = ["Todos", "Masculino", "Femenino", "Otro"];
 
+  const fetchResults = async (dateFrom?: string, dateTo?: string) => {
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+
+      let url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/results`;
+      const params = new URLSearchParams();
+      if (dateFrom) params.append("date_from", dateFrom);
+      if (dateTo) params.append("date_to", dateTo);
+      if (params.toString()) url += `?${params.toString()}`;
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al obtener los resultados");
+      }
+
+      const data = await response.json();
+      setResults(data);
+
+      // Calcular métricas dinámicamente
+      const uniqueCities = Object.keys(data.demographics.by_city).filter(
+        city => city !== "Sin especificar"
+      ).length;
+
+      setMetrics({
+        totalResponses: data.total_responses,
+        totalResponsesChange: 0,
+        monthlyResponses: data.monthly_responses,
+        monthlyResponsesChange: 0,
+        uniqueCities: uniqueCities,
+      });
+
+      setLoading(false);
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  const loadCachedInsights = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/ai-insights`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.insights) {
+          setAiInsights(data.insights);
+        }
+      }
+    } catch (error) {
+      console.log("No cached insights available");
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -150,74 +224,22 @@ export default function SurveyResultsPage() {
       return;
     }
 
-    const fetchResults = async () => {
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/results`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Error al obtener los resultados");
-        }
-
-        const data = await response.json();
-        setResults(data);
-
-        // Calcular métricas dinámicamente
-        const uniqueCities = Object.keys(data.demographics.by_city).filter(
-          city => city !== "Sin especificar"
-        ).length;
-
-        setMetrics({
-          totalResponses: data.total_responses,
-          totalResponsesChange: 0, // TODO: calcular del backend con datos históricos
-          monthlyResponses: data.monthly_responses,
-          monthlyResponsesChange: 0, // TODO: calcular del backend con datos históricos
-          uniqueCities: uniqueCities,
-        });
-
-        setLoading(false);
-
-        // Cargar insights cacheados automáticamente
-        loadCachedInsights();
-      } catch (err: any) {
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
-    const loadCachedInsights = async () => {
-      try {
-        const token = localStorage.getItem("access_token");
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/ai-insights`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.insights) {
-            setAiInsights(data.insights);
-          }
-        }
-      } catch (error) {
-        // Silencioso - no mostrar error si no hay insights cacheados
-        console.log("No cached insights available");
-      }
-    };
-
     fetchResults();
+    loadCachedInsights();
   }, [surveyId, router]);
+
+  // Close period picker on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (periodPickerRef.current && !periodPickerRef.current.contains(e.target as Node)) {
+        setShowPeriodPicker(false);
+      }
+    };
+    if (showPeriodPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showPeriodPicker]);
 
   if (loading) {
     return (
@@ -282,17 +304,34 @@ export default function SurveyResultsPage() {
     return question.results;
   };
 
-  // Helper: renderizar botones de filtro de género
-  const renderGenderFilter = (currentFilter: string, setFilter: (v: string) => void) => (
-    <div className="flex gap-1 mb-4 bg-pink-50 rounded-lg p-1 w-fit">
+  // Helper: renderizar filtros combinados de edad + género en una sola fila
+  const renderCombinedFilters = (
+    ageFilter: string, setAgeFilter: (v: string) => void,
+    genderFilter: string, setGenderFilter: (v: string) => void
+  ) => (
+    <div className="flex items-center gap-0 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+      {ageFilterOptions.map((option) => (
+        <button
+          key={option}
+          onClick={() => { setAgeFilter(option); if (option !== "General") setGenderFilter("Todos"); }}
+          className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+            ageFilter === option
+              ? "bg-white text-gray-900 shadow-sm"
+              : "text-gray-500 hover:text-gray-900"
+          }`}
+        >
+          {option}
+        </button>
+      ))}
+      <div className="w-px h-5 bg-gray-300 mx-1.5" />
       {genderFilterOptions.map((option) => (
         <button
           key={option}
-          onClick={() => setFilter(option)}
-          className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
-            currentFilter === option
+          onClick={() => { setGenderFilter(option); if (option !== "Todos") setAgeFilter("General"); }}
+          className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+            genderFilter === option
               ? "bg-white text-gray-900 shadow-sm"
-              : "text-gray-600 hover:text-gray-900"
+              : "text-gray-500 hover:text-gray-900"
           }`}
         >
           {option}
@@ -361,25 +400,7 @@ export default function SurveyResultsPage() {
           <p className="text-sm text-gray-500">Preferencias promedio de inversión ciudadana</p>
         </div>
 
-        {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
-          {ageFilterOptions.map((option) => (
-            <button
-              key={option}
-              onClick={() => { setBudgetAgeFilter(option); if (option !== "General") setBudgetGenderFilter("Todos"); }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
-                budgetAgeFilter === option
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-
-        {/* Gender Filter */}
-        {renderGenderFilter(budgetGenderFilter, (v) => { setBudgetGenderFilter(v); if (v !== "Todos") setBudgetAgeFilter("General"); })}
+        {renderCombinedFilters(budgetAgeFilter, setBudgetAgeFilter, budgetGenderFilter, setBudgetGenderFilter)}
 
         {!hasData ? (
           <div className="text-center text-gray-500 py-12">
@@ -501,25 +522,7 @@ export default function SurveyResultsPage() {
           <p className="text-sm text-gray-500">Votación ciudadana sobre proyectos</p>
         </div>
 
-        {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
-          {ageFilterOptions.map((option) => (
-            <button
-              key={option}
-              onClick={() => { setProjectsAgeFilter(option); if (option !== "General") setProjectsGenderFilter("Todos"); }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
-                projectsAgeFilter === option
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-
-        {/* Gender Filter */}
-        {renderGenderFilter(projectsGenderFilter, (v) => { setProjectsGenderFilter(v); if (v !== "Todos") setProjectsAgeFilter("General"); })}
+        {renderCombinedFilters(projectsAgeFilter, setProjectsAgeFilter, projectsGenderFilter, setProjectsGenderFilter)}
 
         {!hasData ? (
           <div className="text-center text-gray-500 py-12">
@@ -652,25 +655,7 @@ export default function SurveyResultsPage() {
           <p className="text-sm text-gray-500">Satisfacción ciudadana general</p>
         </div>
 
-        {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
-          {ageFilterOptions.map((option) => (
-            <button
-              key={option}
-              onClick={() => { setRatingAgeFilter(option); if (option !== "General") setRatingGenderFilter("Todos"); }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
-                ratingAgeFilter === option
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-
-        {/* Gender Filter */}
-        {renderGenderFilter(ratingGenderFilter, (v) => { setRatingGenderFilter(v); if (v !== "Todos") setRatingAgeFilter("General"); })}
+        {renderCombinedFilters(ratingAgeFilter, setRatingAgeFilter, ratingGenderFilter, setRatingGenderFilter)}
 
         {!hasData ? (
           <div className="text-center text-gray-500 py-12">
@@ -827,24 +812,7 @@ export default function SurveyResultsPage() {
         </div>
 
         {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
-          {ageFilterOptions.map((option) => (
-            <button
-              key={option}
-              onClick={() => { setBudgetEvolutionAgeFilter(option); if (option !== "General") setBudgetEvolutionGenderFilter("Todos"); }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
-                budgetEvolutionAgeFilter === option
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-
-        {/* Gender Filter */}
-        {renderGenderFilter(budgetEvolutionGenderFilter, (v) => { setBudgetEvolutionGenderFilter(v); if (v !== "Todos") setBudgetEvolutionAgeFilter("General"); })}
+        {renderCombinedFilters(budgetEvolutionAgeFilter, setBudgetEvolutionAgeFilter, budgetEvolutionGenderFilter, setBudgetEvolutionGenderFilter)}
 
         {/* Line Chart */}
         {!hasData ? (
@@ -1024,24 +992,7 @@ export default function SurveyResultsPage() {
         </div>
 
         {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
-          {ageFilterOptions.map((option) => (
-            <button
-              key={option}
-              onClick={() => { setProjectsEvolutionAgeFilter(option); if (option !== "General") setProjectsEvolutionGenderFilter("Todos"); }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
-                projectsEvolutionAgeFilter === option
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-
-        {/* Gender Filter */}
-        {renderGenderFilter(projectsEvolutionGenderFilter, (v) => { setProjectsEvolutionGenderFilter(v); if (v !== "Todos") setProjectsEvolutionAgeFilter("General"); })}
+        {renderCombinedFilters(projectsEvolutionAgeFilter, setProjectsEvolutionAgeFilter, projectsEvolutionGenderFilter, setProjectsEvolutionGenderFilter)}
 
         {/* Line Chart */}
         {!hasData ? (
@@ -1241,25 +1192,7 @@ export default function SurveyResultsPage() {
         </div>
         <p className="text-sm text-gray-500 mb-4">Calificación promedio mensual</p>
 
-        {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
-          {ageFilterOptions.map((option) => (
-            <button
-              key={option}
-              onClick={() => { setRatingEvolutionAgeFilter(option); if (option !== "General") setRatingEvolutionGenderFilter("Todos"); }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
-                ratingEvolutionAgeFilter === option
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-
-        {/* Gender Filter */}
-        {renderGenderFilter(ratingEvolutionGenderFilter, (v) => { setRatingEvolutionGenderFilter(v); if (v !== "Todos") setRatingEvolutionAgeFilter("General"); })}
+        {renderCombinedFilters(ratingEvolutionAgeFilter, setRatingEvolutionAgeFilter, ratingEvolutionGenderFilter, setRatingEvolutionGenderFilter)}
 
         {!hasData ? (
           <div className="text-center text-gray-500 py-12">
@@ -1714,6 +1647,219 @@ export default function SurveyResultsPage() {
             <span className="font-semibold text-gray-900">{topPercentage}%</span>
           </p>
         </div>
+      </div>
+    );
+  };
+
+  // Renderizar análisis cruzado
+  const renderCrossAnalysis = () => {
+    if (!results) return null;
+
+    const budgetQuestion = getQuestionByType("percentage_distribution");
+    const projectQuestion = getQuestionByType("single_choice");
+    const ratingQuestion = getQuestionByType("rating");
+
+    if (!budgetQuestion && !projectQuestion && !ratingQuestion) return null;
+
+    // Obtener los datos según la tab activa
+    type SegmentKey = "results_by_neighborhood" | "results_by_age" | "results_by_gender";
+    type DemographicKey = "by_neighborhood" | "by_age_group" | "by_gender";
+
+    const segmentKeyMap: Record<string, SegmentKey> = {
+      neighborhood: "results_by_neighborhood",
+      age: "results_by_age",
+      gender: "results_by_gender",
+    };
+
+    const demographicKeyMap: Record<string, DemographicKey> = {
+      neighborhood: "by_neighborhood",
+      age: "by_age_group",
+      gender: "by_gender",
+    };
+
+    const segmentKey = segmentKeyMap[crossAnalysisTab];
+    const demographicKey = demographicKeyMap[crossAnalysisTab];
+    const demographics = results.demographics[demographicKey] || {};
+
+    // Filtrar "Sin especificar" y "Menor de 18"
+    const groups = Object.entries(demographics)
+      .filter(([key]) => key !== "Sin especificar" && key !== "Menor de 18")
+      .sort((a, b) => b[1] - a[1]);
+
+    if (groups.length === 0) {
+      return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+          <h3 className="text-xl font-bold text-gray-900 mb-1">Análisis Cruzado</h3>
+          <p className="text-sm text-gray-500 mb-4">Compara preferencias segmentando por diferentes dimensiones</p>
+          <div className="text-center text-gray-500 py-12">No hay datos disponibles</div>
+        </div>
+      );
+    }
+
+    // Colores para las prioridades
+    const priorityColors = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4"];
+
+    // Helper para obtener top N de un result set de percentage_distribution
+    const getTopPriorities = (resultData: Record<string, any> | undefined, n: number) => {
+      if (!resultData) return [];
+      return Object.entries(resultData)
+        .map(([key, val]) => ({ key, label: (val as any).label || key, percentage: (val as any).percentage || 0 }))
+        .sort((a, b) => b.percentage - a.percentage)
+        .slice(0, n);
+    };
+
+    // Helper para obtener la obra más votada
+    const getTopProject = (resultData: Record<string, any> | undefined) => {
+      if (!resultData) return null;
+      const entries = Object.entries(resultData)
+        .map(([key, val]) => ({ key, label: (val as any).label || key, percentage: (val as any).percentage || 0 }))
+        .sort((a, b) => b.percentage - a.percentage);
+      return entries[0] || null;
+    };
+
+    // Helper para obtener rating
+    const getRating = (resultData: any) => {
+      if (!resultData) return null;
+      return { average: resultData.average || 0, total: resultData.total_ratings || 0 };
+    };
+
+    // Construir un mapa de colores consistente para las opciones de presupuesto
+    const allBudgetLabels: string[] = [];
+    groups.forEach(([groupName]) => {
+      const data = (budgetQuestion as any)?.[segmentKey]?.[groupName];
+      if (data) {
+        Object.values(data).forEach((val: any) => {
+          const label = val.label || "";
+          if (label && !allBudgetLabels.includes(label)) allBudgetLabels.push(label);
+        });
+      }
+    });
+    const budgetColorMap: Record<string, string> = {};
+    allBudgetLabels.forEach((label, idx) => {
+      budgetColorMap[label] = priorityColors[idx % priorityColors.length];
+    });
+
+    const tabLabels: Record<string, string> = {
+      neighborhood: "Por Barrio",
+      age: "Por Edad",
+      gender: "Por Género",
+    };
+
+    const columnLabel: Record<string, string> = {
+      neighborhood: "Barrio",
+      age: "Edad",
+      gender: "Género",
+    };
+
+    // Limitar barrios a top 10 para no hacer la tabla interminable
+    const displayGroups = crossAnalysisTab === "neighborhood" ? groups.slice(0, 10) : groups;
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-gray-900">Análisis Cruzado</h3>
+          <p className="text-sm text-gray-500">Compara preferencias segmentando por diferentes dimensiones</p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+          {(["neighborhood", "age", "gender"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setCrossAnalysisTab(tab)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
+                crossAnalysisTab === tab
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-900"
+              }`}
+            >
+              {tabLabels[tab]}
+            </button>
+          ))}
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-2 font-semibold text-gray-700">{columnLabel[crossAnalysisTab]}</th>
+                <th className="text-center py-3 px-2 font-semibold text-gray-700">Respuestas</th>
+                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-gray-700">Prioridad #1</th>}
+                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-gray-700">Prioridad #2</th>}
+                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-gray-700">Prioridad #3</th>}
+                {projectQuestion && <th className="text-left py-3 px-2 font-semibold text-gray-700">Obra Preferida</th>}
+                {ratingQuestion && <th className="text-right py-3 px-2 font-semibold text-gray-700">Calificación</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {displayGroups.map(([groupName, count]) => {
+                const budgetData = (budgetQuestion as any)?.[segmentKey]?.[groupName];
+                const projectData = (projectQuestion as any)?.[segmentKey]?.[groupName];
+                const ratingData = (ratingQuestion as any)?.[segmentKey]?.[groupName];
+
+                const priorities = getTopPriorities(budgetData, 3);
+                const topProject = getTopProject(projectData);
+                const rating = getRating(ratingData);
+
+                // Color de rating
+                const ratingColor = rating && rating.average >= 4 ? "text-green-600"
+                  : rating && rating.average >= 3 ? "text-orange-500"
+                  : "text-red-500";
+
+                return (
+                  <tr key={groupName} className="border-b border-gray-100 hover:bg-gray-50 transition">
+                    <td className="py-3 px-2 font-medium text-gray-900">{groupName}</td>
+                    <td className="py-3 px-2 text-center text-gray-600">{count.toLocaleString()}</td>
+                    {budgetQuestion && [0, 1, 2].map((i) => (
+                      <td key={i} className="py-3 px-2">
+                        {priorities[i] ? (
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: budgetColorMap[priorities[i].label] || "#9CA3AF" }}
+                            />
+                            <span className="text-gray-900">{priorities[i].label}</span>
+                            <span className="text-gray-400 text-xs">({priorities[i].percentage.toFixed(1)}%)</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                    ))}
+                    {projectQuestion && (
+                      <td className="py-3 px-2">
+                        {topProject ? (
+                          <span className="text-gray-900">
+                            {topProject.label.split("(")[0].trim()}{" "}
+                            <span className="text-gray-400 text-xs">({topProject.percentage.toFixed(1)}%)</span>
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                    )}
+                    {ratingQuestion && (
+                      <td className="py-3 px-2 text-right">
+                        {rating && rating.total > 0 ? (
+                          <span className={`font-bold ${ratingColor}`}>
+                            {rating.average.toFixed(1)}<span className="text-gray-400 font-normal">/5</span>
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {crossAnalysisTab === "neighborhood" && groups.length > 10 && (
+          <p className="text-xs text-gray-400 mt-3">Mostrando los 10 barrios con más respuestas de {groups.length} totales</p>
+        )}
       </div>
     );
   };
@@ -2374,46 +2520,112 @@ export default function SurveyResultsPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                <svg
-                  className="w-5 h-5 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            <div className="flex items-center gap-3 relative print-hide">
+              {/* Período */}
+              <div className="relative" ref={periodPickerRef}>
+                <button
+                  onClick={() => setShowPeriodPicker(!showPeriodPicker)}
+                  className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition ${
+                    activePeriodLabel
+                      ? "bg-blue-50 border-blue-300 text-blue-700"
+                      : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                  }`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <span className="text-sm font-medium text-gray-700">
-                  Período
-                </span>
-              </button>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium">
+                    {activePeriodLabel || "Período"}
+                  </span>
+                  {activePeriodLabel && (
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPeriodFrom("");
+                        setPeriodTo("");
+                        setActivePeriodLabel("");
+                        setShowPeriodPicker(false);
+                        fetchResults();
+                      }}
+                      className="ml-1 text-blue-500 hover:text-blue-700 cursor-pointer"
+                    >
+                      ✕
+                    </span>
+                  )}
+                </button>
 
-              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                <svg
-                  className="w-5 h-5 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                  />
-                </svg>
-                <span className="text-sm font-medium text-gray-700">
-                  Filtros
-                </span>
-              </button>
+                {showPeriodPicker && (
+                  <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-50 w-80">
+                    <p className="text-sm font-semibold text-gray-700 mb-3">Seleccionar período</p>
+                    <div className="flex gap-3 mb-3">
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-500 mb-1 block">Desde</label>
+                        <input
+                          type="date"
+                          value={periodFrom}
+                          onChange={(e) => setPeriodFrom(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-500 mb-1 block">Hasta</label>
+                        <input
+                          type="date"
+                          value={periodTo}
+                          onChange={(e) => setPeriodTo(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setPeriodFrom("");
+                          setPeriodTo("");
+                          setActivePeriodLabel("");
+                          setShowPeriodPicker(false);
+                          fetchResults();
+                        }}
+                        className="flex-1 px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      >
+                        Limpiar
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (periodFrom || periodTo) {
+                            const fromLabel = periodFrom ? new Date(periodFrom + "T12:00:00").toLocaleDateString("es-AR", { day: "2-digit", month: "short" }) : "";
+                            const toLabel = periodTo ? new Date(periodTo + "T12:00:00").toLocaleDateString("es-AR", { day: "2-digit", month: "short" }) : "";
+                            setActivePeriodLabel(
+                              fromLabel && toLabel ? `${fromLabel} - ${toLabel}` : fromLabel || toLabel
+                            );
+                            fetchResults(periodFrom || undefined, periodTo || undefined);
+                          }
+                          setShowPeriodPicker(false);
+                        }}
+                        className="flex-1 px-3 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm">
+              {/* Exportar PDF */}
+              <button
+                onClick={() => window.print()}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
+              >
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -2427,7 +2639,7 @@ export default function SurveyResultsPage() {
                     d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                   />
                 </svg>
-                <span className="text-sm font-medium">Exportar</span>
+                <span className="text-sm font-medium">Exportar PDF</span>
               </button>
             </div>
           </div>
@@ -2579,6 +2791,9 @@ export default function SurveyResultsPage() {
             <div className="mb-8">
               {renderRatingChart()}
             </div>
+
+            {/* Cross Analysis */}
+            {renderCrossAnalysis()}
 
             {/* Evolution Section Title */}
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Evolución Histórica</h2>
