@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasa por Servicio a la Propiedad - Demo Integración PAD</title>
+    <link rel="stylesheet" href="Consulta y Pago de Deuda_files/bootstrap.min.css">
+    <link rel="stylesheet" href="Consulta y Pago de Deuda_files/font-awesome.min.css">
+    <link rel="stylesheet" href="Consulta y Pago de Deuda_files/Site.css">
+    <link rel="stylesheet" href="Consulta y Pago de Deuda_files/dataTables.bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f5f5f5;
+            font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .main-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header-bar {
+            background: linear-gradient(135deg, #b71c1c 0%, #c62828 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px 6px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-bar h3 {
+            color: white;
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .deuda-badge {
+            background-color: #d32f2f;
+            border: 2px solid rgba(255,255,255,0.5);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .info-section {
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            padding: 20px;
+        }
+        .info-table {
+            width: 100%;
+            margin-bottom: 0;
+        }
+        .info-table td {
+            padding: 8px 12px;
+            border: 1px solid #eee;
+        }
+        .info-table .label-cell {
+            background-color: #f8f8f8;
+            font-weight: bold;
+            width: 180px;
+            border-left: 3px solid #999;
+        }
+
+        /* === PAD Rewards Section === */
+        .pad-section {
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .pad-header {
+            background: linear-gradient(135deg, #1565c0 0%, #1976d2 50%, #2196f3 100%);
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .pad-header .star-icon {
+            font-size: 22px;
+        }
+        .pad-body {
+            background: white;
+            padding: 24px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .pad-stat {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .pad-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+        }
+        .pad-circle.points {
+            background: linear-gradient(135deg, #43a047, #66bb6a);
+            box-shadow: 0 3px 8px rgba(67, 160, 71, 0.3);
+        }
+        .pad-circle.discount {
+            background: linear-gradient(135deg, #43a047, #66bb6a);
+            box-shadow: 0 3px 8px rgba(67, 160, 71, 0.3);
+        }
+        .pad-stat-info {
+            line-height: 1.4;
+        }
+        .pad-stat-info .sublabel {
+            color: #888;
+            font-size: 13px;
+        }
+        .pad-stat-info .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+        }
+        .pad-stat-info .progress-bar-container {
+            width: 140px;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        .pad-stat-info .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1976d2, #42a5f5);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        .pad-cta-btn {
+            background: linear-gradient(135deg, #1565c0, #1976d2);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .pad-cta-btn:hover {
+            background: linear-gradient(135deg, #0d47a1, #1565c0);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(21, 101, 192, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+
+        /* === PFP Banner === */
+        .pfp-banner {
+            margin-top: 20px;
+            background-color: #dff0d8;
+            border: 1px solid #d0e9c6;
+            border-left: 5px solid #5cb85c;
+            padding: 14px 20px;
+            border-radius: 4px;
+            color: #3c763d;
+            font-size: 15px;
+        }
+        .pfp-banner a {
+            color: #2e6da4;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        /* === Debt Table === */
+        .debt-table-container {
+            margin-top: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .debt-table {
+            width: 100%;
+            margin-bottom: 0;
+        }
+        .debt-table thead th {
+            background-color: #f8f8f8;
+            border-bottom: 2px solid #ddd;
+            padding: 10px 12px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #555;
+        }
+        .debt-table tbody td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        .debt-table tbody tr:hover {
+            background-color: #f5f9ff;
+        }
+        .text-danger-amount {
+            color: #c62828;
+            font-weight: 600;
+        }
+        .text-muted-amount {
+            color: #999;
+        }
+        .amount-cell {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* === Discount Applied State === */
+        .discount-applied-row .original-amount {
+            text-decoration: line-through;
+            color: #999;
+            font-size: 12px;
+        }
+        .discount-applied-row .new-amount {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+
+        /* === Modal === */
+        .pad-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .pad-modal-overlay.active {
+            display: flex;
+        }
+        .pad-modal {
+            background: white;
+            border-radius: 12px;
+            width: 480px;
+            max-width: 95vw;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .pad-modal-header {
+            background: linear-gradient(135deg, #1565c0, #1976d2);
+            color: white;
+            padding: 20px 24px;
+            text-align: center;
+        }
+        .pad-modal-header h4 {
+            margin: 0;
+            font-size: 20px;
+            color: white;
+        }
+        .pad-modal-body {
+            padding: 24px;
+        }
+        .pad-modal-body .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 15px;
+        }
+        .pad-modal-body .summary-row:last-child {
+            border-bottom: none;
+        }
+        .pad-modal-body .summary-row .label {
+            color: #666;
+        }
+        .pad-modal-body .summary-row .value {
+            font-weight: 600;
+        }
+        .pad-modal-body .summary-row .value.green {
+            color: #2e7d32;
+        }
+        .pad-modal-body .summary-row .value.red {
+            color: #c62828;
+        }
+        .pad-modal-footer {
+            padding: 16px 24px 24px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .btn-apply {
+            background: linear-gradient(135deg, #43a047, #66bb6a);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-apply:hover {
+            background: linear-gradient(135deg, #2e7d32, #43a047);
+        }
+        .btn-cancel {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-cancel:hover {
+            background: #eee;
+        }
+
+        /* === Success state === */
+        .pad-section.applied .pad-header {
+            background: linear-gradient(135deg, #2e7d32, #43a047);
+        }
+        .pad-applied-message {
+            display: none;
+            background: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            padding: 14px 20px;
+            margin-top: 12px;
+            border-radius: 6px;
+            color: #2e7d32;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .pad-applied-message.visible {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* === Controls panel (demo) === */
+        .demo-controls {
+            background: #fff3e0;
+            border: 2px dashed #ff9800;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .demo-controls h5 {
+            color: #e65100;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        .demo-controls label {
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: block;
+            color: #555;
+        }
+        .demo-controls input[type="range"] {
+            width: 100%;
+            margin: 4px 0 12px;
+        }
+        .demo-controls .control-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .demo-controls .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        .demo-controls .control-value {
+            font-weight: bold;
+            color: #e65100;
+            font-size: 18px;
+        }
+        .demo-controls .btn-reset {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .demo-controls .btn-reset:hover {
+            background: #f57c00;
+        }
+
+        /* checkbox custom for table */
+        .debt-table input[type="checkbox"] {
+            transform: scale(1.3);
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+
+    <!-- ========== DEMO CONTROLS ========== -->
+    <div class="demo-controls">
+        <h5><i class="fa fa-cogs"></i> Panel de Control (Demo - No visible para el usuario final)</h5>
+        <div class="control-row">
+            <div class="control-group">
+                <label>Puntos acumulados: <span id="ctrl-points-val" class="control-value">350</span></label>
+                <input type="range" id="ctrl-points" min="0" max="1000" step="10" value="350">
+                <span style="font-size:12px;color:#888;">0 - 1000 puntos</span>
+            </div>
+            <div class="control-group">
+                <label>Descuento disponible: <span id="ctrl-discount-val" class="control-value">3%</span></label>
+                <input type="range" id="ctrl-discount" min="0" max="10" step="1" value="3">
+                <span style="font-size:12px;color:#888;">100 pts = 1% de descuento (máx 10%)</span>
+            </div>
+            <div class="control-group">
+                <label>Nombre contribuyente:</label>
+                <input type="text" id="ctrl-nombre" value="DOMINGUEZ MARIANO AGUSTIN" class="form-control input-sm" style="margin-top: 4px;">
+            </div>
+        </div>
+        <div class="control-row" style="margin-top: 10px;">
+            <div class="control-group">
+                <label>Cuenta:</label>
+                <input type="text" id="ctrl-cuenta" value="00345007" class="form-control input-sm">
+            </div>
+            <div class="control-group">
+                <label>CUIT:</label>
+                <input type="text" id="ctrl-cuit" value="20-33445566-0" class="form-control input-sm">
+            </div>
+            <div class="control-group" style="display: flex; align-items: flex-end;">
+                <button class="btn-reset" onclick="resetDemo()"><i class="fa fa-refresh"></i> Reiniciar Demo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== HEADER: Tasa por Servicio a la Propiedad ========== -->
+    <div class="header-bar">
+        <h3>Tasa por Servicio a la Propiedad</h3>
+        <span class="deuda-badge">Deuda: <span id="total-deuda">14.472,73</span></span>
+    </div>
+
+    <!-- ========== INFO DEL CONTRIBUYENTE ========== -->
+    <div class="info-section">
+        <table class="info-table">
+            <tr>
+                <td class="label-cell">Contribuyente</td>
+                <td id="info-contribuyente">DOMINGUEZ MARIANO AGUSTIN</td>
+                <td class="label-cell">Cuenta</td>
+                <td id="info-cuenta">00345007</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Documento</td>
+                <td id="info-doc">CUIT 20-33445566-0</td>
+                <td class="label-cell" colspan="2"></td>
+            </tr>
+            <tr>
+                <td class="label-cell">Titular/es</td>
+                <td colspan="3" id="info-titular">DOMINGUEZ MARIANO AGUSTIN</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Dirección Electrónica</td>
+                <td colspan="3">Cuenta No Adherida</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Nro. Pago Electrónico Link</td>
+                <td>76553402104580</td>
+                <td class="label-cell">Nro. Pago Electrónico Banelco</td>
+                <td>0043895980</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ========== PAD: PROGRAMA DE ENCUESTAS Y RECOMPENSAS ========== -->
+    <div class="pad-section" id="pad-section">
+        <div class="pad-header">
+            <span class="star-icon">&#9734;</span>
+            Programa de Encuestas y Recompensas
+        </div>
+        <div class="pad-body" id="pad-body-main">
+            <div class="pad-stat">
+                <div class="pad-circle points" id="pad-circle-points">350</div>
+                <div class="pad-stat-info">
+                    <div class="sublabel">Tus puntos acumulados</div>
+                    <div class="value"><span id="pad-points-text">350</span> puntos</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" id="pad-progress" style="width: 50%;"></div>
+                    </div>
+                    <div class="sublabel"><span id="pad-next-pts">50</span> pts para +1%</div>
+                </div>
+            </div>
+            <div class="pad-stat">
+                <div class="pad-circle discount" id="pad-circle-discount">3%</div>
+                <div class="pad-stat-info">
+                    <div class="sublabel">Descuento disponible</div>
+                    <div class="value"><span id="pad-discount-text">3</span>%</div>
+                    <div class="sublabel">100 pts = 1% de descuento</div>
+                </div>
+            </div>
+            <a href="#" class="pad-cta-btn" id="btn-completar-encuesta" onclick="openApplyModal(); return false;">
+                <i class="fa fa-clipboard"></i> Completar Encuesta <span style="font-size: 20px;">›</span>
+            </a>
+        </div>
+        <div class="pad-applied-message" id="pad-applied-msg">
+            <i class="fa fa-check-circle" style="font-size: 20px;"></i>
+            <span id="pad-applied-msg-text">Descuento del 3% aplicado correctamente a las cuotas vencidas.</span>
+        </div>
+    </div>
+
+    <!-- ========== PFP BANNER ========== -->
+    <div class="pfp-banner">
+        <strong>Sr. Contribuyente</strong>, si usted desea regularizar su deuda mediante un plan de facilidades de pago (PFP), haga clic <a href="#">Aquí</a>
+    </div>
+
+    <!-- ========== TABLA DE DEUDA ========== -->
+    <div class="debt-table-container">
+        <table class="debt-table" id="debt-table">
+            <thead>
+                <tr>
+                    <th>Período</th>
+                    <th>Descripción</th>
+                    <th>Boleta</th>
+                    <th>Vencimiento</th>
+                    <th class="amount-cell">Histórico</th>
+                    <th class="amount-cell">Rec/Desc</th>
+                    <th class="amount-cell">Total</th>
+                    <th style="width: 40px;"></th>
+                </tr>
+            </thead>
+            <tbody id="debt-tbody">
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- ========== MODAL: Aplicar descuento ========== -->
+<div class="pad-modal-overlay" id="modal-overlay">
+    <div class="pad-modal">
+        <div class="pad-modal-header">
+            <h4><i class="fa fa-tag"></i> Aplicar Descuento PAD</h4>
+        </div>
+        <div class="pad-modal-body">
+            <p style="color: #666; margin-bottom: 16px;">Tenés un descuento disponible por participar en el Programa de Encuestas y Recompensas. ¿Querés aplicarlo a tus cuotas vencidas?</p>
+            <div class="summary-row">
+                <span class="label">Descuento disponible</span>
+                <span class="value green" id="modal-discount">3%</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Cuota vencida (2026/001)</span>
+                <span class="value" id="modal-cuota-original">$14.472,73</span>
+            </div>
+            <div class="summary-row">
+                <span class="label">Ahorro estimado</span>
+                <span class="value green" id="modal-ahorro">- $434,18</span>
+            </div>
+            <div class="summary-row" style="border-top: 2px solid #333; padding-top: 12px; margin-top: 4px;">
+                <span class="label" style="font-weight: bold; color: #333;">Total con descuento</span>
+                <span class="value green" style="font-size: 18px;" id="modal-total-desc">$14.038,55</span>
+            </div>
+        </div>
+        <div class="pad-modal-footer">
+            <button class="btn-cancel" onclick="closeModal()">No, gracias</button>
+            <button class="btn-apply" onclick="applyDiscount()"><i class="fa fa-check"></i> Aplicar descuento</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // =========== DATA ===========
+    const debtData = [
+        { periodo: "2026/001", desc: "CUOTA BASICA", boleta: "0142130922", venc: "20/01/2026", historico: 14022.83, recargo: 449.90, total: 14472.73, vencida: true },
+        { periodo: "2026/002", desc: "CUOTA BASICA", boleta: "0142130930", venc: "27/02/2026", historico: 14022.83, recargo: 218.76, total: 14241.59, vencida: true },
+        { periodo: "2026/003", desc: "CUOTA BASICA", boleta: "0142130948", venc: "10/03/2026", historico: 14775.86, recargo: 0.00, total: 14775.86, vencida: false },
+        { periodo: "2026/004", desc: "CUOTA BASICA", boleta: "0142130956", venc: "10/04/2026", historico: 14775.86, recargo: 0.00, total: 14775.86, vencida: false },
+        { periodo: "2026/005", desc: "CUOTA BASICA", boleta: "0142130964", venc: "12/05/2026", historico: 14775.86, recargo: 0.00, total: 14775.86, vencida: false },
+        { periodo: "2026/006", desc: "CUOTA BASICA", boleta: "0142130972", venc: "10/06/2026", historico: 14775.86, recargo: 0.00, total: 14775.86, vencida: false },
+    ];
+
+    let discountApplied = false;
+    let currentDiscount = 3;
+    let currentPoints = 350;
+
+    // =========== RENDER TABLE ===========
+    function formatMoney(n) {
+        return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('debt-tbody');
+        tbody.innerHTML = '';
+        debtData.forEach((row) => {
+            const tr = document.createElement('tr');
+            const isDiscounted = discountApplied && row.vencida;
+            const discountAmount = isDiscounted ? row.total * (currentDiscount / 100) : 0;
+            const finalTotal = isDiscounted ? row.total - discountAmount : row.total;
+            const finalRecargo = isDiscounted ? row.recargo - discountAmount : row.recargo;
+
+            if (isDiscounted) tr.classList.add('discount-applied-row');
+
+            tr.innerHTML = `
+                <td>${row.periodo}</td>
+                <td>${row.desc}</td>
+                <td>${row.boleta}</td>
+                <td>${row.venc}</td>
+                <td class="amount-cell">${formatMoney(row.historico)}</td>
+                <td class="amount-cell">${isDiscounted
+                    ? `<span class="original-amount">${formatMoney(row.recargo)}</span><br><span class="new-amount">${formatMoney(finalRecargo)}</span>`
+                    : (row.recargo > 0 ? `<span class="text-danger-amount">${formatMoney(row.recargo)}</span>` : formatMoney(row.recargo))
+                }</td>
+                <td class="amount-cell">${isDiscounted
+                    ? `<span class="original-amount">${formatMoney(row.total)}</span><br><span class="new-amount">${formatMoney(finalTotal)}</span>`
+                    : (row.vencida ? `<span class="text-danger-amount">${formatMoney(row.total)}</span>` : formatMoney(row.total))
+                }</td>
+                <td><input type="checkbox"></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Update total deuda
+        const totalDeuda = debtData
+            .filter(r => r.vencida)
+            .reduce((sum, r) => {
+                const disc = discountApplied ? r.total * (currentDiscount / 100) : 0;
+                return sum + (r.total - disc);
+            }, 0);
+        document.getElementById('total-deuda').textContent = formatMoney(totalDeuda);
+    }
+
+    // =========== PAD CONTROLS ===========
+    function updatePAD() {
+        currentPoints = parseInt(document.getElementById('ctrl-points').value);
+        currentDiscount = parseInt(document.getElementById('ctrl-discount').value);
+
+        document.getElementById('ctrl-points-val').textContent = currentPoints;
+        document.getElementById('ctrl-discount-val').textContent = currentDiscount + '%';
+
+        document.getElementById('pad-circle-points').textContent = currentPoints;
+        document.getElementById('pad-points-text').textContent = currentPoints;
+        document.getElementById('pad-circle-discount').textContent = currentDiscount + '%';
+        document.getElementById('pad-discount-text').textContent = currentDiscount;
+
+        // Progress to next %
+        const ptsInCurrentPercent = currentPoints % 100;
+        const ptsNeeded = 100 - ptsInCurrentPercent;
+        document.getElementById('pad-next-pts').textContent = ptsNeeded;
+        document.getElementById('pad-progress').style.width = ptsInCurrentPercent + '%';
+
+        // Update modal values
+        const vencida = debtData.find(r => r.vencida);
+        if (vencida) {
+            const ahorro = vencida.total * (currentDiscount / 100);
+            document.getElementById('modal-discount').textContent = currentDiscount + '%';
+            document.getElementById('modal-cuota-original').textContent = '$' + formatMoney(vencida.total);
+            document.getElementById('modal-ahorro').textContent = '- $' + formatMoney(ahorro);
+            document.getElementById('modal-total-desc').textContent = '$' + formatMoney(vencida.total - ahorro);
+        }
+
+        // Update info fields
+        const nombre = document.getElementById('ctrl-nombre').value;
+        const cuenta = document.getElementById('ctrl-cuenta').value;
+        const cuit = document.getElementById('ctrl-cuit').value;
+        document.getElementById('info-contribuyente').textContent = nombre;
+        document.getElementById('info-titular').textContent = nombre;
+        document.getElementById('info-cuenta').textContent = cuenta;
+        document.getElementById('info-doc').textContent = 'CUIT ' + cuit;
+    }
+
+    function openApplyModal() {
+        if (discountApplied) return;
+        updatePAD();
+        document.getElementById('modal-overlay').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('modal-overlay').classList.remove('active');
+    }
+
+    function applyDiscount() {
+        discountApplied = true;
+        closeModal();
+
+        // Update PAD section
+        const section = document.getElementById('pad-section');
+        section.classList.add('applied');
+
+        // Change button
+        const btn = document.getElementById('btn-completar-encuesta');
+        btn.innerHTML = '<i class="fa fa-check"></i> Descuento aplicado';
+        btn.style.background = 'linear-gradient(135deg, #2e7d32, #43a047)';
+        btn.style.cursor = 'default';
+        btn.onclick = function(e) { e.preventDefault(); };
+
+        // Show message
+        const msg = document.getElementById('pad-applied-msg');
+        msg.classList.add('visible');
+        document.getElementById('pad-applied-msg-text').textContent =
+            `Descuento del ${currentDiscount}% aplicado correctamente a las cuotas vencidas.`;
+
+        renderTable();
+    }
+
+    function resetDemo() {
+        discountApplied = false;
+        const section = document.getElementById('pad-section');
+        section.classList.remove('applied');
+
+        const btn = document.getElementById('btn-completar-encuesta');
+        btn.innerHTML = '<i class="fa fa-clipboard"></i> Completar Encuesta <span style="font-size: 20px;">›</span>';
+        btn.style.background = 'linear-gradient(135deg, #1565c0, #1976d2)';
+        btn.style.cursor = 'pointer';
+        btn.onclick = function(e) { e.preventDefault(); openApplyModal(); };
+
+        document.getElementById('pad-applied-msg').classList.remove('visible');
+        renderTable();
+    }
+
+    // =========== EVENT LISTENERS ===========
+    document.getElementById('ctrl-points').addEventListener('input', function() { updatePAD(); if (discountApplied) renderTable(); });
+    document.getElementById('ctrl-discount').addEventListener('input', function() { updatePAD(); if (discountApplied) renderTable(); });
+    document.getElementById('ctrl-nombre').addEventListener('input', updatePAD);
+    document.getElementById('ctrl-cuenta').addEventListener('input', updatePAD);
+    document.getElementById('ctrl-cuit').addEventListener('input', updatePAD);
+
+    // Close modal on overlay click
+    document.getElementById('modal-overlay').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    // =========== INIT ===========
+    updatePAD();
+    renderTable();
+</script>
+
+</body>
+</html>
