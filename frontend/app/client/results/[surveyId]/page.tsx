@@ -21,6 +21,7 @@ interface Demographics {
   by_age_group: Record<string, number>;
   by_city: Record<string, number>;
   by_neighborhood: Record<string, number>;
+  by_gender: Record<string, number>;
 }
 
 interface PercentageResult {
@@ -47,6 +48,8 @@ interface QuestionSummary {
   total_answers: number;
   results: Record<string, PercentageResult | SingleChoiceResult>;
   results_by_age: Record<string, Record<string, PercentageResult | SingleChoiceResult>>;
+  results_by_gender: Record<string, Record<string, PercentageResult | SingleChoiceResult>>;
+  results_by_neighborhood: Record<string, Record<string, PercentageResult | SingleChoiceResult>>;
 }
 
 interface EvolutionCategory {
@@ -73,6 +76,11 @@ interface EvolutionData {
     data: number[];
   };
   by_age: Record<string, {
+    percentage_distribution: { categories: EvolutionCategory[] };
+    single_choice: { projects: EvolutionCategory[] };
+    rating: { data: number[] };
+  }>;
+  by_gender: Record<string, {
     percentage_distribution: { categories: EvolutionCategory[] };
     single_choice: { projects: EvolutionCategory[] };
     rating: { data: number[] };
@@ -118,6 +126,12 @@ export default function SurveyResultsPage() {
   const [projectsEvolutionAgeFilter, setProjectsEvolutionAgeFilter] = useState("General");
   const [ratingEvolutionAgeFilter, setRatingEvolutionAgeFilter] = useState("General");
   const [participationTrendAgeFilter, setParticipationTrendAgeFilter] = useState("General");
+  const [budgetGenderFilter, setBudgetGenderFilter] = useState("Todos");
+  const [projectsGenderFilter, setProjectsGenderFilter] = useState("Todos");
+  const [ratingGenderFilter, setRatingGenderFilter] = useState("Todos");
+  const [budgetEvolutionGenderFilter, setBudgetEvolutionGenderFilter] = useState("Todos");
+  const [projectsEvolutionGenderFilter, setProjectsEvolutionGenderFilter] = useState("Todos");
+  const [ratingEvolutionGenderFilter, setRatingEvolutionGenderFilter] = useState("Todos");
   const [hoveredRatingPoint, setHoveredRatingPoint] = useState<{index: number, value: number, month: string} | null>(null);
   const [activeTab, setActiveTab] = useState<"datos" | "ai-insights">("datos");
   const [aiInsights, setAiInsights] = useState<any[] | null>(null);
@@ -127,6 +141,7 @@ export default function SurveyResultsPage() {
   const [loadingAiPredictions, setLoadingAiPredictions] = useState(false);
 
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
+  const genderFilterOptions = ["Todos", "Masculino", "Femenino", "Otro"];
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -256,14 +271,42 @@ export default function SurveyResultsPage() {
     return results?.questions_summary.find(q => q.question_type === type);
   };
 
+  // Helper: obtener datos filtrados por edad y/o género
+  const getFilteredData = (question: QuestionSummary, ageFilter: string, genderFilter: string) => {
+    if (genderFilter !== "Todos") {
+      return question.results_by_gender?.[genderFilter] || {};
+    }
+    if (ageFilter !== "General") {
+      return question.results_by_age?.[ageFilter] || {};
+    }
+    return question.results;
+  };
+
+  // Helper: renderizar botones de filtro de género
+  const renderGenderFilter = (currentFilter: string, setFilter: (v: string) => void) => (
+    <div className="flex gap-1 mb-4 bg-pink-50 rounded-lg p-1 w-fit">
+      {genderFilterOptions.map((option) => (
+        <button
+          key={option}
+          onClick={() => setFilter(option)}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
+            currentFilter === option
+              ? "bg-white text-gray-900 shadow-sm"
+              : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          {option}
+        </button>
+      ))}
+    </div>
+  );
+
   // Renderizar Pie Chart para distribución de presupuesto
   const renderBudgetPieChart = () => {
     const question = getQuestionByType("percentage_distribution");
     if (!question) return null;
 
-    const data = budgetAgeFilter === "General"
-      ? question.results
-      : question.results_by_age[budgetAgeFilter] || {};
+    const data = getFilteredData(question, budgetAgeFilter, budgetGenderFilter);
 
     const entries = Object.entries(data).sort((a, b) => {
       const aPerc = (a[1] as PercentageResult).percentage;
@@ -319,11 +362,11 @@ export default function SurveyResultsPage() {
         </div>
 
         {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
           {ageFilterOptions.map((option) => (
             <button
               key={option}
-              onClick={() => setBudgetAgeFilter(option)}
+              onClick={() => { setBudgetAgeFilter(option); if (option !== "General") setBudgetGenderFilter("Todos"); }}
               className={`px-4 py-2 text-sm font-medium rounded-md transition ${
                 budgetAgeFilter === option
                   ? "bg-white text-gray-900 shadow-sm"
@@ -335,9 +378,12 @@ export default function SurveyResultsPage() {
           ))}
         </div>
 
+        {/* Gender Filter */}
+        {renderGenderFilter(budgetGenderFilter, (v) => { setBudgetGenderFilter(v); if (v !== "Todos") setBudgetAgeFilter("General"); })}
+
         {!hasData ? (
           <div className="text-center text-gray-500 py-12">
-            No hay datos para este grupo de edad
+            No hay datos para este filtro
           </div>
         ) : (
           <>
@@ -433,9 +479,7 @@ export default function SurveyResultsPage() {
     const question = getQuestionByType("single_choice");
     if (!question) return null;
 
-    const data = projectsAgeFilter === "General"
-      ? question.results
-      : question.results_by_age[projectsAgeFilter] || {};
+    const data = getFilteredData(question, projectsAgeFilter, projectsGenderFilter);
 
     const entries = Object.entries(data).sort((a, b) => {
       const aResult = a[1] as SingleChoiceResult;
@@ -458,11 +502,11 @@ export default function SurveyResultsPage() {
         </div>
 
         {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
           {ageFilterOptions.map((option) => (
             <button
               key={option}
-              onClick={() => setProjectsAgeFilter(option)}
+              onClick={() => { setProjectsAgeFilter(option); if (option !== "General") setProjectsGenderFilter("Todos"); }}
               className={`px-4 py-2 text-sm font-medium rounded-md transition ${
                 projectsAgeFilter === option
                   ? "bg-white text-gray-900 shadow-sm"
@@ -474,9 +518,12 @@ export default function SurveyResultsPage() {
           ))}
         </div>
 
+        {/* Gender Filter */}
+        {renderGenderFilter(projectsGenderFilter, (v) => { setProjectsGenderFilter(v); if (v !== "Todos") setProjectsAgeFilter("General"); })}
+
         {!hasData ? (
           <div className="text-center text-gray-500 py-12">
-            No hay datos para este grupo de edad
+            No hay datos para este filtro
           </div>
         ) : (
           <>
@@ -554,27 +601,31 @@ export default function SurveyResultsPage() {
     if (!question) return null;
 
     const generalResults = question.results as unknown as RatingResult;
-    const isGeneral = ratingAgeFilter === "General";
 
     let average: number;
     let totalRatings: number;
     let distribution: Record<string, number> | undefined;
 
-    if (isGeneral) {
+    // Determinar qué datos mostrar según filtros
+    let filteredRating: RatingResult | undefined;
+    if (ratingGenderFilter !== "Todos") {
+      filteredRating = question.results_by_gender?.[ratingGenderFilter] as unknown as RatingResult | undefined;
+    } else if (ratingAgeFilter !== "General") {
+      filteredRating = question.results_by_age[ratingAgeFilter] as unknown as RatingResult | undefined;
+    }
+
+    if (filteredRating) {
+      average = filteredRating.average;
+      totalRatings = filteredRating.total_ratings;
+      distribution = filteredRating.distribution;
+    } else if (ratingAgeFilter === "General" && ratingGenderFilter === "Todos") {
       average = generalResults.average;
       totalRatings = generalResults.total_ratings;
       distribution = generalResults.distribution;
     } else {
-      const ageResults = question.results_by_age[ratingAgeFilter] as unknown as RatingResult | undefined;
-      if (!ageResults) {
-        average = 0;
-        totalRatings = 0;
-        distribution = undefined;
-      } else {
-        average = ageResults.average;
-        totalRatings = ageResults.total_ratings;
-        distribution = ageResults.distribution;
-      }
+      average = 0;
+      totalRatings = 0;
+      distribution = undefined;
     }
 
     const hasData = totalRatings > 0;
@@ -602,11 +653,11 @@ export default function SurveyResultsPage() {
         </div>
 
         {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
           {ageFilterOptions.map((option) => (
             <button
               key={option}
-              onClick={() => setRatingAgeFilter(option)}
+              onClick={() => { setRatingAgeFilter(option); if (option !== "General") setRatingGenderFilter("Todos"); }}
               className={`px-4 py-2 text-sm font-medium rounded-md transition ${
                 ratingAgeFilter === option
                   ? "bg-white text-gray-900 shadow-sm"
@@ -618,9 +669,12 @@ export default function SurveyResultsPage() {
           ))}
         </div>
 
+        {/* Gender Filter */}
+        {renderGenderFilter(ratingGenderFilter, (v) => { setRatingGenderFilter(v); if (v !== "Todos") setRatingAgeFilter("General"); })}
+
         {!hasData ? (
           <div className="text-center text-gray-500 py-12">
-            No hay datos para este grupo de edad
+            No hay datos para este filtro
           </div>
         ) : (
           <>
@@ -712,10 +766,15 @@ export default function SurveyResultsPage() {
 
     const months = evolutionData.months;
 
-    // Obtener categorías según filtro de edad
-    const rawCategories = budgetEvolutionAgeFilter === "General"
-      ? evolutionData.percentage_distribution.categories
-      : evolutionData.by_age[budgetEvolutionAgeFilter]?.percentage_distribution?.categories || [];
+    // Obtener categorías según filtro de edad o género
+    let rawCategories;
+    if (budgetEvolutionGenderFilter !== "Todos") {
+      rawCategories = evolutionData.by_gender?.[budgetEvolutionGenderFilter]?.percentage_distribution?.categories || [];
+    } else if (budgetEvolutionAgeFilter !== "General") {
+      rawCategories = evolutionData.by_age[budgetEvolutionAgeFilter]?.percentage_distribution?.categories || [];
+    } else {
+      rawCategories = evolutionData.percentage_distribution.categories;
+    }
 
     // Asignar colores a las categorías
     const categoryColors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#EC4899", "#06B6D4"];
@@ -768,11 +827,11 @@ export default function SurveyResultsPage() {
         </div>
 
         {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
           {ageFilterOptions.map((option) => (
             <button
               key={option}
-              onClick={() => setBudgetEvolutionAgeFilter(option)}
+              onClick={() => { setBudgetEvolutionAgeFilter(option); if (option !== "General") setBudgetEvolutionGenderFilter("Todos"); }}
               className={`px-4 py-2 text-sm font-medium rounded-md transition ${
                 budgetEvolutionAgeFilter === option
                   ? "bg-white text-gray-900 shadow-sm"
@@ -783,6 +842,9 @@ export default function SurveyResultsPage() {
             </button>
           ))}
         </div>
+
+        {/* Gender Filter */}
+        {renderGenderFilter(budgetEvolutionGenderFilter, (v) => { setBudgetEvolutionGenderFilter(v); if (v !== "Todos") setBudgetEvolutionAgeFilter("General"); })}
 
         {/* Line Chart */}
         {!hasData ? (
@@ -903,10 +965,15 @@ export default function SurveyResultsPage() {
 
     const months = evolutionData.months;
 
-    // Obtener proyectos según filtro de edad
-    const rawProjects = projectsEvolutionAgeFilter === "General"
-      ? evolutionData.single_choice.projects
-      : evolutionData.by_age[projectsEvolutionAgeFilter]?.single_choice?.projects || [];
+    // Obtener proyectos según filtro de edad o género
+    let rawProjects;
+    if (projectsEvolutionGenderFilter !== "Todos") {
+      rawProjects = evolutionData.by_gender?.[projectsEvolutionGenderFilter]?.single_choice?.projects || [];
+    } else if (projectsEvolutionAgeFilter !== "General") {
+      rawProjects = evolutionData.by_age[projectsEvolutionAgeFilter]?.single_choice?.projects || [];
+    } else {
+      rawProjects = evolutionData.single_choice.projects;
+    }
 
     // Asignar colores a los proyectos
     const projectColors = ["#3B82F6", "#10B981", "#8B5CF6", "#F59E0B", "#EF4444"];
@@ -957,11 +1024,11 @@ export default function SurveyResultsPage() {
         </div>
 
         {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
           {ageFilterOptions.map((option) => (
             <button
               key={option}
-              onClick={() => setProjectsEvolutionAgeFilter(option)}
+              onClick={() => { setProjectsEvolutionAgeFilter(option); if (option !== "General") setProjectsEvolutionGenderFilter("Todos"); }}
               className={`px-4 py-2 text-sm font-medium rounded-md transition ${
                 projectsEvolutionAgeFilter === option
                   ? "bg-white text-gray-900 shadow-sm"
@@ -973,10 +1040,13 @@ export default function SurveyResultsPage() {
           ))}
         </div>
 
+        {/* Gender Filter */}
+        {renderGenderFilter(projectsEvolutionGenderFilter, (v) => { setProjectsEvolutionGenderFilter(v); if (v !== "Todos") setProjectsEvolutionAgeFilter("General"); })}
+
         {/* Line Chart */}
         {!hasData ? (
           <div className="text-center text-gray-500 py-12">
-            No hay datos para este grupo de edad
+            No hay datos para este filtro
           </div>
         ) : (
           <>
@@ -1095,10 +1165,15 @@ export default function SurveyResultsPage() {
 
     const months = evolutionData.months;
 
-    // Obtener datos según filtro de edad
-    const ratingData = ratingEvolutionAgeFilter === "General"
-      ? evolutionData.rating.data
-      : evolutionData.by_age[ratingEvolutionAgeFilter]?.rating?.data || [];
+    // Obtener datos según filtro de edad o género
+    let ratingData;
+    if (ratingEvolutionGenderFilter !== "Todos") {
+      ratingData = evolutionData.by_gender?.[ratingEvolutionGenderFilter]?.rating?.data || [];
+    } else if (ratingEvolutionAgeFilter !== "General") {
+      ratingData = evolutionData.by_age[ratingEvolutionAgeFilter]?.rating?.data || [];
+    } else {
+      ratingData = evolutionData.rating.data;
+    }
 
     const hasData = months.length > 0 && ratingData.length > 0 && ratingData.some(v => v > 0);
 
@@ -1167,11 +1242,11 @@ export default function SurveyResultsPage() {
         <p className="text-sm text-gray-500 mb-4">Calificación promedio mensual</p>
 
         {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
           {ageFilterOptions.map((option) => (
             <button
               key={option}
-              onClick={() => setRatingEvolutionAgeFilter(option)}
+              onClick={() => { setRatingEvolutionAgeFilter(option); if (option !== "General") setRatingEvolutionGenderFilter("Todos"); }}
               className={`px-4 py-2 text-sm font-medium rounded-md transition ${
                 ratingEvolutionAgeFilter === option
                   ? "bg-white text-gray-900 shadow-sm"
@@ -1183,9 +1258,12 @@ export default function SurveyResultsPage() {
           ))}
         </div>
 
+        {/* Gender Filter */}
+        {renderGenderFilter(ratingEvolutionGenderFilter, (v) => { setRatingEvolutionGenderFilter(v); if (v !== "Todos") setRatingEvolutionAgeFilter("General"); })}
+
         {!hasData ? (
           <div className="text-center text-gray-500 py-12">
-            No hay datos para este grupo de edad
+            No hay datos para este filtro
           </div>
         ) : (
           <>
@@ -1646,7 +1724,12 @@ export default function SurveyResultsPage() {
     if (!neighborhoodData) {
       return null;
     }
-    return <GeographicHeatMap neighborhoodData={neighborhoodData} />;
+    return (
+      <GeographicHeatMap
+        neighborhoodData={neighborhoodData}
+        questions={results?.questions_summary || []}
+      />
+    );
   };
 
   // Renderizar predicciones y proyecciones

@@ -255,9 +255,11 @@ class SurveyService:
                 "demographics": {
                     "by_age_group": {},
                     "by_city": {},
-                    "by_neighborhood": {}
+                    "by_neighborhood": {},
+                    "by_gender": {}
                 },
-                "questions_summary": []
+                "questions_summary": [],
+                "evolution_data": {}
             }
 
         # Calcular edad y agrupar
@@ -285,9 +287,12 @@ class SurveyService:
         age_groups: Dict[str, int] = {}
         cities: Dict[str, int] = {}
         neighborhoods: Dict[str, int] = {}
+        genders: Dict[str, int] = {}
 
-        # Mapeo usuario -> grupo de edad para filtrar respuestas
+        # Mapeos usuario -> grupo demográfico para filtrar respuestas
         user_age_groups: Dict[UUID, str] = {}
+        user_genders: Dict[UUID, str] = {}
+        user_neighborhoods: Dict[UUID, str] = {}
 
         for response, user in responses:
             # Por grupo de edad
@@ -296,6 +301,11 @@ class SurveyService:
             age_groups[age_group] = age_groups.get(age_group, 0) + 1
             user_age_groups[user.id] = age_group
 
+            # Por género
+            gender = user.gender or "Sin especificar"
+            genders[gender] = genders.get(gender, 0) + 1
+            user_genders[user.id] = gender
+
             # Por ciudad
             city = user.city or "Sin especificar"
             cities[city] = cities.get(city, 0) + 1
@@ -303,6 +313,7 @@ class SurveyService:
             # Por barrio
             neighborhood = user.neighborhood or "Sin especificar"
             neighborhoods[neighborhood] = neighborhoods.get(neighborhood, 0) + 1
+            user_neighborhoods[user.id] = neighborhood
 
         # Obtener preguntas de la encuesta con sus opciones
         questions = db.query(Question).filter(
@@ -334,7 +345,9 @@ class SurveyService:
                 "question_type": question.question_type.value,
                 "total_answers": len(question_answers),
                 "results": {},
-                "results_by_age": {}
+                "results_by_age": {},
+                "results_by_gender": {},
+                "results_by_neighborhood": {}
             }
 
             if question.question_type == QuestionType.PERCENTAGE_DISTRIBUTION:
@@ -350,13 +363,17 @@ class SurveyService:
                 percentage_totals: Dict[str, float] = {}
                 percentage_counts: Dict[str, int] = {}
 
-                # También por grupo de edad
+                # También por grupo de edad, género y barrio
                 percentage_by_age: Dict[str, Dict[str, List[float]]] = {}
+                percentage_by_gender: Dict[str, Dict[str, List[float]]] = {}
+                percentage_by_neighborhood: Dict[str, Dict[str, List[float]]] = {}
 
                 for answer in question_answers:
                     if answer.percentage_data:
                         user_id = response_user_map.get(answer.response_id)
                         user_age = user_age_groups.get(user_id, "Sin especificar")
+                        user_gender = user_genders.get(user_id, "Sin especificar")
+                        user_neighborhood = user_neighborhoods.get(user_id, "Sin especificar")
 
                         for key, value in answer.percentage_data.items():
                             # Convertir UUID key a option_value
@@ -376,6 +393,20 @@ class SurveyService:
                             if option_key not in percentage_by_age[user_age]:
                                 percentage_by_age[user_age][option_key] = []
                             percentage_by_age[user_age][option_key].append(value)
+
+                            # Por género
+                            if user_gender not in percentage_by_gender:
+                                percentage_by_gender[user_gender] = {}
+                            if option_key not in percentage_by_gender[user_gender]:
+                                percentage_by_gender[user_gender][option_key] = []
+                            percentage_by_gender[user_gender][option_key].append(value)
+
+                            # Por barrio
+                            if user_neighborhood not in percentage_by_neighborhood:
+                                percentage_by_neighborhood[user_neighborhood] = {}
+                            if option_key not in percentage_by_neighborhood[user_neighborhood]:
+                                percentage_by_neighborhood[user_neighborhood][option_key] = []
+                            percentage_by_neighborhood[user_neighborhood][option_key].append(value)
 
                 # Calcular promedios generales
                 results = {}
@@ -412,23 +443,73 @@ class SurveyService:
 
                 question_data["results_by_age"] = results_by_age
 
+                # Calcular promedios por género
+                results_by_gender = {}
+                for gender_grp, categories in percentage_by_gender.items():
+                    results_by_gender[gender_grp] = {}
+                    for key, values in categories.items():
+                        avg = sum(values) / len(values) if values else 0
+                        option_text = key
+                        for opt in question.options:
+                            if opt.option_value == key:
+                                option_text = opt.option_text
+                                break
+                        results_by_gender[gender_grp][key] = {
+                            "label": option_text,
+                            "percentage": round(avg, 1)
+                        }
+
+                question_data["results_by_gender"] = results_by_gender
+
+                # Calcular promedios por barrio
+                results_by_neighborhood = {}
+                for neighborhood_grp, categories in percentage_by_neighborhood.items():
+                    results_by_neighborhood[neighborhood_grp] = {}
+                    for key, values in categories.items():
+                        avg = sum(values) / len(values) if values else 0
+                        option_text = key
+                        for opt in question.options:
+                            if opt.option_value == key:
+                                option_text = opt.option_text
+                                break
+                        results_by_neighborhood[neighborhood_grp][key] = {
+                            "label": option_text,
+                            "percentage": round(avg, 1)
+                        }
+
+                question_data["results_by_neighborhood"] = results_by_neighborhood
+
             elif question.question_type == QuestionType.SINGLE_CHOICE:
                 # Contar votos por opción
                 vote_counts: Dict[str, int] = {}
                 votes_by_age: Dict[str, Dict[str, int]] = {}
+                votes_by_gender: Dict[str, Dict[str, int]] = {}
+                votes_by_neighborhood: Dict[str, Dict[str, int]] = {}
 
                 for answer in question_answers:
                     if answer.option_id:
                         opt_id = str(answer.option_id)
                         vote_counts[opt_id] = vote_counts.get(opt_id, 0) + 1
 
-                        # Por grupo de edad
                         user_id = response_user_map.get(answer.response_id)
                         user_age = user_age_groups.get(user_id, "Sin especificar")
+                        user_gender = user_genders.get(user_id, "Sin especificar")
+                        user_neighborhood = user_neighborhoods.get(user_id, "Sin especificar")
 
+                        # Por grupo de edad
                         if user_age not in votes_by_age:
                             votes_by_age[user_age] = {}
                         votes_by_age[user_age][opt_id] = votes_by_age[user_age].get(opt_id, 0) + 1
+
+                        # Por género
+                        if user_gender not in votes_by_gender:
+                            votes_by_gender[user_gender] = {}
+                        votes_by_gender[user_gender][opt_id] = votes_by_gender[user_gender].get(opt_id, 0) + 1
+
+                        # Por barrio
+                        if user_neighborhood not in votes_by_neighborhood:
+                            votes_by_neighborhood[user_neighborhood] = {}
+                        votes_by_neighborhood[user_neighborhood][opt_id] = votes_by_neighborhood[user_neighborhood].get(opt_id, 0) + 1
 
                 total_votes = sum(vote_counts.values())
 
@@ -465,6 +546,27 @@ class SurveyService:
 
                 question_data["results_by_age"] = results_by_age
 
+                # Resultados por género
+                def _calc_votes_by_group(votes_by_group, options_map):
+                    result = {}
+                    for grp, grp_votes in votes_by_group.items():
+                        grp_total = sum(grp_votes.values())
+                        result[grp] = {}
+                        for opt_id, count in grp_votes.items():
+                            opt_uuid = UUID(opt_id)
+                            if opt_uuid in options_map:
+                                opt_info = options_map[opt_uuid]
+                                percentage = (count / grp_total * 100) if grp_total > 0 else 0
+                                result[grp][opt_info["value"]] = {
+                                    "label": opt_info["text"],
+                                    "votes": count,
+                                    "percentage": round(percentage, 1)
+                                }
+                    return result
+
+                question_data["results_by_gender"] = _calc_votes_by_group(votes_by_gender, options)
+                question_data["results_by_neighborhood"] = _calc_votes_by_group(votes_by_neighborhood, options)
+
             elif question.question_type == QuestionType.RATING:
                 # Calcular promedio de calificaciones
                 ratings = [a.rating for a in question_answers if a.rating is not None]
@@ -481,36 +583,52 @@ class SurveyService:
                     "distribution": rating_dist
                 }
 
-                # Por grupo de edad
+                # Agrupar ratings por edad, género y barrio
                 ratings_by_age: Dict[str, List[int]] = {}
+                ratings_by_gender: Dict[str, List[int]] = {}
+                ratings_by_neighborhood: Dict[str, List[int]] = {}
                 for answer in question_answers:
                     if answer.rating is not None:
                         user_id = response_user_map.get(answer.response_id)
                         user_age = user_age_groups.get(user_id, "Sin especificar")
+                        user_gender = user_genders.get(user_id, "Sin especificar")
+                        user_neighborhood = user_neighborhoods.get(user_id, "Sin especificar")
+
                         if user_age not in ratings_by_age:
                             ratings_by_age[user_age] = []
                         ratings_by_age[user_age].append(answer.rating)
 
-                results_by_age = {}
-                for age_grp, age_ratings in ratings_by_age.items():
-                    avg = sum(age_ratings) / len(age_ratings) if age_ratings else 0
-                    # Distribución por grupo de edad
-                    age_rating_dist = {}
-                    for r in range(1, 6):
-                        age_rating_dist[str(r)] = sum(1 for rating in age_ratings if rating == r)
-                    results_by_age[age_grp] = {
-                        "average": round(avg, 2),
-                        "total_ratings": len(age_ratings),
-                        "distribution": age_rating_dist
-                    }
+                        if user_gender not in ratings_by_gender:
+                            ratings_by_gender[user_gender] = []
+                        ratings_by_gender[user_gender].append(answer.rating)
 
-                question_data["results_by_age"] = results_by_age
+                        if user_neighborhood not in ratings_by_neighborhood:
+                            ratings_by_neighborhood[user_neighborhood] = []
+                        ratings_by_neighborhood[user_neighborhood].append(answer.rating)
+
+                def _calc_rating_by_group(ratings_by_group):
+                    result = {}
+                    for grp, grp_ratings in ratings_by_group.items():
+                        avg = sum(grp_ratings) / len(grp_ratings) if grp_ratings else 0
+                        grp_rating_dist = {}
+                        for r in range(1, 6):
+                            grp_rating_dist[str(r)] = sum(1 for rating in grp_ratings if rating == r)
+                        result[grp] = {
+                            "average": round(avg, 2),
+                            "total_ratings": len(grp_ratings),
+                            "distribution": grp_rating_dist
+                        }
+                    return result
+
+                question_data["results_by_age"] = _calc_rating_by_group(ratings_by_age)
+                question_data["results_by_gender"] = _calc_rating_by_group(ratings_by_gender)
+                question_data["results_by_neighborhood"] = _calc_rating_by_group(ratings_by_neighborhood)
 
             questions_summary.append(question_data)
 
         # Calcular evolución histórica por mes
         evolution_data = SurveyService._calculate_evolution_data(
-            responses, all_answers, questions, user_age_groups, response_user_map
+            responses, all_answers, questions, user_age_groups, user_genders, response_user_map
         )
 
         return {
@@ -520,7 +638,8 @@ class SurveyService:
             "demographics": {
                 "by_age_group": age_groups,
                 "by_city": cities,
-                "by_neighborhood": neighborhoods
+                "by_neighborhood": neighborhoods,
+                "by_gender": genders
             },
             "questions_summary": questions_summary,
             "evolution_data": evolution_data
@@ -532,6 +651,7 @@ class SurveyService:
         all_answers: List[Answer],
         questions: List[Question],
         user_age_groups: Dict[UUID, str],
+        user_genders: Dict[UUID, str],
         response_user_map: Dict[UUID, UUID]
     ) -> Dict[str, Any]:
         """
@@ -547,8 +667,11 @@ class SurveyService:
         # Estructura: {month_key: {question_id: [answers]}}
         answers_by_month: Dict[str, Dict[UUID, List[Answer]]] = defaultdict(lambda: defaultdict(list))
 
-        # También por edad: {age_group: {month_key: {question_id: [answers]}}}
+        # También por edad y género: {group: {month_key: {question_id: [answers]}}}
         answers_by_age_month: Dict[str, Dict[str, Dict[UUID, List[Answer]]]] = defaultdict(
+            lambda: defaultdict(lambda: defaultdict(list))
+        )
+        answers_by_gender_month: Dict[str, Dict[str, Dict[UUID, List[Answer]]]] = defaultdict(
             lambda: defaultdict(lambda: defaultdict(list))
         )
 
@@ -562,10 +685,15 @@ class SurveyService:
                 month_key = response_date.strftime("%Y-%m")
                 answers_by_month[month_key][answer.question_id].append(answer)
 
-                # Por grupo de edad
                 user_id = response_user_map.get(answer.response_id)
+
+                # Por grupo de edad
                 age_group = user_age_groups.get(user_id, "Sin especificar")
                 answers_by_age_month[age_group][month_key][answer.question_id].append(answer)
+
+                # Por género
+                gender = user_genders.get(user_id, "Sin especificar")
+                answers_by_gender_month[gender][month_key][answer.question_id].append(answer)
 
         # Obtener los últimos 8 meses con datos (o los que haya)
         sorted_months = sorted(answers_by_month.keys())[-8:]
@@ -589,7 +717,8 @@ class SurveyService:
             "percentage_distribution": {},
             "single_choice": {},
             "rating": {},
-            "by_age": {}
+            "by_age": {},
+            "by_gender": {}
         }
 
         for question in questions:
@@ -685,94 +814,103 @@ class SurveyService:
                     "data": rating_data
                 }
 
-        # Calcular evolución por grupo de edad
+        # Helper para calcular evolución por grupo demográfico
+        def _calc_group_evolution(group_list, answers_by_group_month):
+            result = {}
+            for group in group_list:
+                group_evolution = {
+                    "percentage_distribution": {},
+                    "single_choice": {},
+                    "rating": {}
+                }
+
+                group_months_data = answers_by_group_month.get(group, {})
+
+                for question in questions:
+                    if question.question_type == QuestionType.PERCENTAGE_DISTRIBUTION:
+                        option_id_map = {str(opt.id): opt.option_value for opt in question.options}
+                        option_labels = {opt.option_value: opt.option_text for opt in question.options}
+                        option_data: Dict[str, List[float]] = {opt.option_value: [] for opt in question.options}
+
+                        for month_key in sorted_months:
+                            month_answers = group_months_data.get(month_key, {}).get(question.id, [])
+                            month_totals: Dict[str, List[float]] = defaultdict(list)
+
+                            for answer in month_answers:
+                                if answer.percentage_data:
+                                    for key, value in answer.percentage_data.items():
+                                        option_value = option_id_map.get(key, key)
+                                        month_totals[option_value].append(value)
+
+                            for opt_value in option_data.keys():
+                                values = month_totals.get(opt_value, [])
+                                avg = sum(values) / len(values) if values else 0
+                                option_data[opt_value].append(round(avg, 1))
+
+                        group_evolution["percentage_distribution"] = {
+                            "categories": [
+                                {
+                                    "name": option_labels.get(opt_value, opt_value),
+                                    "key": opt_value,
+                                    "data": data
+                                }
+                                for opt_value, data in option_data.items()
+                            ]
+                        }
+
+                    elif question.question_type == QuestionType.SINGLE_CHOICE:
+                        option_labels = {str(opt.id): opt.option_text for opt in question.options}
+                        option_values = {str(opt.id): opt.option_value for opt in question.options}
+                        option_data: Dict[str, List[float]] = {str(opt.id): [] for opt in question.options}
+
+                        for month_key in sorted_months:
+                            month_answers = group_months_data.get(month_key, {}).get(question.id, [])
+                            vote_counts: Dict[str, int] = defaultdict(int)
+
+                            for answer in month_answers:
+                                if answer.option_id:
+                                    vote_counts[str(answer.option_id)] += 1
+
+                            total_votes = sum(vote_counts.values())
+
+                            for opt_id in option_data.keys():
+                                count = vote_counts.get(opt_id, 0)
+                                percentage = (count / total_votes * 100) if total_votes > 0 else 0
+                                option_data[opt_id].append(round(percentage, 1))
+
+                        group_evolution["single_choice"] = {
+                            "projects": [
+                                {
+                                    "name": option_labels.get(opt_id, ""),
+                                    "key": option_values.get(opt_id, opt_id),
+                                    "data": data
+                                }
+                                for opt_id, data in option_data.items()
+                            ]
+                        }
+
+                    elif question.question_type == QuestionType.RATING:
+                        rating_data: List[float] = []
+
+                        for month_key in sorted_months:
+                            month_answers = group_months_data.get(month_key, {}).get(question.id, [])
+                            ratings = [a.rating for a in month_answers if a.rating is not None]
+                            avg = sum(ratings) / len(ratings) if ratings else 0
+                            rating_data.append(round(avg, 2))
+
+                        group_evolution["rating"] = {
+                            "data": rating_data
+                        }
+
+                result[group] = group_evolution
+            return result
+
+        # Evolución por grupo de edad
         age_groups_list = ["18-30", "31-45", "46-60", "60+"]
+        evolution_result["by_age"] = _calc_group_evolution(age_groups_list, answers_by_age_month)
 
-        for age_group in age_groups_list:
-            age_evolution = {
-                "percentage_distribution": {},
-                "single_choice": {},
-                "rating": {}
-            }
-
-            age_months_data = answers_by_age_month.get(age_group, {})
-
-            for question in questions:
-                if question.question_type == QuestionType.PERCENTAGE_DISTRIBUTION:
-                    option_id_map = {str(opt.id): opt.option_value for opt in question.options}
-                    option_labels = {opt.option_value: opt.option_text for opt in question.options}
-                    option_data: Dict[str, List[float]] = {opt.option_value: [] for opt in question.options}
-
-                    for month_key in sorted_months:
-                        month_answers = age_months_data.get(month_key, {}).get(question.id, [])
-                        month_totals: Dict[str, List[float]] = defaultdict(list)
-
-                        for answer in month_answers:
-                            if answer.percentage_data:
-                                for key, value in answer.percentage_data.items():
-                                    option_value = option_id_map.get(key, key)
-                                    month_totals[option_value].append(value)
-
-                        for opt_value in option_data.keys():
-                            values = month_totals.get(opt_value, [])
-                            avg = sum(values) / len(values) if values else 0
-                            option_data[opt_value].append(round(avg, 1))
-
-                    age_evolution["percentage_distribution"] = {
-                        "categories": [
-                            {
-                                "name": option_labels.get(opt_value, opt_value),
-                                "key": opt_value,
-                                "data": data
-                            }
-                            for opt_value, data in option_data.items()
-                        ]
-                    }
-
-                elif question.question_type == QuestionType.SINGLE_CHOICE:
-                    option_labels = {str(opt.id): opt.option_text for opt in question.options}
-                    option_values = {str(opt.id): opt.option_value for opt in question.options}
-                    option_data: Dict[str, List[float]] = {str(opt.id): [] for opt in question.options}
-
-                    for month_key in sorted_months:
-                        month_answers = age_months_data.get(month_key, {}).get(question.id, [])
-                        vote_counts: Dict[str, int] = defaultdict(int)
-
-                        for answer in month_answers:
-                            if answer.option_id:
-                                vote_counts[str(answer.option_id)] += 1
-
-                        total_votes = sum(vote_counts.values())
-
-                        for opt_id in option_data.keys():
-                            count = vote_counts.get(opt_id, 0)
-                            percentage = (count / total_votes * 100) if total_votes > 0 else 0
-                            option_data[opt_id].append(round(percentage, 1))
-
-                    age_evolution["single_choice"] = {
-                        "projects": [
-                            {
-                                "name": option_labels.get(opt_id, ""),
-                                "key": option_values.get(opt_id, opt_id),
-                                "data": data
-                            }
-                            for opt_id, data in option_data.items()
-                        ]
-                    }
-
-                elif question.question_type == QuestionType.RATING:
-                    rating_data: List[float] = []
-
-                    for month_key in sorted_months:
-                        month_answers = age_months_data.get(month_key, {}).get(question.id, [])
-                        ratings = [a.rating for a in month_answers if a.rating is not None]
-                        avg = sum(ratings) / len(ratings) if ratings else 0
-                        rating_data.append(round(avg, 2))
-
-                    age_evolution["rating"] = {
-                        "data": rating_data
-                    }
-
-            evolution_result["by_age"][age_group] = age_evolution
+        # Evolución por género
+        gender_list = [g for g in answers_by_gender_month.keys() if g != "Sin especificar"]
+        evolution_result["by_gender"] = _calc_group_evolution(gender_list, answers_by_gender_month)
 
         return evolution_result
