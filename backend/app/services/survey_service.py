@@ -248,19 +248,45 @@ class SurveyService:
 
         total_responses = len(responses)
 
-        # Calcular respuestas de este mes
+        # Calcular respuestas de este mes y mes anterior
         now = datetime.now()
         first_day_of_month = datetime(now.year, now.month, 1)
+        if now.month == 1:
+            first_day_prev_month = datetime(now.year - 1, 12, 1)
+        else:
+            first_day_prev_month = datetime(now.year, now.month - 1, 1)
+
         monthly_responses = sum(
             1 for response, _ in responses
             if response.started_at and response.started_at.replace(tzinfo=None) >= first_day_of_month
         )
+        prev_month_responses = sum(
+            1 for response, _ in responses
+            if response.started_at
+            and response.started_at.replace(tzinfo=None) >= first_day_prev_month
+            and response.started_at.replace(tzinfo=None) < first_day_of_month
+        )
+
+        # Calcular % de cambio vs mes anterior
+        if prev_month_responses > 0:
+            monthly_change = round(((monthly_responses - prev_month_responses) / prev_month_responses) * 100)
+        else:
+            monthly_change = 100 if monthly_responses > 0 else 0
+
+        # Crecimiento del total: respuestas nuevas este mes como % del total anterior
+        total_at_start_of_month = total_responses - monthly_responses
+        if total_at_start_of_month > 0:
+            total_change = round((monthly_responses / total_at_start_of_month) * 100)
+        else:
+            total_change = 100 if total_responses > 0 else 0
 
         if total_responses == 0:
             return {
                 "survey_id": str(survey_id),
                 "total_responses": 0,
                 "monthly_responses": 0,
+                "monthly_change": 0,
+                "total_change": 0,
                 "demographics": {
                     "by_age_group": {},
                     "by_city": {},
@@ -356,6 +382,7 @@ class SurveyService:
                 "results": {},
                 "results_by_age": {},
                 "results_by_gender": {},
+                "results_by_age_and_gender": {},
                 "results_by_neighborhood": {}
             }
 
@@ -372,9 +399,10 @@ class SurveyService:
                 percentage_totals: Dict[str, float] = {}
                 percentage_counts: Dict[str, int] = {}
 
-                # También por grupo de edad, género y barrio
+                # También por grupo de edad, género, cruce edad+género y barrio
                 percentage_by_age: Dict[str, Dict[str, List[float]]] = {}
                 percentage_by_gender: Dict[str, Dict[str, List[float]]] = {}
+                percentage_by_age_and_gender: Dict[str, Dict[str, List[float]]] = {}
                 percentage_by_neighborhood: Dict[str, Dict[str, List[float]]] = {}
 
                 for answer in question_answers:
@@ -409,6 +437,14 @@ class SurveyService:
                             if option_key not in percentage_by_gender[user_gender]:
                                 percentage_by_gender[user_gender][option_key] = []
                             percentage_by_gender[user_gender][option_key].append(value)
+
+                            # Por cruce edad+género
+                            age_gender_key = f"{user_age}|{user_gender}"
+                            if age_gender_key not in percentage_by_age_and_gender:
+                                percentage_by_age_and_gender[age_gender_key] = {}
+                            if option_key not in percentage_by_age_and_gender[age_gender_key]:
+                                percentage_by_age_and_gender[age_gender_key][option_key] = []
+                            percentage_by_age_and_gender[age_gender_key][option_key].append(value)
 
                             # Por barrio
                             if user_neighborhood not in percentage_by_neighborhood:
@@ -470,6 +506,24 @@ class SurveyService:
 
                 question_data["results_by_gender"] = results_by_gender
 
+                # Calcular promedios por cruce edad+género
+                results_by_age_gender = {}
+                for ag_key, categories in percentage_by_age_and_gender.items():
+                    results_by_age_gender[ag_key] = {}
+                    for key, values in categories.items():
+                        avg = sum(values) / len(values) if values else 0
+                        option_text = key
+                        for opt in question.options:
+                            if opt.option_value == key:
+                                option_text = opt.option_text
+                                break
+                        results_by_age_gender[ag_key][key] = {
+                            "label": option_text,
+                            "percentage": round(avg, 1)
+                        }
+
+                question_data["results_by_age_and_gender"] = results_by_age_gender
+
                 # Calcular promedios por barrio
                 results_by_neighborhood = {}
                 for neighborhood_grp, categories in percentage_by_neighborhood.items():
@@ -493,6 +547,7 @@ class SurveyService:
                 vote_counts: Dict[str, int] = {}
                 votes_by_age: Dict[str, Dict[str, int]] = {}
                 votes_by_gender: Dict[str, Dict[str, int]] = {}
+                votes_by_age_and_gender: Dict[str, Dict[str, int]] = {}
                 votes_by_neighborhood: Dict[str, Dict[str, int]] = {}
 
                 for answer in question_answers:
@@ -514,6 +569,12 @@ class SurveyService:
                         if user_gender not in votes_by_gender:
                             votes_by_gender[user_gender] = {}
                         votes_by_gender[user_gender][opt_id] = votes_by_gender[user_gender].get(opt_id, 0) + 1
+
+                        # Por cruce edad+género
+                        age_gender_key = f"{user_age}|{user_gender}"
+                        if age_gender_key not in votes_by_age_and_gender:
+                            votes_by_age_and_gender[age_gender_key] = {}
+                        votes_by_age_and_gender[age_gender_key][opt_id] = votes_by_age_and_gender[age_gender_key].get(opt_id, 0) + 1
 
                         # Por barrio
                         if user_neighborhood not in votes_by_neighborhood:
@@ -574,6 +635,7 @@ class SurveyService:
                     return result
 
                 question_data["results_by_gender"] = _calc_votes_by_group(votes_by_gender, options)
+                question_data["results_by_age_and_gender"] = _calc_votes_by_group(votes_by_age_and_gender, options)
                 question_data["results_by_neighborhood"] = _calc_votes_by_group(votes_by_neighborhood, options)
 
             elif question.question_type == QuestionType.RATING:
@@ -595,6 +657,7 @@ class SurveyService:
                 # Agrupar ratings por edad, género y barrio
                 ratings_by_age: Dict[str, List[int]] = {}
                 ratings_by_gender: Dict[str, List[int]] = {}
+                ratings_by_age_and_gender: Dict[str, List[int]] = {}
                 ratings_by_neighborhood: Dict[str, List[int]] = {}
                 for answer in question_answers:
                     if answer.rating is not None:
@@ -610,6 +673,11 @@ class SurveyService:
                         if user_gender not in ratings_by_gender:
                             ratings_by_gender[user_gender] = []
                         ratings_by_gender[user_gender].append(answer.rating)
+
+                        age_gender_key = f"{user_age}|{user_gender}"
+                        if age_gender_key not in ratings_by_age_and_gender:
+                            ratings_by_age_and_gender[age_gender_key] = []
+                        ratings_by_age_and_gender[age_gender_key].append(answer.rating)
 
                         if user_neighborhood not in ratings_by_neighborhood:
                             ratings_by_neighborhood[user_neighborhood] = []
@@ -631,6 +699,7 @@ class SurveyService:
 
                 question_data["results_by_age"] = _calc_rating_by_group(ratings_by_age)
                 question_data["results_by_gender"] = _calc_rating_by_group(ratings_by_gender)
+                question_data["results_by_age_and_gender"] = _calc_rating_by_group(ratings_by_age_and_gender)
                 question_data["results_by_neighborhood"] = _calc_rating_by_group(ratings_by_neighborhood)
 
             questions_summary.append(question_data)
@@ -644,6 +713,8 @@ class SurveyService:
             "survey_id": str(survey_id),
             "total_responses": total_responses,
             "monthly_responses": monthly_responses,
+            "monthly_change": monthly_change,
+            "total_change": total_change,
             "demographics": {
                 "by_age_group": age_groups,
                 "by_city": cities,
@@ -683,6 +754,9 @@ class SurveyService:
         answers_by_gender_month: Dict[str, Dict[str, Dict[UUID, List[Answer]]]] = defaultdict(
             lambda: defaultdict(lambda: defaultdict(list))
         )
+        answers_by_age_and_gender_month: Dict[str, Dict[str, Dict[UUID, List[Answer]]]] = defaultdict(
+            lambda: defaultdict(lambda: defaultdict(list))
+        )
 
         for answer in all_answers:
             response_date = response_dates.get(answer.response_id)
@@ -703,6 +777,10 @@ class SurveyService:
                 # Por género
                 gender = user_genders.get(user_id, "Sin especificar")
                 answers_by_gender_month[gender][month_key][answer.question_id].append(answer)
+
+                # Por cruce edad+género
+                age_gender_key = f"{age_group}|{gender}"
+                answers_by_age_and_gender_month[age_gender_key][month_key][answer.question_id].append(answer)
 
         # Obtener los últimos 8 meses con datos (o los que haya)
         sorted_months = sorted(answers_by_month.keys())[-8:]
@@ -727,7 +805,8 @@ class SurveyService:
             "single_choice": {},
             "rating": {},
             "by_age": {},
-            "by_gender": {}
+            "by_gender": {},
+            "by_age_and_gender": {}
         }
 
         for question in questions:
@@ -921,5 +1000,9 @@ class SurveyService:
         # Evolución por género
         gender_list = [g for g in answers_by_gender_month.keys() if g != "Sin especificar"]
         evolution_result["by_gender"] = _calc_group_evolution(gender_list, answers_by_gender_month)
+
+        # Evolución por cruce edad+género
+        age_gender_list = [k for k in answers_by_age_and_gender_month.keys() if "Sin especificar" not in k]
+        evolution_result["by_age_and_gender"] = _calc_group_evolution(age_gender_list, answers_by_age_and_gender_month)
 
         return evolution_result

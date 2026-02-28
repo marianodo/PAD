@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { API_URL } from "@/lib/config";
 import dynamic from "next/dynamic";
+import ChatBot from "@/components/ChatBot";
 
 // Importar el componente del mapa dinámicamente para evitar problemas de SSR
 const GeographicHeatMap = dynamic(() => import("@/components/GeographicHeatMap"), {
@@ -49,6 +50,7 @@ interface QuestionSummary {
   results: Record<string, PercentageResult | SingleChoiceResult>;
   results_by_age: Record<string, Record<string, PercentageResult | SingleChoiceResult>>;
   results_by_gender: Record<string, Record<string, PercentageResult | SingleChoiceResult>>;
+  results_by_age_and_gender: Record<string, Record<string, PercentageResult | SingleChoiceResult>>;
   results_by_neighborhood: Record<string, Record<string, PercentageResult | SingleChoiceResult>>;
 }
 
@@ -101,7 +103,7 @@ interface DashboardMetrics {
   totalResponsesChange: number;
   monthlyResponses: number;
   monthlyResponsesChange: number;
-  uniqueCities: number;
+  uniqueNeighborhoods: number;
 }
 
 export default function SurveyResultsPage() {
@@ -115,7 +117,7 @@ export default function SurveyResultsPage() {
     totalResponsesChange: 0,
     monthlyResponses: 0,
     monthlyResponsesChange: 0,
-    uniqueCities: 0,
+    uniqueNeighborhoods: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -147,7 +149,7 @@ export default function SurveyResultsPage() {
   const [loadingAiPredictions, setLoadingAiPredictions] = useState(false);
 
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
-  const genderFilterOptions = ["Todos", "Masculino", "Femenino", "Otro"];
+  const genderFilterOptions = ["Todos", "Masculino", "Femenino"];
 
   const fetchResults = async (dateFrom?: string, dateTo?: string) => {
     try {
@@ -174,16 +176,16 @@ export default function SurveyResultsPage() {
       setResults(data);
 
       // Calcular métricas dinámicamente
-      const uniqueCities = Object.keys(data.demographics.by_city).filter(
-        city => city !== "Sin especificar"
+      const uniqueNeighborhoods = Object.keys(data.demographics.by_neighborhood).filter(
+        n => n !== "Sin especificar"
       ).length;
 
       setMetrics({
         totalResponses: data.total_responses,
-        totalResponsesChange: 0,
+        totalResponsesChange: data.total_change ?? 0,
         monthlyResponses: data.monthly_responses,
-        monthlyResponsesChange: 0,
-        uniqueCities: uniqueCities,
+        monthlyResponsesChange: data.monthly_change ?? 0,
+        uniqueNeighborhoods: uniqueNeighborhoods,
       });
 
       setLoading(false);
@@ -295,8 +297,12 @@ export default function SurveyResultsPage() {
 
   // Helper: obtener datos filtrados por edad y/o género
   const getFilteredData = (question: QuestionSummary, ageFilter: string, genderFilter: string) => {
+    if (ageFilter !== "General" && genderFilter !== "Todos") {
+      const key = `${ageFilter}|${genderFilter.toLowerCase()}`;
+      return question.results_by_age_and_gender?.[key] || {};
+    }
     if (genderFilter !== "Todos") {
-      return question.results_by_gender?.[genderFilter] || {};
+      return question.results_by_gender?.[genderFilter.toLowerCase()] || {};
     }
     if (ageFilter !== "General") {
       return question.results_by_age?.[ageFilter] || {};
@@ -313,7 +319,7 @@ export default function SurveyResultsPage() {
       {ageFilterOptions.map((option) => (
         <button
           key={option}
-          onClick={() => { setAgeFilter(option); if (option !== "General") setGenderFilter("Todos"); }}
+          onClick={() => setAgeFilter(option)}
           className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
             ageFilter === option
               ? "bg-white text-gray-900 shadow-sm"
@@ -327,7 +333,7 @@ export default function SurveyResultsPage() {
       {genderFilterOptions.map((option) => (
         <button
           key={option}
-          onClick={() => { setGenderFilter(option); if (option !== "Todos") setAgeFilter("General"); }}
+          onClick={() => setGenderFilter(option)}
           className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
             genderFilter === option
               ? "bg-white text-gray-900 shadow-sm"
@@ -611,8 +617,11 @@ export default function SurveyResultsPage() {
 
     // Determinar qué datos mostrar según filtros
     let filteredRating: RatingResult | undefined;
-    if (ratingGenderFilter !== "Todos") {
-      filteredRating = question.results_by_gender?.[ratingGenderFilter] as unknown as RatingResult | undefined;
+    if (ratingAgeFilter !== "General" && ratingGenderFilter !== "Todos") {
+      const key = `${ratingAgeFilter}|${ratingGenderFilter.toLowerCase()}`;
+      filteredRating = question.results_by_age_and_gender?.[key] as unknown as RatingResult | undefined;
+    } else if (ratingGenderFilter !== "Todos") {
+      filteredRating = question.results_by_gender?.[ratingGenderFilter.toLowerCase()] as unknown as RatingResult | undefined;
     } else if (ratingAgeFilter !== "General") {
       filteredRating = question.results_by_age[ratingAgeFilter] as unknown as RatingResult | undefined;
     }
@@ -751,10 +760,13 @@ export default function SurveyResultsPage() {
 
     const months = evolutionData.months;
 
-    // Obtener categorías según filtro de edad o género
+    // Obtener categorías según filtro de edad y/o género
     let rawCategories;
-    if (budgetEvolutionGenderFilter !== "Todos") {
-      rawCategories = evolutionData.by_gender?.[budgetEvolutionGenderFilter]?.percentage_distribution?.categories || [];
+    if (budgetEvolutionAgeFilter !== "General" && budgetEvolutionGenderFilter !== "Todos") {
+      const key = `${budgetEvolutionAgeFilter}|${budgetEvolutionGenderFilter.toLowerCase()}`;
+      rawCategories = evolutionData.by_age_and_gender?.[key]?.percentage_distribution?.categories || [];
+    } else if (budgetEvolutionGenderFilter !== "Todos") {
+      rawCategories = evolutionData.by_gender?.[budgetEvolutionGenderFilter.toLowerCase()]?.percentage_distribution?.categories || [];
     } else if (budgetEvolutionAgeFilter !== "General") {
       rawCategories = evolutionData.by_age[budgetEvolutionAgeFilter]?.percentage_distribution?.categories || [];
     } else {
@@ -933,10 +945,13 @@ export default function SurveyResultsPage() {
 
     const months = evolutionData.months;
 
-    // Obtener proyectos según filtro de edad o género
+    // Obtener proyectos según filtro de edad y/o género
     let rawProjects;
-    if (projectsEvolutionGenderFilter !== "Todos") {
-      rawProjects = evolutionData.by_gender?.[projectsEvolutionGenderFilter]?.single_choice?.projects || [];
+    if (projectsEvolutionAgeFilter !== "General" && projectsEvolutionGenderFilter !== "Todos") {
+      const key = `${projectsEvolutionAgeFilter}|${projectsEvolutionGenderFilter.toLowerCase()}`;
+      rawProjects = evolutionData.by_age_and_gender?.[key]?.single_choice?.projects || [];
+    } else if (projectsEvolutionGenderFilter !== "Todos") {
+      rawProjects = evolutionData.by_gender?.[projectsEvolutionGenderFilter.toLowerCase()]?.single_choice?.projects || [];
     } else if (projectsEvolutionAgeFilter !== "General") {
       rawProjects = evolutionData.by_age[projectsEvolutionAgeFilter]?.single_choice?.projects || [];
     } else {
@@ -1116,10 +1131,13 @@ export default function SurveyResultsPage() {
 
     const months = evolutionData.months;
 
-    // Obtener datos según filtro de edad o género
+    // Obtener datos según filtro de edad y/o género
     let ratingData;
-    if (ratingEvolutionGenderFilter !== "Todos") {
-      ratingData = evolutionData.by_gender?.[ratingEvolutionGenderFilter]?.rating?.data || [];
+    if (ratingEvolutionAgeFilter !== "General" && ratingEvolutionGenderFilter !== "Todos") {
+      const key = `${ratingEvolutionAgeFilter}|${ratingEvolutionGenderFilter.toLowerCase()}`;
+      ratingData = evolutionData.by_age_and_gender?.[key]?.rating?.data || [];
+    } else if (ratingEvolutionGenderFilter !== "Todos") {
+      ratingData = evolutionData.by_gender?.[ratingEvolutionGenderFilter.toLowerCase()]?.rating?.data || [];
     } else if (ratingEvolutionAgeFilter !== "General") {
       ratingData = evolutionData.by_age[ratingEvolutionAgeFilter]?.rating?.data || [];
     } else {
@@ -1573,6 +1591,14 @@ export default function SurveyResultsPage() {
     }
 
     const entries = Object.entries(ageData).filter(([key]) => key !== "Sin especificar");
+    if (entries.length === 0) {
+      return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Desglose por Edad</h3>
+          <p className="text-gray-500 text-sm">No hay datos demográficos disponibles aún.</p>
+        </div>
+      );
+    }
     const total = entries.reduce((sum, [, value]) => sum + value, 0);
 
     // Ordenar por edad
@@ -2657,8 +2683,8 @@ export default function SurveyResultsPage() {
                 <p className="text-4xl font-bold text-gray-900 mb-3">
                   {metrics.totalResponses.toLocaleString()}
                 </p>
-                <p className="text-sm text-green-600 font-medium">
-                  +{metrics.totalResponsesChange}% vs. mes anterior
+                <p className={`text-sm font-medium ${metrics.totalResponsesChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  {metrics.totalResponsesChange >= 0 ? '+' : ''}{metrics.totalResponsesChange}% vs. mes anterior
                 </p>
               </div>
               <div className="bg-blue-100 rounded-full p-3">
@@ -2689,8 +2715,8 @@ export default function SurveyResultsPage() {
                 <p className="text-4xl font-bold text-gray-900 mb-3">
                   {metrics.monthlyResponses.toLocaleString()}
                 </p>
-                <p className="text-sm text-green-600 font-medium">
-                  +{metrics.monthlyResponsesChange}% vs. mes anterior
+                <p className={`text-sm font-medium ${metrics.monthlyResponsesChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  {metrics.monthlyResponsesChange >= 0 ? '+' : ''}{metrics.monthlyResponsesChange}% vs. mes anterior
                 </p>
               </div>
               <div className="bg-purple-100 rounded-full p-3">
@@ -2711,15 +2737,15 @@ export default function SurveyResultsPage() {
             </div>
           </div>
 
-          {/* Card 3: Ciudades Participantes */}
+          {/* Card 3: Barrios Participantes */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-sm text-gray-600 mb-2">
-                  Ciudades Participantes
+                  Barrios Participantes
                 </p>
                 <p className="text-4xl font-bold text-gray-900 mb-3">
-                  {metrics.uniqueCities}
+                  {metrics.uniqueNeighborhoods}
                 </p>
                 <p className="text-sm text-gray-500 font-medium">
                   Cobertura geográfica
@@ -2863,6 +2889,9 @@ export default function SurveyResultsPage() {
           </div>
         )}
       </div>
+
+      {/* Chatbot - visible on both tabs */}
+      <ChatBot surveyId={surveyId as string} />
     </div>
   );
 }
