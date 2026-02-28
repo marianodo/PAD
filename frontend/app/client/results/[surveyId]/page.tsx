@@ -87,6 +87,11 @@ interface EvolutionData {
     single_choice: { projects: EvolutionCategory[] };
     rating: { data: number[] };
   }>;
+  by_age_and_gender: Record<string, {
+    percentage_distribution: { categories: EvolutionCategory[] };
+    single_choice: { projects: EvolutionCategory[] };
+    rating: { data: number[] };
+  }>;
 }
 
 interface SurveyResults {
