@@ -171,7 +171,7 @@ Responde SOLO con el JSON, sin texto adicional:
         client = Anthropic(api_key=api_key)
 
         message = client.messages.create(
-            model="claude-3-haiku-20240307",  # Usando Haiku porque es el único disponible con esta API key
+            model="claude-sonnet-4-20250514",  # Usando Haiku porque es el único disponible con esta API key
             max_tokens=2500,
             temperature=0.3,  # Más determinístico para análisis
             messages=[{
@@ -258,7 +258,7 @@ Responde SOLO con el JSON, sin texto adicional:
             })
 
         # 8. Guardar insights en cache (base de datos)
-        model_used = "claude-3-haiku-20240307"
+        model_used = "claude-sonnet-4-20250514"
         generated_at = datetime.utcnow()
 
         # Eliminar insights anteriores de esta encuesta
@@ -373,7 +373,7 @@ Responde SOLO con el JSON:
         client = Anthropic(api_key=api_key)
 
         message = client.messages.create(
-            model="claude-3-haiku-20240307",
+            model="claude-sonnet-4-20250514",
             max_tokens=1500,
             temperature=0.3,
             messages=[{
@@ -427,7 +427,7 @@ Responde SOLO con el JSON:
                 total_responses=total_responses,
                 insights=[],  # Vacío por ahora
                 predictions=predictions,
-                model="claude-3-haiku-20240307",
+                model="claude-sonnet-4-20250514",
                 generated_at=datetime.utcnow()
             )
             db.add(new_insight)
@@ -436,7 +436,7 @@ Responde SOLO con el JSON:
         return {
             "predictions": predictions,
             "generated_at": datetime.utcnow().isoformat(),
-            "model": "claude-3-haiku-20240307",
+            "model": "claude-sonnet-4-20250514",
             "total_responses_analyzed": total_responses
         }
 
