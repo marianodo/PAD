@@ -57,7 +57,12 @@ export function QuestionRenderer({
                 onChange={() => handleChange({ option_id: option.id })}
                 className="w-5 h-5 text-blue-600"
               />
-              <span className="ml-3 text-gray-800">{option.option_text}</span>
+              <div className="ml-3">
+                <span className="text-gray-800">{option.option_text}</span>
+                {option.description && (
+                  <p className="text-xs text-gray-400 mt-0.5">{option.description}</p>
+                )}
+              </div>
             </label>
           ))}
         </div>
@@ -76,7 +81,12 @@ export function QuestionRenderer({
                 value={option.id}
                 className="w-5 h-5 text-blue-600 rounded"
               />
-              <span className="ml-3 text-gray-800">{option.option_text}</span>
+              <div className="ml-3">
+                <span className="text-gray-800">{option.option_text}</span>
+                {option.description && (
+                  <p className="text-xs text-gray-400 mt-0.5">{option.description}</p>
+                )}
+              </div>
             </label>
           ))}
         </div>
@@ -184,10 +194,15 @@ function PercentageDistribution({
       {question.options.map((option) => (
         <div key={option.id} className="space-y-3">
           <div className="flex justify-between items-center">
-            <label className="text-sm font-medium text-gray-700">
-              {option.option_text}
-            </label>
-            <span className="text-lg font-semibold text-blue-600">
+            <div>
+              <label className="text-sm font-medium text-gray-700">
+                {option.option_text}
+              </label>
+              {option.description && (
+                <p className="text-xs text-gray-400 mt-0.5">{option.description}</p>
+              )}
+            </div>
+            <span className="text-lg font-semibold text-blue-600 shrink-0 ml-4">
               {percentages[option.id] || 0}%
             </span>
           </div>

@@ -66,6 +66,7 @@ class QuestionOption(Base):
     question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id", ondelete="CASCADE"), nullable=False)
     option_text = Column(Text, nullable=False)
     option_value = Column(String(255))  # Valor interno (ej: "infraestructura")
+    description = Column(Text, nullable=True)  # Descripción corta de la opción
     order_index = Column(Integer)
 
     # Relationships

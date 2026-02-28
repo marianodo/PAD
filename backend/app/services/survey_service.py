@@ -87,6 +87,7 @@ class SurveyService:
                     question_id=question.id,
                     option_text=option_data.option_text,
                     option_value=option_data.option_value,
+                    description=option_data.description,
                     order_index=option_data.order_index,
                 )
                 db.add(option)

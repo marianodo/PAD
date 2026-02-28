@@ -10,6 +10,7 @@ class QuestionOptionResponse(BaseModel):
     id: UUID
     option_text: str
     option_value: Optional[str] = None
+    description: Optional[str] = None
     order_index: Optional[int] = None
 
     class Config:
@@ -66,6 +67,7 @@ class SurveyResponse(BaseModel):
 class QuestionOptionCreate(BaseModel):
     option_text: str
     option_value: Optional[str] = None
+    description: Optional[str] = None
     order_index: Optional[int] = None
 
 

@@ -132,7 +132,8 @@ export default function ClientDashboard() {
 
   const totalResponses = surveys.reduce((acc, s) => acc + (s.total_responses || 0), 0);
   const activeSurveys = surveys.filter((s) => s.is_active).length;
-  const responseRate = surveys.length > 0 ? Math.round((totalResponses / (surveys.length * 100)) * 100) : 0;
+  const inactiveSurveys = surveys.length - activeSurveys;
+  const avgResponses = surveys.length > 0 ? Math.round(totalResponses / surveys.length) : 0;
 
   const filteredSurveys = surveys.filter(
     (s) =>
@@ -323,7 +324,7 @@ export default function ClientDashboard() {
           {/* Total Encuestas */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-medium text-gray-500">Total Encuestas</p>
+              <p className="text-sm font-medium text-gray-500">Total Consultas</p>
               <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -334,13 +335,13 @@ export default function ClientDashboard() {
               </div>
             </div>
             <p className="text-3xl font-bold text-gray-900">{surveys.length}</p>
-            <p className="text-xs text-gray-400 mt-1">+1 este mes</p>
+            <p className="text-xs text-gray-400 mt-1">{activeSurveys} activa{activeSurveys !== 1 ? 's' : ''}, {inactiveSurveys} inactiva{inactiveSurveys !== 1 ? 's' : ''}</p>
           </div>
 
           {/* Encuestas Activas */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-medium text-gray-500">Encuestas Activas</p>
+              <p className="text-sm font-medium text-gray-500">Consultas Activas</p>
               <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -349,7 +350,7 @@ export default function ClientDashboard() {
               </div>
             </div>
             <p className="text-3xl font-bold text-gray-900">{activeSurveys}</p>
-            <p className="text-xs text-gray-400 mt-1">Todas en curso</p>
+            <p className="text-xs text-gray-400 mt-1">{activeSurveys === surveys.length ? 'Todas en curso' : `${activeSurveys} de ${surveys.length} en curso`}</p>
           </div>
 
           {/* Total Respuestas */}
@@ -366,21 +367,21 @@ export default function ClientDashboard() {
               </div>
             </div>
             <p className="text-3xl font-bold text-gray-900">{totalResponses.toLocaleString("es-AR")}</p>
-            <p className="text-xs text-gray-400 mt-1">+142 esta semana</p>
+            <p className="text-xs text-gray-400 mt-1">Entre todas las consultas</p>
           </div>
 
           {/* Tasa de Respuesta */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-medium text-gray-500">Tasa de Respuesta</p>
+              <p className="text-sm font-medium text-gray-500">Promedio por Consulta</p>
               <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{responseRate}%</p>
-            <p className="text-xs text-gray-400 mt-1">+5% vs mes anterior</p>
+            <p className="text-3xl font-bold text-gray-900">{avgResponses.toLocaleString("es-AR")}</p>
+            <p className="text-xs text-gray-400 mt-1">Respuestas promedio</p>
           </div>
         </div>
 
@@ -389,9 +390,9 @@ export default function ClientDashboard() {
           {/* Table header */}
           <div className="p-6 flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Mis Encuestas</h2>
+              <h2 className="text-xl font-bold text-gray-900">Mis Consultas</h2>
               <p className="text-sm text-gray-500 mt-0.5">
-                Visualiza y gestiona las encuestas de tu organizacion
+                Visualiza y gestiona las consultas de tu organización
               </p>
             </div>
             <div className="relative">

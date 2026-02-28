@@ -144,10 +144,10 @@ export default function AdminLoginPage() {
 
           {/* Hero text */}
           <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight mb-5">
-            Analizá la voz de tus ciudadanos en tiempo real
+            Analizá las preferencias ciudadanas en tiempo real
           </h1>
           <p className="text-blue-200/60 text-base leading-relaxed max-w-md mb-10">
-            Accedé al dashboard de tu municipio para visualizar resultados de consultas, tendencias y participación.
+            Accedé al Monitor de Participación para visualizar los resultados de las consultas y las tendencias, predicciones e insights detrás de los datos.
           </p>
 
           {/* Feature cards 2x2 */}
