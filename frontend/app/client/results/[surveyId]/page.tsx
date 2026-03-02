@@ -146,12 +146,18 @@ export default function SurveyResultsPage() {
   const [periodTo, setPeriodTo] = useState("");
   const [activePeriodLabel, setActivePeriodLabel] = useState("");
   const periodPickerRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<"datos" | "ai-insights">("datos");
+  const [activeTab, setActiveTab] = useState<"datos" | "ai-insights" | "reportes">("datos");
   const [aiInsights, setAiInsights] = useState<any[] | null>(null);
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
   const [aiInsightsError, setAiInsightsError] = useState("");
   const [aiPredictions, setAiPredictions] = useState<any[] | null>(null);
   const [loadingAiPredictions, setLoadingAiPredictions] = useState(false);
+
+  // Reportes/Segments state
+  const [segmentsData, setSegmentsData] = useState<any>(null);
+  const [loadingSegments, setLoadingSegments] = useState(false);
+  const [segmentThreshold, setSegmentThreshold] = useState(20);
+  const [expandedSegments, setExpandedSegments] = useState<Record<string, boolean>>({});
 
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
   const genderFilterOptions = ["Todos", "Masculino", "Femenino"];
@@ -247,6 +253,68 @@ export default function SurveyResultsPage() {
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showPeriodPicker]);
+
+  // Fetch segments when tab is active or threshold changes
+  const fetchSegments = async (threshold: number) => {
+    try {
+      setLoadingSegments(true);
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/segments?threshold=${threshold}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        setSegmentsData(data);
+      }
+    } catch (err) {
+      console.error("Error fetching segments:", err);
+    } finally {
+      setLoadingSegments(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "reportes" && !segmentsData) {
+      fetchSegments(segmentThreshold);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "reportes") {
+      const timer = setTimeout(() => fetchSegments(segmentThreshold), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [segmentThreshold]);
+
+  const handleExportXLSX = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/segments/export?threshold=${segmentThreshold}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `segmentos.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error("Error exporting XLSX:", err);
+    }
+  };
 
   if (loading) {
     return (
@@ -502,6 +570,48 @@ export default function SurveyResultsPage() {
             </div>
           </>
         )}
+      </div>
+    );
+  };
+
+  // Renderizar widget de resumen de "Otros"
+  const renderOtrosSummary = () => {
+    const question = getQuestionByType("percentage_distribution");
+    if (!question) return null;
+
+    const otrosSummary = (question as any).otros_summary as Array<{ text: string; count: number }> | undefined;
+    if (!otrosSummary || otrosSummary.length === 0) return null;
+
+    const totalOtros = otrosSummary.reduce((sum, item) => sum + item.count, 0);
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-gray-900">Otras Propuestas Ciudadanas</h3>
+          <p className="text-sm text-gray-500">{totalOtros} personas sugirieron áreas adicionales de inversión</p>
+        </div>
+
+        <div className="space-y-3">
+          {otrosSummary.slice(0, 10).map((item, index) => {
+            const pct = ((item.count / totalOtros) * 100).toFixed(0);
+            return (
+              <div key={index} className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium text-gray-700">{item.text}</span>
+                    <span className="text-sm text-gray-500">{item.count} mención{item.count !== 1 ? 'es' : ''}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };
@@ -2805,6 +2915,16 @@ export default function SurveyResultsPage() {
               >
                 🤖 AI Insights
               </button>
+              <button
+                onClick={() => setActiveTab("reportes")}
+                className={`${
+                  activeTab === "reportes"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              >
+                📋 Reportes
+              </button>
             </nav>
           </div>
         </div>
@@ -2817,6 +2937,9 @@ export default function SurveyResultsPage() {
               {renderBudgetPieChart()}
               {renderProjectsChart()}
             </div>
+
+            {/* Otras Propuestas Ciudadanas */}
+            {renderOtrosSummary()}
 
             {/* Rating Chart - Full width */}
             <div className="mb-8">
@@ -2867,6 +2990,180 @@ export default function SurveyResultsPage() {
             {/* Predictions and Projections Section */}
             {renderPredictionsSection()}
           </>
+        )}
+
+        {/* Tab Content: Reportes */}
+        {activeTab === "reportes" && (
+          <div>
+            {/* Header */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900">Segmentacion por Preferencias</h2>
+              <p className="text-gray-500 mt-1">
+                Clasificacion de votantes segun las areas donde asignaron mayor porcentaje de inversion.
+                Ideal para enviar reportes personalizados a cada segmento.
+              </p>
+            </div>
+
+            {/* Threshold Slider + Export */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex-1">
+                  <label className="text-sm font-medium text-gray-700 block mb-2">
+                    Umbral minimo: <span className="text-blue-600 font-bold text-lg">{segmentThreshold}%</span>
+                  </label>
+                  <p className="text-xs text-gray-400 mb-3">
+                    Una persona se incluye en un segmento si asigno al menos este porcentaje al area
+                  </p>
+                  <input
+                    type="range"
+                    min="1"
+                    max="100"
+                    value={segmentThreshold}
+                    onChange={(e) => setSegmentThreshold(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    style={{
+                      background: `linear-gradient(to right, #2563eb 0%, #2563eb ${segmentThreshold}%, #e5e7eb ${segmentThreshold}%, #e5e7eb 100%)`,
+                    }}
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>1%</span>
+                    <span>50%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+                <button
+                  onClick={handleExportXLSX}
+                  disabled={!segmentsData || segmentsData.segments.length === 0}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Exportar XLSX
+                </button>
+              </div>
+            </div>
+
+            {/* Loading */}
+            {loadingSegments && (
+              <div className="flex justify-center py-12">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+                <span className="ml-3 text-gray-500">Cargando segmentos...</span>
+              </div>
+            )}
+
+            {/* Summary */}
+            {segmentsData && !loadingSegments && (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                  <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+                    <p className="text-2xl font-bold text-blue-600">{segmentsData.segments.length}</p>
+                    <p className="text-xs text-gray-500">Segmentos</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+                    <p className="text-2xl font-bold text-gray-900">{segmentsData.total_respondents}</p>
+                    <p className="text-xs text-gray-500">Votantes totales</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+                    <p className="text-2xl font-bold text-green-600">
+                      {segmentsData.segments.reduce((sum: number, s: any) => sum + s.count, 0)}
+                    </p>
+                    <p className="text-xs text-gray-500">Asignaciones totales</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+                    <p className="text-2xl font-bold text-purple-600">{segmentThreshold}%</p>
+                    <p className="text-xs text-gray-500">Umbral activo</p>
+                  </div>
+                </div>
+
+                {/* Segment Cards */}
+                <div className="space-y-4">
+                  {segmentsData.segments.map((segment: any) => {
+                    const isExpanded = expandedSegments[segment.area_key] || false;
+                    const displayUsers = isExpanded ? segment.users : segment.users.slice(0, 5);
+                    const pctOfTotal = ((segment.count / segmentsData.total_respondents) * 100).toFixed(1);
+
+                    return (
+                      <div key={segment.area_key} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                        {/* Segment Header */}
+                        <div className="p-6 border-b border-gray-100">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-900">{segment.area}</h3>
+                              <p className="text-sm text-gray-500">
+                                {segment.count} persona{segment.count !== 1 ? "s" : ""} ({pctOfTotal}% del total)
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold">
+                                {segment.count}
+                              </div>
+                            </div>
+                          </div>
+                          {/* Mini bar */}
+                          <div className="mt-3 w-full bg-gray-100 rounded-full h-2">
+                            <div
+                              className="bg-blue-500 h-2 rounded-full transition-all"
+                              style={{ width: `${pctOfTotal}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Users Table */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barrio</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">% Asignado</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {displayUsers.map((user: any, idx: number) => (
+                                <tr key={idx} className="hover:bg-gray-50">
+                                  <td className="px-6 py-3 text-sm text-gray-900">{user.name}</td>
+                                  <td className="px-6 py-3 text-sm text-gray-500">{user.email}</td>
+                                  <td className="px-6 py-3 text-sm text-gray-500">{user.neighborhood}</td>
+                                  <td className="px-6 py-3 text-sm text-right font-semibold text-blue-600">{user.percentage}%</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Show more/less */}
+                        {segment.users.length > 5 && (
+                          <div className="px-6 py-3 border-t border-gray-100 bg-gray-50">
+                            <button
+                              onClick={() =>
+                                setExpandedSegments((prev) => ({
+                                  ...prev,
+                                  [segment.area_key]: !isExpanded,
+                                }))
+                              }
+                              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              {isExpanded
+                                ? "Ver menos"
+                                : `Ver todos (${segment.users.length} personas)`}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {segmentsData.segments.length === 0 && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
+                    <p className="text-gray-500">No hay segmentos con el umbral seleccionado. Proba bajando el porcentaje.</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         )}
 
         {/* Empty state */}

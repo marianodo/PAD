@@ -26,7 +26,7 @@ class Survey(Base):
     is_active = Column(Boolean, default=True)  # Flag rápido para activar/desactivar
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)  # Cliente owner de la encuesta
     points_per_question = Column(Integer, default=10)  # Puntos por pregunta respondida
-    bonus_points = Column(Integer, default=50)  # Puntos bonus por completar todo
+    bonus_points = Column(Integer, default=70)  # Puntos bonus por completar todo
     max_responses_per_user = Column(Integer, default=0)  # 0 = ilimitado, >0 = límite de respuestas
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime(timezone=True), nullable=True)
@@ -67,6 +67,7 @@ class QuestionOption(Base):
     option_text = Column(Text, nullable=False)
     option_value = Column(String(255))  # Valor interno (ej: "infraestructura")
     description = Column(Text, nullable=True)  # Descripción corta de la opción
+    image_url = Column(Text, nullable=True)  # URL de imagen para la opción
     order_index = Column(Integer)
 
     # Relationships

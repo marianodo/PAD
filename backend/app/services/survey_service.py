@@ -11,6 +11,12 @@ from app.models.client import Client
 from app.models.points import UserPoints, PointTransaction
 from app.schemas.survey import SurveyCreate
 from app.schemas.response import SurveyResponseCreate, AnswerCreate
+from anthropic import Anthropic
+from app.core.config import settings
+import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SurveyService:
@@ -88,6 +94,7 @@ class SurveyService:
                     option_text=option_data.option_text,
                     option_value=option_data.option_value,
                     description=option_data.description,
+                    image_url=option_data.image_url,
                     order_index=option_data.order_index,
                 )
                 db.add(option)
@@ -399,6 +406,7 @@ class SurveyService:
                 # Promediar los porcentajes de todas las respuestas
                 percentage_totals: Dict[str, float] = {}
                 percentage_counts: Dict[str, int] = {}
+                total_respondents = sum(1 for a in question_answers if a.percentage_data)
 
                 # También por grupo de edad, género, cruce edad+género y barrio
                 percentage_by_age: Dict[str, Dict[str, List[float]]] = {}
@@ -454,16 +462,21 @@ class SurveyService:
                                 percentage_by_neighborhood[user_neighborhood][option_key] = []
                             percentage_by_neighborhood[user_neighborhood][option_key].append(value)
 
+                def _get_option_label(k):
+                    if k == "otros":
+                        return "OTROS"
+                    for o in question.options:
+                        if o.option_value == k:
+                            return o.option_text
+                    return k
+
                 # Calcular promedios generales
                 results = {}
                 for key in percentage_totals:
-                    avg = percentage_totals[key] / percentage_counts[key] if percentage_counts[key] > 0 else 0
-                    # Buscar el texto de la opción por option_value
-                    option_text = key
-                    for opt in question.options:
-                        if opt.option_value == key:
-                            option_text = opt.option_text
-                            break
+                    # Para "otros", dividir por total de encuestados (no solo los que eligieron "otros")
+                    divisor = total_respondents if key == "otros" else percentage_counts[key]
+                    avg = percentage_totals[key] / divisor if divisor > 0 else 0
+                    option_text = _get_option_label(key)
                     results[key] = {
                         "label": option_text,
                         "percentage": round(avg, 1)
@@ -471,77 +484,56 @@ class SurveyService:
 
                 question_data["results"] = results
 
-                # Calcular promedios por grupo de edad
-                results_by_age = {}
-                for age_grp, categories in percentage_by_age.items():
-                    results_by_age[age_grp] = {}
-                    for key, values in categories.items():
-                        avg = sum(values) / len(values) if values else 0
-                        option_text = key
-                        for opt in question.options:
-                            if opt.option_value == key:
-                                option_text = opt.option_text
-                                break
-                        results_by_age[age_grp][key] = {
-                            "label": option_text,
-                            "percentage": round(avg, 1)
-                        }
+                # Contar encuestados por grupo demográfico
+                respondents_by_age: Dict[str, int] = {}
+                respondents_by_gender: Dict[str, int] = {}
+                respondents_by_age_and_gender: Dict[str, int] = {}
+                respondents_by_neighborhood: Dict[str, int] = {}
+                for a in question_answers:
+                    if a.percentage_data:
+                        uid = response_user_map.get(a.response_id)
+                        ag = user_age_groups.get(uid, "Sin especificar")
+                        gn = user_genders.get(uid, "Sin especificar")
+                        nb = user_neighborhoods.get(uid, "Sin especificar")
+                        respondents_by_age[ag] = respondents_by_age.get(ag, 0) + 1
+                        respondents_by_gender[gn] = respondents_by_gender.get(gn, 0) + 1
+                        respondents_by_age_and_gender[f"{ag}|{gn}"] = respondents_by_age_and_gender.get(f"{ag}|{gn}", 0) + 1
+                        respondents_by_neighborhood[nb] = respondents_by_neighborhood.get(nb, 0) + 1
 
-                question_data["results_by_age"] = results_by_age
+                # Helper para calcular promedios por grupo demográfico
+                def _calc_percentage_by_group(group_data, group_totals):
+                    result = {}
+                    for grp, categories in group_data.items():
+                        result[grp] = {}
+                        for key, values in categories.items():
+                            if key == "otros":
+                                divisor = group_totals.get(grp, len(values))
+                                avg = sum(values) / divisor if divisor > 0 else 0
+                            else:
+                                avg = sum(values) / len(values) if values else 0
+                            result[grp][key] = {
+                                "label": _get_option_label(key),
+                                "percentage": round(avg, 1)
+                            }
+                    return result
 
-                # Calcular promedios por género
-                results_by_gender = {}
-                for gender_grp, categories in percentage_by_gender.items():
-                    results_by_gender[gender_grp] = {}
-                    for key, values in categories.items():
-                        avg = sum(values) / len(values) if values else 0
-                        option_text = key
-                        for opt in question.options:
-                            if opt.option_value == key:
-                                option_text = opt.option_text
-                                break
-                        results_by_gender[gender_grp][key] = {
-                            "label": option_text,
-                            "percentage": round(avg, 1)
-                        }
+                question_data["results_by_age"] = _calc_percentage_by_group(percentage_by_age, respondents_by_age)
+                question_data["results_by_gender"] = _calc_percentage_by_group(percentage_by_gender, respondents_by_gender)
+                question_data["results_by_age_and_gender"] = _calc_percentage_by_group(percentage_by_age_and_gender, respondents_by_age_and_gender)
+                question_data["results_by_neighborhood"] = _calc_percentage_by_group(percentage_by_neighborhood, respondents_by_neighborhood)
 
-                question_data["results_by_gender"] = results_by_gender
+                # Recopilar textos de "otros" para el resumen
+                otros_raw_texts = []
+                for answer in question_answers:
+                    if answer.answer_text and answer.percentage_data and answer.percentage_data.get("otros", 0) > 0:
+                        text = answer.answer_text.strip()
+                        if text:
+                            otros_raw_texts.append(text)
 
-                # Calcular promedios por cruce edad+género
-                results_by_age_gender = {}
-                for ag_key, categories in percentage_by_age_and_gender.items():
-                    results_by_age_gender[ag_key] = {}
-                    for key, values in categories.items():
-                        avg = sum(values) / len(values) if values else 0
-                        option_text = key
-                        for opt in question.options:
-                            if opt.option_value == key:
-                                option_text = opt.option_text
-                                break
-                        results_by_age_gender[ag_key][key] = {
-                            "label": option_text,
-                            "percentage": round(avg, 1)
-                        }
-
-                question_data["results_by_age_and_gender"] = results_by_age_gender
-
-                # Calcular promedios por barrio
-                results_by_neighborhood = {}
-                for neighborhood_grp, categories in percentage_by_neighborhood.items():
-                    results_by_neighborhood[neighborhood_grp] = {}
-                    for key, values in categories.items():
-                        avg = sum(values) / len(values) if values else 0
-                        option_text = key
-                        for opt in question.options:
-                            if opt.option_value == key:
-                                option_text = opt.option_text
-                                break
-                        results_by_neighborhood[neighborhood_grp][key] = {
-                            "label": option_text,
-                            "percentage": round(avg, 1)
-                        }
-
-                question_data["results_by_neighborhood"] = results_by_neighborhood
+                if otros_raw_texts:
+                    question_data["otros_summary"] = SurveyService._classify_otros_texts(otros_raw_texts)
+                else:
+                    question_data["otros_summary"] = []
 
             elif question.question_type == QuestionType.SINGLE_CHOICE:
                 # Contar votos por opción
@@ -815,9 +807,11 @@ class SurveyService:
                 # Crear mapeo option_id -> option_value
                 option_id_map = {str(opt.id): opt.option_value for opt in question.options}
                 option_labels = {opt.option_value: opt.option_text for opt in question.options}
+                option_labels["otros"] = "OTROS"
 
-                # Calcular promedio por mes para cada opción
+                # Calcular promedio por mes para cada opción (incluir "otros")
                 option_data: Dict[str, List[float]] = {opt.option_value: [] for opt in question.options}
+                option_data["otros"] = []
 
                 for month_key in sorted_months:
                     month_answers = answers_by_month[month_key].get(question.id, [])
@@ -919,7 +913,9 @@ class SurveyService:
                     if question.question_type == QuestionType.PERCENTAGE_DISTRIBUTION:
                         option_id_map = {str(opt.id): opt.option_value for opt in question.options}
                         option_labels = {opt.option_value: opt.option_text for opt in question.options}
+                        option_labels["otros"] = "OTROS"
                         option_data: Dict[str, List[float]] = {opt.option_value: [] for opt in question.options}
+                        option_data["otros"] = []
 
                         for month_key in sorted_months:
                             month_answers = group_months_data.get(month_key, {}).get(question.id, [])
@@ -1007,3 +1003,218 @@ class SurveyService:
         evolution_result["by_age_and_gender"] = _calc_group_evolution(age_gender_list, answers_by_age_and_gender_month)
 
         return evolution_result
+
+    @staticmethod
+    def get_survey_segments(db: Session, survey_id: UUID, threshold: int = 20) -> Dict[str, Any]:
+        """
+        Segmenta a los votantes según sus preferencias en la pregunta de distribución porcentual.
+        Una persona entra en un segmento si asignó >= threshold% a esa área.
+        """
+        # Obtener la encuesta con preguntas
+        survey = db.query(Survey).options(
+            joinedload(Survey.questions).joinedload(Question.options)
+        ).filter(Survey.id == survey_id).first()
+
+        if not survey:
+            return {"segments": [], "threshold": threshold, "total_respondents": 0}
+
+        # Encontrar la pregunta de distribución porcentual
+        pct_question = None
+        for q in survey.questions:
+            if q.question_type == QuestionType.PERCENTAGE_DISTRIBUTION:
+                pct_question = q
+                break
+
+        if not pct_question:
+            return {"segments": [], "threshold": threshold, "total_respondents": 0}
+
+        # Mapeo option_id -> option info
+        option_map = {}
+        for opt in pct_question.options:
+            option_map[str(opt.id)] = {
+                "text": opt.option_text,
+                "value": opt.option_value or str(opt.id)
+            }
+
+        # Obtener respuestas completadas con datos de usuario
+        responses = (
+            db.query(SurveyResponse, User)
+            .join(User, SurveyResponse.user_id == User.id)
+            .filter(
+                SurveyResponse.survey_id == survey_id,
+                SurveyResponse.completed == True
+            )
+            .all()
+        )
+
+        # Obtener las answers de la pregunta de distribución porcentual
+        response_ids = [r.id for r, _ in responses]
+        user_by_response = {r.id: u for r, u in responses}
+
+        if not response_ids:
+            return {"segments": [], "threshold": threshold, "total_respondents": 0}
+
+        answers = (
+            db.query(Answer)
+            .filter(
+                Answer.response_id.in_(response_ids),
+                Answer.question_id == pct_question.id
+            )
+            .all()
+        )
+
+        # Agrupar por usuario y promediar porcentajes (un usuario puede tener múltiples respuestas)
+        # user_id -> {area_key -> [values]}
+        user_area_values: Dict[UUID, Dict[str, List[float]]] = {}
+        user_otros_texts: Dict[UUID, str] = {}
+        users_map: Dict[UUID, User] = {}
+
+        for answer in answers:
+            if not answer.percentage_data:
+                continue
+
+            user = user_by_response.get(answer.response_id)
+            if not user:
+                continue
+
+            users_map[user.id] = user
+
+            if user.id not in user_area_values:
+                user_area_values[user.id] = {}
+
+            for key, value in answer.percentage_data.items():
+                if key not in user_area_values[user.id]:
+                    user_area_values[user.id][key] = []
+                user_area_values[user.id][key].append(value)
+
+                if key == "otros" and answer.answer_text:
+                    user_otros_texts[user.id] = answer.answer_text
+
+        # Contar usuarios únicos
+        total_respondents = len(user_area_values)
+
+        # Construir segmentos con promedios
+        segments_data: Dict[str, Dict[str, Any]] = {}
+
+        for user_id, area_values in user_area_values.items():
+            user = users_map[user_id]
+
+            for key, values in area_values.items():
+                avg_value = sum(values) / len(values)
+
+                if avg_value >= threshold:
+                    # Determinar nombre del área
+                    if key == "otros":
+                        area_name = "OTROS"
+                        area_key = "otros"
+                    else:
+                        opt_info = option_map.get(key)
+                        if opt_info:
+                            area_name = opt_info["text"]
+                            area_key = opt_info["value"]
+                        else:
+                            area_name = key
+                            area_key = key
+
+                    if area_key not in segments_data:
+                        segments_data[area_key] = {
+                            "area": area_name,
+                            "area_key": area_key,
+                            "users": []
+                        }
+
+                    segments_data[area_key]["users"].append({
+                        "id": str(user.id),
+                        "name": user.name or "Sin nombre",
+                        "email": user.email,
+                        "neighborhood": user.neighborhood or "N/A",
+                        "city": user.city or "N/A",
+                        "percentage": round(avg_value, 1),
+                        "otros_text": user_otros_texts.get(user_id) if key == "otros" else None
+                    })
+
+        # Ordenar usuarios dentro de cada segmento por porcentaje descendente
+        segments = []
+        for seg in segments_data.values():
+            seg["users"].sort(key=lambda u: u["percentage"], reverse=True)
+            seg["count"] = len(seg["users"])
+            segments.append(seg)
+
+        # Ordenar segmentos por cantidad de personas descendente
+        segments.sort(key=lambda s: s["count"], reverse=True)
+
+        return {
+            "segments": segments,
+            "threshold": threshold,
+            "total_respondents": total_respondents
+        }
+
+    @staticmethod
+    def _classify_otros_texts(texts: List[str]) -> List[Dict[str, Any]]:
+        """
+        Usa Claude para clasificar textos libres de 'otros' en categorías semánticas.
+        Retorna lista de {text: nombre_categoria, count: cantidad}.
+        """
+        if not texts:
+            return []
+
+        api_key = settings.ANTHROPIC_API_KEY
+        if not api_key:
+            # Fallback: agrupar por texto exacto si no hay API key
+            from collections import Counter
+            counts = Counter(texts)
+            return [
+                {"text": text, "count": count}
+                for text, count in counts.most_common()
+            ]
+
+        try:
+            client = Anthropic(api_key=api_key)
+
+            texts_list = "\n".join(f"- {t}" for t in texts)
+
+            response = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=1000,
+                temperature=0.2,
+                messages=[{
+                    "role": "user",
+                    "content": f"""Tengo las siguientes respuestas de texto libre de una encuesta de participación ciudadana.
+Las personas escribieron en qué área adicional les gustaría que se invierta el presupuesto municipal.
+
+Respuestas:
+{texts_list}
+
+Agrupa las respuestas en categorías temáticas. Respuestas similares (ej: "comida", "gastronomía", "bares y restaurantes") deben ir en la misma categoría.
+Usa nombres de categoría cortos y claros en español (máximo 3-4 palabras).
+
+Respondé SOLO con un JSON array, sin texto adicional ni markdown. Formato:
+[{{"category": "Nombre Categoría", "count": N}}]
+
+Ordená de mayor a menor count."""
+                }]
+            )
+
+            result_text = response.content[0].text.strip()
+            # Limpiar posible markdown wrapping
+            if result_text.startswith("```"):
+                result_text = result_text.split("\n", 1)[1] if "\n" in result_text else result_text
+                result_text = result_text.rsplit("```", 1)[0].strip()
+
+            categories = json.loads(result_text)
+
+            return [
+                {"text": cat["category"], "count": cat["count"]}
+                for cat in categories
+                if cat.get("count", 0) > 0
+            ]
+
+        except Exception as e:
+            logger.error(f"Error clasificando textos con AI: {e}")
+            # Fallback: agrupar por texto exacto
+            from collections import Counter
+            counts = Counter(texts)
+            return [
+                {"text": text, "count": count}
+                for text, count in counts.most_common()
+            ]
