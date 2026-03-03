@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   role: "user" | "assistant";
@@ -202,13 +203,30 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
+              className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
                 msg.role === "user"
-                  ? "bg-blue-600 text-white rounded-br-md"
+                  ? "bg-blue-600 text-white rounded-br-md whitespace-pre-wrap"
                   : "bg-gray-100 text-gray-800 rounded-bl-md"
               }`}
             >
-              {msg.content}
+              {msg.role === "user" ? (
+                msg.content
+              ) : (
+                <ReactMarkdown
+                  components={{
+                    h3: ({ children }) => <h3 className="font-bold text-sm mt-2 mb-1">{children}</h3>,
+                    h4: ({ children }) => <h4 className="font-bold text-sm mt-1.5 mb-0.5">{children}</h4>,
+                    strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                    em: ({ children }) => <em className="italic">{children}</em>,
+                    ul: ({ children }) => <ul className="list-disc list-inside space-y-0.5 my-1">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal list-inside space-y-0.5 my-1">{children}</ol>,
+                    li: ({ children }) => <li className="text-sm">{children}</li>,
+                    p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+                  }}
+                >
+                  {msg.content}
+                </ReactMarkdown>
+              )}
             </div>
           </div>
         ))}
