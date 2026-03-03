@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from anthropic import Anthropic
 from pydantic import BaseModel
 import json
+import re
 from typing import List, Union
 from uuid import UUID
 
@@ -74,7 +75,30 @@ REGLAS ESTRICTAS:
 4. Usa datos concretos (números, porcentajes, nombres de barrios) en tus respuestas.
 5. Sé conciso pero informativo.
 6. NO inventes datos que no estén en el contexto proporcionado.
-7. Cuando hables de porcentajes o votos, cita los números exactos del contexto."""
+7. Cuando hables de porcentajes o votos, cita los números exactos del contexto.
+8. INSIGHTS: Al final de tu respuesta (despues del grafico si lo hay), agrega un breve insight analitico marcado con "💡 **Insight:**". Puede ser una tendencia, un dato destacado, una comparacion interesante, o una conclusion accionable derivada de los datos. Debe ser util para la toma de decisiones. Ejemplo: "💡 **Insight:** El barrio Centro concentra el 35% de la participacion, lo que sugiere mayor engagement civico en zonas centricas."
+9. GRAFICOS: Cuando una pregunta se beneficie de una representacion visual (comparaciones, distribuciones, rankings), incluye UN bloque de grafico en tu respuesta usando este formato exacto:
+
+~~~chart
+{{"type": "bar", "title": "Titulo del grafico", "data": [{{"label": "Cat A", "value": 45}}, {{"label": "Cat B", "value": 30}}]}}
+~~~
+
+o para pie charts:
+
+~~~chart
+{{"type": "pie", "title": "Titulo del grafico", "data": [{{"label": "Cat A", "value": 45}}, {{"label": "Cat B", "value": 30}}]}}
+~~~
+
+REGLAS PARA GRAFICOS:
+- Solo usa "bar" o "pie" como type.
+- Usa "bar" para comparaciones y rankings (ej: votos por proyecto, participacion por barrio).
+- Usa "pie" para distribuciones porcentuales (ej: distribucion de presupuesto, genero).
+- Los valores deben ser numeros exactos del contexto, NO inventados.
+- Maximo 8 categorias. Si hay mas, agrupa las menores en "Otros".
+- Titulo descriptivo en español.
+- Solo UN grafico por respuesta.
+- El bloque ~~~chart debe estar DESPUES del texto explicativo.
+- No todos los mensajes necesitan grafico. Solo inclui uno cuando realmente aporte valor visual."""
 
         # Build messages array from history + new message
         messages = []
@@ -91,7 +115,25 @@ REGLAS ESTRICTAS:
             messages=messages,
         )
 
-        return {"response": response.content[0].text}
+        raw_text = response.content[0].text
+
+        # Extract chart blocks from the response
+        chart_pattern = r'~~~chart\s*\n(.*?)\n~~~'
+        chart_matches = re.findall(chart_pattern, raw_text, re.DOTALL)
+
+        charts = []
+        for match in chart_matches:
+            try:
+                chart_data = json.loads(match.strip())
+                if chart_data.get("type") in ("bar", "pie") and "data" in chart_data:
+                    charts.append(chart_data)
+            except json.JSONDecodeError:
+                pass
+
+        # Remove chart blocks from text
+        clean_text = re.sub(r'~~~chart\s*\n.*?\n~~~', '', raw_text, flags=re.DOTALL).strip()
+
+        return {"response": clean_text, "charts": charts}
 
     except HTTPException:
         raise
