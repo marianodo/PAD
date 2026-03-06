@@ -279,10 +279,10 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
 
   if (!mounted) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Desglose por Zona Geográfica</h3>
-        <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-          <p className="text-gray-500">Cargando mapa...</p>
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+        <h3 className="text-xl font-bold text-[#F2F3F4] mb-2">Desglose por Zona Geográfica</h3>
+        <div className="h-96 bg-[#201631] rounded-lg flex items-center justify-center">
+          <p className="text-[#F2F3F4]/50">Cargando mapa...</p>
         </div>
       </div>
     );
@@ -290,9 +290,9 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
 
   if (entries.length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Desglose por Zona Geográfica</h3>
-        <p className="text-gray-500 text-sm">No hay datos geográficos disponibles.</p>
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+        <h3 className="text-xl font-bold text-[#F2F3F4] mb-2">Desglose por Zona Geográfica</h3>
+        <p className="text-[#F2F3F4]/50 text-sm">No hay datos geográficos disponibles.</p>
       </div>
     );
   }
@@ -318,17 +318,17 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
       <div className="mb-4">
-        <h3 className="text-xl font-bold text-gray-900">Desglose por Zona Geográfica</h3>
-        <p className="text-sm text-gray-500">Participación y votación por ubicación</p>
+        <h3 className="text-xl font-bold text-[#F2F3F4]">Desglose por Zona Geográfica</h3>
+        <p className="text-sm text-[#F2F3F4]/50">Participación y votación por ubicación</p>
       </div>
 
       {/* View Mode Toggle */}
-      <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 mb-4 bg-[#201631] rounded-lg p-1 w-fit">
         {(["participation", "pie-charts", "winner-color"] as ViewMode[]).map((mode) => (
           <button key={mode} onClick={() => setViewMode(mode)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${viewMode === mode ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${viewMode === mode ? "bg-[#5941CE] text-white shadow-sm" : "text-[#F2F3F4]/60 hover:text-[#F2F3F4]"}`}>
             {mode === "participation" ? "Participación" : mode === "pie-charts" ? "Pie Charts" : "Color Ganador"}
           </button>
         ))}
@@ -338,7 +338,7 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
       {viewMode !== "participation" && mappableQuestions.length > 0 && (
         <div className="mb-4">
           <select value={effectiveQuestionId} onChange={(e) => setSelectedQuestionId(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            className="w-full px-3 py-2 text-sm border border-white/10 rounded-lg bg-[#201631] text-[#F2F3F4] focus:outline-none focus:ring-2 focus:ring-[#5941CE]">
             {mappableQuestions.map((q) => (
               <option key={q.question_id} value={q.question_id}>{q.question_text}</option>
             ))}
@@ -347,31 +347,31 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
       )}
 
       {/* Map */}
-      <div ref={mapContainerRef} className="h-[500px] rounded-lg overflow-hidden border border-gray-200 mb-4" />
+      <div ref={mapContainerRef} className="h-[500px] rounded-lg overflow-hidden border border-white/10 mb-4" />
 
       {/* Legend */}
       {viewMode === "participation" ? (
         <div className="mb-4">
-          <p className="text-xs font-medium text-gray-600 mb-2">Intensidad de participación:</p>
+          <p className="text-xs font-medium text-[#F2F3F4]/60 mb-2">Intensidad de participación:</p>
           <div className="flex flex-wrap gap-3">
             {[{ color: "#EF4444", label: "Muy Alta" }, { color: "#F97316", label: "Alta" }, { color: "#EAB308", label: "Media" }, { color: "#22C55E", label: "Baja-Media" }, { color: "#3B82F6", label: "Baja" }].map(({ color, label }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-xs text-gray-600">{label}</span>
+                <span className="text-xs text-[#F2F3F4]/60">{label}</span>
               </div>
             ))}
           </div>
         </div>
       ) : optionLegend.length > 0 && (
         <div className="mb-4">
-          <p className="text-xs font-medium text-gray-600 mb-2">
+          <p className="text-xs font-medium text-[#F2F3F4]/60 mb-2">
             {isRatingSelected ? "Escala de calificación:" : viewMode === "winner-color" ? "Color por opción ganadora:" : "Opciones:"}
           </p>
           <div className="flex flex-wrap gap-3">
             {optionLegend.map(({ label, color }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-xs text-gray-600">{label}</span>
+                <span className="text-xs text-[#F2F3F4]/60">{label}</span>
               </div>
             ))}
           </div>
@@ -379,10 +379,10 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
       )}
 
       {/* Insight */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <p className="text-sm text-gray-600">
+      <div className="bg-[#201631] border border-white/10 rounded-lg p-4">
+        <p className="text-sm text-[#F2F3F4]/70">
           {viewMode === "participation" ? (
-            <>La zona <span className="font-semibold text-gray-900">{topZone[0]}</span> lidera con <span className="font-semibold text-gray-900">{topZone[1].toLocaleString()}</span> respuestas.</>
+            <>La zona <span className="font-semibold text-[#F2F3F4]">{topZone[0]}</span> lidera con <span className="font-semibold text-[#F2F3F4]">{topZone[1].toLocaleString()}</span> respuestas.</>
           ) : viewMode === "pie-charts" ? (
             isRatingSelected ? "Cada barrio muestra un círculo con color según la calificación promedio. Pase el cursor para ver el detalle." : "Cada barrio muestra un mini gráfico circular con la distribución de respuestas."
           ) : (

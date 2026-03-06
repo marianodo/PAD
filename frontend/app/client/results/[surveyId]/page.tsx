@@ -10,9 +10,9 @@ import ChatBot from "@/components/ChatBot";
 const GeographicHeatMap = dynamic(() => import("@/components/GeographicHeatMap"), {
   ssr: false,
   loading: () => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-      <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-        <p className="text-gray-500">Cargando mapa...</p>
+    <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+      <div className="h-96 bg-[#201631] rounded-lg flex items-center justify-center">
+        <p className="text-[#F2F3F4]/50">Cargando mapa...</p>
       </div>
     </div>
   ),
@@ -318,10 +318,10 @@ export default function SurveyResultsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#201631]">
         <div className="text-center">
           <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-          <p className="mt-4 text-gray-600">Cargando resultados...</p>
+          <p className="mt-4 text-[#F2F3F4]/70">Cargando resultados...</p>
         </div>
       </div>
     );
@@ -329,12 +329,12 @@ export default function SurveyResultsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md">
-          <p className="text-red-600">{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#201631]">
+        <div className="bg-[#3C2E51] rounded-lg shadow-lg p-8 max-w-md">
+          <p className="text-red-400">{error}</p>
           <button
             onClick={() => router.push("/client")}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="mt-4 px-4 py-2 bg-[#5941CE] text-white rounded-lg hover:bg-[#7B6FD4]"
           >
             Volver al Dashboard
           </button>
@@ -388,29 +388,29 @@ export default function SurveyResultsPage() {
     ageFilter: string, setAgeFilter: (v: string) => void,
     genderFilter: string, setGenderFilter: (v: string) => void
   ) => (
-    <div className="flex items-center gap-0 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+    <div className="flex items-center gap-0 mb-6 bg-[#201631] rounded-lg p-1 w-fit">
       {ageFilterOptions.map((option) => (
         <button
           key={option}
           onClick={() => setAgeFilter(option)}
           className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
             ageFilter === option
-              ? "bg-white text-gray-900 shadow-sm"
-              : "text-gray-500 hover:text-gray-900"
+              ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
+              : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]"
           }`}
         >
           {option}
         </button>
       ))}
-      <div className="w-px h-5 bg-gray-300 mx-1.5" />
+      <div className="w-px h-5 bg-white/20 mx-1.5" />
       {genderFilterOptions.map((option) => (
         <button
           key={option}
           onClick={() => setGenderFilter(option)}
           className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
             genderFilter === option
-              ? "bg-white text-gray-900 shadow-sm"
-              : "text-gray-500 hover:text-gray-900"
+              ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
+              : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]"
           }`}
         >
           {option}
@@ -473,16 +473,16 @@ export default function SurveyResultsPage() {
     const topPercentage = topCategory ? (topCategory[1] as PercentageResult).percentage : 0;
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Distribución de Preferencias</h3>
-          <p className="text-sm text-gray-500">Preferencias promedio de inversión ciudadana</p>
+          <h3 className="text-xl font-bold text-[#F2F3F4]">Distribución de Preferencias</h3>
+          <p className="text-sm text-[#F2F3F4]/50">Preferencias promedio de inversión ciudadana</p>
         </div>
 
         {renderCombinedFilters(budgetAgeFilter, setBudgetAgeFilter, budgetGenderFilter, setBudgetGenderFilter)}
 
         {!hasData ? (
-          <div className="text-center text-gray-500 py-12">
+          <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos para este filtro
           </div>
         ) : (
@@ -555,16 +555,16 @@ export default function SurveyResultsPage() {
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: segment.color }}
                     />
-                    <span className="text-sm text-gray-600">{segment.label}</span>
+                    <span className="text-sm text-[#F2F3F4]/70">{segment.label}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Insight */}
-            <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
-              <p className="text-sm font-semibold text-blue-900">Insight Principal</p>
-              <p className="text-sm text-blue-700">
+            <div className="mt-6 bg-[#5941CE]/10 border border-[#5941CE]/20 rounded-lg p-4">
+              <p className="text-sm font-semibold text-[#7B6FD4]">Insight Principal</p>
+              <p className="text-sm text-[#7B6FD4]">
                 {topLabel} es la prioridad #1 con {topPercentage.toFixed(1)}% del presupuesto preferido
               </p>
             </div>
@@ -585,10 +585,10 @@ export default function SurveyResultsPage() {
     const totalOtros = otrosSummary.reduce((sum, item) => sum + item.count, 0);
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6 mb-8">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Otras Propuestas Ciudadanas</h3>
-          <p className="text-sm text-gray-500">{totalOtros} personas sugirieron áreas adicionales de inversión</p>
+          <h3 className="text-xl font-bold text-[#F2F3F4]">Otras Propuestas Ciudadanas</h3>
+          <p className="text-sm text-[#F2F3F4]/50">{totalOtros} personas sugirieron áreas adicionales de inversión</p>
         </div>
 
         <div className="space-y-3">
@@ -598,12 +598,12 @@ export default function SurveyResultsPage() {
               <div key={index} className="flex items-center gap-3">
                 <div className="flex-1">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium text-gray-700">{item.text}</span>
-                    <span className="text-sm text-gray-500">{item.count} mención{item.count !== 1 ? 'es' : ''}</span>
+                    <span className="text-sm font-medium text-[#F2F3F4]/80">{item.text}</span>
+                    <span className="text-sm text-[#F2F3F4]/50">{item.count} mención{item.count !== 1 ? 'es' : ''}</span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
+                  <div className="w-full bg-[#201631] rounded-full h-2">
                     <div
-                      className="bg-blue-500 h-2 rounded-full transition-all"
+                      className="bg-[#5941CE] h-2 rounded-full transition-all"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -637,16 +637,16 @@ export default function SurveyResultsPage() {
     const winnerResult = winner ? (winner[1] as SingleChoiceResult) : null;
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Obras Públicas Prioritarias</h3>
-          <p className="text-sm text-gray-500">Votación ciudadana sobre proyectos</p>
+          <h3 className="text-xl font-bold text-[#F2F3F4]">Obras Públicas Prioritarias</h3>
+          <p className="text-sm text-[#F2F3F4]/50">Votación ciudadana sobre proyectos</p>
         </div>
 
         {renderCombinedFilters(projectsAgeFilter, setProjectsAgeFilter, projectsGenderFilter, setProjectsGenderFilter)}
 
         {!hasData ? (
-          <div className="text-center text-gray-500 py-12">
+          <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos para este filtro
           </div>
         ) : (
@@ -663,7 +663,7 @@ export default function SurveyResultsPage() {
                 return (
                   <div
                     key={key}
-                    className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition"
+                    className="border border-white/10 rounded-xl p-4 hover:shadow-md transition"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
@@ -674,23 +674,23 @@ export default function SurveyResultsPage() {
                           {projectIcons[index % 3]}
                         </div>
                         <div>
-                          <h4 className="font-semibold text-gray-900">{projectName}</h4>
+                          <h4 className="font-semibold text-[#F2F3F4]">{projectName}</h4>
                           {location && (
-                            <p className="text-sm text-gray-500">{location}</p>
+                            <p className="text-sm text-[#F2F3F4]/50">{location}</p>
                           )}
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-gray-900">
+                        <p className="text-2xl font-bold text-[#F2F3F4]">
                           {result.percentage.toFixed(1)}%
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-[#F2F3F4]/50">
                           {result.votes.toLocaleString()} votos
                         </p>
                       </div>
                     </div>
                     {/* Progress bar */}
-                    <div className="mt-3 w-full bg-gray-100 rounded-full h-2">
+                    <div className="mt-3 w-full bg-[#201631] rounded-full h-2">
                       <div
                         className="h-2 rounded-full transition-all duration-300"
                         style={{
@@ -706,9 +706,9 @@ export default function SurveyResultsPage() {
 
             {/* Winner Insight */}
             {winnerResult && (
-              <div className="mt-6 bg-amber-50 border border-amber-100 rounded-lg p-4">
-                <p className="text-sm font-semibold text-amber-900">Proyecto Ganador</p>
-                <p className="text-sm text-amber-700">
+              <div className="mt-6 bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                <p className="text-sm font-semibold text-amber-300">Proyecto Ganador</p>
+                <p className="text-sm text-amber-400">
                   {winnerResult.label.split("(")[0].trim()} lidera con {winnerResult.percentage.toFixed(1)}% de preferencia ciudadana
                 </p>
               </div>
@@ -773,16 +773,16 @@ export default function SurveyResultsPage() {
       : 1;
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Calificación de Gestión</h3>
-          <p className="text-sm text-gray-500">Satisfacción ciudadana general</p>
+          <h3 className="text-xl font-bold text-[#F2F3F4]">Calificación de Gestión</h3>
+          <p className="text-sm text-[#F2F3F4]/50">Satisfacción ciudadana general</p>
         </div>
 
         {renderCombinedFilters(ratingAgeFilter, setRatingAgeFilter, ratingGenderFilter, setRatingGenderFilter)}
 
         {!hasData ? (
-          <div className="text-center text-gray-500 py-12">
+          <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos para este filtro
           </div>
         ) : (
@@ -796,7 +796,7 @@ export default function SurveyResultsPage() {
                     className={`w-8 h-8 ${
                       star <= Math.round(average)
                         ? "text-yellow-400"
-                        : "text-gray-300"
+                        : "text-[#F2F3F4]/30"
                     }`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
@@ -805,8 +805,8 @@ export default function SurveyResultsPage() {
                   </svg>
                 ))}
               </div>
-              <p className="text-4xl font-bold text-gray-900">{average.toFixed(1)}</p>
-              <p className="text-sm text-gray-500">de 5 estrellas</p>
+              <p className="text-4xl font-bold text-[#F2F3F4]">{average.toFixed(1)}</p>
+              <p className="text-sm text-[#F2F3F4]/50">de 5 estrellas</p>
             </div>
 
             {/* Distribution bars */}
@@ -818,10 +818,10 @@ export default function SurveyResultsPage() {
 
                   return (
                     <div key={rating} className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-600 w-6">
+                      <span className="text-sm font-medium text-[#F2F3F4]/70 w-6">
                         {rating}★
                       </span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
+                      <div className="flex-1 bg-[#201631] rounded-full h-4 overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-300"
                           style={{
@@ -830,7 +830,7 @@ export default function SurveyResultsPage() {
                           }}
                         />
                       </div>
-                      <span className="text-sm text-gray-500 w-20 text-right">
+                      <span className="text-sm text-[#F2F3F4]/50 w-20 text-right">
                         {count.toLocaleString()} ({percentage.toFixed(1)}%)
                       </span>
                     </div>
@@ -840,9 +840,9 @@ export default function SurveyResultsPage() {
             )}
 
             {/* Insight */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <p className="text-sm text-gray-700">
-                <span className="font-semibold text-gray-900">
+            <div className="bg-[#201631] border border-white/10 rounded-lg p-4">
+              <p className="text-sm text-[#F2F3F4]/80">
+                <span className="font-semibold text-[#F2F3F4]">
                   {goodRatingPercentage > 0 ? `${goodRatingPercentage.toFixed(1)}%` : `${average.toFixed(1)} promedio`}
                 </span>
                 {goodRatingPercentage > 0
@@ -861,12 +861,12 @@ export default function SurveyResultsPage() {
     const evolutionData = results?.evolution_data;
     if (!evolutionData || !evolutionData.percentage_distribution?.categories) {
       return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="mb-4">
-            <h3 className="text-xl font-bold text-gray-900">Evolución de Preferencias Presupuestales</h3>
-            <p className="text-sm text-gray-500">Tendencias mensuales de asignación ciudadana</p>
+            <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Preferencias Presupuestales</h3>
+            <p className="text-sm text-[#F2F3F4]/50">Tendencias mensuales de asignación ciudadana</p>
           </div>
-          <div className="text-center text-gray-500 py-12">
+          <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos históricos disponibles
           </div>
         </div>
@@ -932,10 +932,10 @@ export default function SurveyResultsPage() {
     const trendCategoryName = firstCategoryWithData?.name || "";
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Evolución de Preferencias Presupuestales</h3>
-          <p className="text-sm text-gray-500">Tendencias mensuales de asignación ciudadana</p>
+          <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Preferencias Presupuestales</h3>
+          <p className="text-sm text-[#F2F3F4]/50">Tendencias mensuales de asignación ciudadana</p>
         </div>
 
         {/* Age Filter Tabs */}
@@ -943,7 +943,7 @@ export default function SurveyResultsPage() {
 
         {/* Line Chart */}
         {!hasData ? (
-          <div className="text-center text-gray-500 py-12">
+          <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos para este grupo de edad
           </div>
         ) : (
@@ -1021,16 +1021,16 @@ export default function SurveyResultsPage() {
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: category.color }}
                   />
-                  <span className="text-sm text-gray-600">{category.name}</span>
+                  <span className="text-sm text-[#F2F3F4]/70">{category.name}</span>
                 </div>
               ))}
             </div>
 
             {/* Insight */}
             {trendCategoryName && (
-              <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
-                <p className="text-sm font-semibold text-blue-900">Tendencia Principal</p>
-                <p className="text-sm text-blue-700">
+              <div className="mt-6 bg-[#5941CE]/10 border border-[#5941CE]/20 rounded-lg p-4">
+                <p className="text-sm font-semibold text-[#7B6FD4]">Tendencia Principal</p>
+                <p className="text-sm text-[#7B6FD4]">
                   La preferencia por {trendCategoryName} {trendDirection} de {startValue}% a {endValue}% en el período analizado
                 </p>
               </div>
@@ -1046,12 +1046,12 @@ export default function SurveyResultsPage() {
     const evolutionData = results?.evolution_data;
     if (!evolutionData || !evolutionData.single_choice?.projects) {
       return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="mb-4">
-            <h3 className="text-xl font-bold text-gray-900">Evolución de Votación de Obras</h3>
-            <p className="text-sm text-gray-500">Cambios en preferencia de proyectos prioritarios</p>
+            <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Votación de Obras</h3>
+            <p className="text-sm text-[#F2F3F4]/50">Cambios en preferencia de proyectos prioritarios</p>
           </div>
-          <div className="text-center text-gray-500 py-12">
+          <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos históricos disponibles
           </div>
         </div>
@@ -1115,10 +1115,10 @@ export default function SurveyResultsPage() {
     const leader = latestData.sort((a, b) => b.value - a.value)[0];
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Evolución de Votación de Obras</h3>
-          <p className="text-sm text-gray-500">Cambios en preferencia de proyectos prioritarios</p>
+          <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Votación de Obras</h3>
+          <p className="text-sm text-[#F2F3F4]/50">Cambios en preferencia de proyectos prioritarios</p>
         </div>
 
         {/* Age Filter Tabs */}
@@ -1126,7 +1126,7 @@ export default function SurveyResultsPage() {
 
         {/* Line Chart */}
         {!hasData ? (
-          <div className="text-center text-gray-500 py-12">
+          <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos para este filtro
           </div>
         ) : (
@@ -1204,16 +1204,16 @@ export default function SurveyResultsPage() {
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: project.color }}
                   />
-                  <span className="text-sm text-gray-600">{project.name}</span>
+                  <span className="text-sm text-[#F2F3F4]/70">{project.name}</span>
                 </div>
               ))}
             </div>
 
             {/* Insight */}
             {leader && leader.value > 0 && (
-              <div className="mt-6 bg-amber-50 border border-amber-100 rounded-lg p-4">
-                <p className="text-sm font-semibold text-amber-900">Proyecto Líder</p>
-                <p className="text-sm text-amber-700">
+              <div className="mt-6 bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                <p className="text-sm font-semibold text-amber-300">Proyecto Líder</p>
+                <p className="text-sm text-amber-400">
                   {leader.name} lidera actualmente con {leader.value}% de preferencia
                 </p>
               </div>
@@ -1229,15 +1229,15 @@ export default function SurveyResultsPage() {
     const evolutionData = results?.evolution_data;
     if (!evolutionData || !evolutionData.rating?.data) {
       return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="flex items-center gap-2 mb-1">
-            <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
-            <h3 className="text-xl font-bold text-gray-900">Evolución de Satisfacción Ciudadana</h3>
+            <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Satisfacción Ciudadana</h3>
           </div>
-          <p className="text-sm text-gray-500 mb-4">Calificación promedio mensual</p>
-          <div className="text-center text-gray-500 py-12">
+          <p className="text-sm text-[#F2F3F4]/50 mb-4">Calificación promedio mensual</p>
+          <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos históricos disponibles
           </div>
         </div>
@@ -1316,19 +1316,19 @@ export default function SurveyResultsPage() {
       : "Estable";
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="flex items-center gap-2 mb-1">
-          <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
           </svg>
-          <h3 className="text-xl font-bold text-gray-900">Evolución de Satisfacción Ciudadana</h3>
+          <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Satisfacción Ciudadana</h3>
         </div>
-        <p className="text-sm text-gray-500 mb-4">Calificación promedio mensual</p>
+        <p className="text-sm text-[#F2F3F4]/50 mb-4">Calificación promedio mensual</p>
 
         {renderCombinedFilters(ratingEvolutionAgeFilter, setRatingEvolutionAgeFilter, ratingEvolutionGenderFilter, setRatingEvolutionGenderFilter)}
 
         {!hasData ? (
-          <div className="text-center text-gray-500 py-12">
+          <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos para este filtro
           </div>
         ) : (
@@ -1468,19 +1468,19 @@ export default function SurveyResultsPage() {
 
             {/* Metrics Cards */}
             <div className="grid grid-cols-2 gap-4 mt-6">
-              <div className="bg-amber-50 border border-amber-100 rounded-lg p-4">
-                <p className="text-sm text-amber-700">Mejora</p>
-                <p className={`text-xl font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                <p className="text-sm text-amber-400">Mejora</p>
+                <p className={`text-xl font-bold ${isPositive ? 'text-[#00CCBA]' : 'text-red-400'}`}>
                   {isPositive ? '+' : ''}{improvement.toFixed(1)}%
                 </p>
-                <p className="text-xs text-amber-600">desde {months[0] || 'inicio'}</p>
+                <p className="text-xs text-amber-400/70">desde {months[0] || 'inicio'}</p>
               </div>
-              <div className="bg-amber-50 border border-amber-100 rounded-lg p-4">
-                <p className="text-sm text-amber-700">Tendencia</p>
-                <p className={`text-xl font-bold ${trend3Months === 'Positiva' ? 'text-green-600' : trend3Months === 'Negativa' ? 'text-red-600' : 'text-gray-600'}`}>
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                <p className="text-sm text-amber-400">Tendencia</p>
+                <p className={`text-xl font-bold ${trend3Months === 'Positiva' ? 'text-[#00CCBA]' : trend3Months === 'Negativa' ? 'text-red-400' : 'text-[#F2F3F4]/70'}`}>
                   {trend3Months}
                 </p>
-                <p className="text-xs text-amber-600">últimos 3 meses</p>
+                <p className="text-xs text-amber-400/70">últimos 3 meses</p>
               </div>
             </div>
           </>
@@ -1494,12 +1494,12 @@ export default function SurveyResultsPage() {
     const evolutionData = results?.evolution_data;
     if (!evolutionData || !evolutionData.months) {
       return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="mb-4">
-            <h3 className="text-xl font-bold text-gray-900">Tendencia de Participación</h3>
-            <p className="text-sm text-gray-500">Evolución mensual de respuestas ciudadanas</p>
+            <h3 className="text-xl font-bold text-[#F2F3F4]">Tendencia de Participación</h3>
+            <p className="text-sm text-[#F2F3F4]/50">Evolución mensual de respuestas ciudadanas</p>
           </div>
-          <div className="text-center text-gray-500 py-12">
+          <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos históricos disponibles
           </div>
         </div>
@@ -1566,22 +1566,22 @@ export default function SurveyResultsPage() {
       : "0";
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Tendencia de Participación</h3>
-          <p className="text-sm text-gray-500">Evolución mensual de respuestas ciudadanas</p>
+          <h3 className="text-xl font-bold text-[#F2F3F4]">Tendencia de Participación</h3>
+          <p className="text-sm text-[#F2F3F4]/50">Evolución mensual de respuestas ciudadanas</p>
         </div>
 
         {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 mb-6 bg-[#201631] rounded-lg p-1 w-fit">
           {ageFilterOptions.map((option) => (
             <button
               key={option}
               onClick={() => setParticipationTrendAgeFilter(option)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition ${
                 participationTrendAgeFilter === option
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
+                  : "text-[#F2F3F4]/70 hover:text-[#F2F3F4]"
               }`}
             >
               {option}
@@ -1591,7 +1591,7 @@ export default function SurveyResultsPage() {
 
         {/* Line Chart */}
         {!hasData ? (
-          <div className="text-center text-gray-500 py-12">
+          <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos para este grupo de edad
           </div>
         ) : (
@@ -1667,19 +1667,19 @@ export default function SurveyResultsPage() {
 
             {/* Metrics Cards */}
             <div className="grid grid-cols-2 gap-4 mt-6">
-              <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-                <p className="text-sm text-blue-700">Crecimiento</p>
-                <p className={`text-2xl font-bold ${isPositiveGrowth ? 'text-green-600' : 'text-red-600'}`}>
+              <div className="bg-[#5941CE]/10 border border-[#5941CE]/20 rounded-lg p-4">
+                <p className="text-sm text-[#7B6FD4]">Crecimiento</p>
+                <p className={`text-2xl font-bold ${isPositiveGrowth ? 'text-[#00CCBA]' : 'text-red-400'}`}>
                   {isPositiveGrowth ? '+' : ''}{growthPercentage}%
                 </p>
-                <p className="text-xs text-blue-600">desde {months[0] || 'inicio'}</p>
+                <p className="text-xs text-[#5941CE]">desde {months[0] || 'inicio'}</p>
               </div>
-              <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-                <p className="text-sm text-blue-700">Promedio/mes</p>
-                <p className="text-2xl font-bold text-blue-900">
+              <div className="bg-[#5941CE]/10 border border-[#5941CE]/20 rounded-lg p-4">
+                <p className="text-sm text-[#7B6FD4]">Promedio/mes</p>
+                <p className="text-2xl font-bold text-[#7B6FD4]">
                   {averagePerMonth}
                 </p>
-                <p className="text-xs text-blue-600">respuestas mensuales</p>
+                <p className="text-xs text-[#5941CE]">respuestas mensuales</p>
               </div>
             </div>
           </>
@@ -1693,12 +1693,12 @@ export default function SurveyResultsPage() {
     const ageData = results?.demographics.by_age_group;
     if (!ageData || Object.keys(ageData).length === 0) {
       return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="mb-4">
-            <h3 className="text-xl font-bold text-gray-900">Desglose por Edad</h3>
-            <p className="text-sm text-gray-500">Participación por grupo etario</p>
+            <h3 className="text-xl font-bold text-[#F2F3F4]">Desglose por Edad</h3>
+            <p className="text-sm text-[#F2F3F4]/50">Participación por grupo etario</p>
           </div>
-          <div className="text-center text-gray-500 py-12">
+          <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos demográficos disponibles
           </div>
         </div>
@@ -1708,9 +1708,9 @@ export default function SurveyResultsPage() {
     const entries = Object.entries(ageData).filter(([key]) => key !== "Sin especificar");
     if (entries.length === 0) {
       return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Desglose por Edad</h3>
-          <p className="text-gray-500 text-sm">No hay datos demográficos disponibles aún.</p>
+        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+          <h3 className="text-xl font-bold text-[#F2F3F4] mb-2">Desglose por Edad</h3>
+          <p className="text-[#F2F3F4]/50 text-sm">No hay datos demográficos disponibles aún.</p>
         </div>
       );
     }
@@ -1743,10 +1743,10 @@ export default function SurveyResultsPage() {
     const topPercentage = ((topGroup[1] / total) * 100).toFixed(1);
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-6">
-          <h3 className="text-xl font-bold text-gray-900">Desglose por Edad</h3>
-          <p className="text-sm text-gray-500">Participación por grupo etario</p>
+          <h3 className="text-xl font-bold text-[#F2F3F4]">Desglose por Edad</h3>
+          <p className="text-sm text-[#F2F3F4]/50">Participación por grupo etario</p>
         </div>
 
         <div className="space-y-4 mb-6">
@@ -1757,10 +1757,10 @@ export default function SurveyResultsPage() {
             return (
               <div key={label}>
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium text-gray-700">{label}</span>
-                  <span className="text-sm text-gray-500">{value.toLocaleString()}</span>
+                  <span className="text-sm font-medium text-[#F2F3F4]/80">{label}</span>
+                  <span className="text-sm text-[#F2F3F4]/50">{value.toLocaleString()}</span>
                 </div>
-                <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                <div className="relative h-8 bg-[#201631] rounded-lg overflow-hidden">
                   <div
                     className="h-full flex items-center justify-end pr-3 text-white text-xs font-semibold transition-all duration-500"
                     style={{
@@ -1771,7 +1771,7 @@ export default function SurveyResultsPage() {
                     {percentage >= 10 && `${percentage.toFixed(0)}%`}
                   </div>
                   {percentage < 10 && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-600">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#F2F3F4]/70">
                       {percentage.toFixed(0)}%
                     </span>
                   )}
@@ -1782,10 +1782,10 @@ export default function SurveyResultsPage() {
         </div>
 
         {/* Insight */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-600">
-            El grupo etario <span className="font-semibold text-gray-900">{topGroup[0]} años</span> representa la mayor participación con{" "}
-            <span className="font-semibold text-gray-900">{topPercentage}%</span>
+        <div className="bg-[#201631] border border-white/10 rounded-lg p-4">
+          <p className="text-sm text-[#F2F3F4]/70">
+            El grupo etario <span className="font-semibold text-[#F2F3F4]">{topGroup[0]} años</span> representa la mayor participación con{" "}
+            <span className="font-semibold text-[#F2F3F4]">{topPercentage}%</span>
           </p>
         </div>
       </div>
@@ -1829,10 +1829,10 @@ export default function SurveyResultsPage() {
 
     if (groups.length === 0) {
       return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
-          <h3 className="text-xl font-bold text-gray-900 mb-1">Análisis Cruzado</h3>
-          <p className="text-sm text-gray-500 mb-4">Compara preferencias segmentando por diferentes dimensiones</p>
-          <div className="text-center text-gray-500 py-12">No hay datos disponibles</div>
+        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6 mb-8">
+          <h3 className="text-xl font-bold text-[#F2F3F4] mb-1">Análisis Cruzado</h3>
+          <p className="text-sm text-[#F2F3F4]/50 mb-4">Compara preferencias segmentando por diferentes dimensiones</p>
+          <div className="text-center text-[#F2F3F4]/50 py-12">No hay datos disponibles</div>
         </div>
       );
     }
@@ -1896,22 +1896,22 @@ export default function SurveyResultsPage() {
     const displayGroups = crossAnalysisTab === "neighborhood" ? groups.slice(0, 10) : groups;
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6 mb-8">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Análisis Cruzado</h3>
-          <p className="text-sm text-gray-500">Compara preferencias segmentando por diferentes dimensiones</p>
+          <h3 className="text-xl font-bold text-[#F2F3F4]">Análisis Cruzado</h3>
+          <p className="text-sm text-[#F2F3F4]/50">Compara preferencias segmentando por diferentes dimensiones</p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 mb-6 bg-[#201631] rounded-lg p-1 w-fit">
           {(["neighborhood", "age", "gender"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setCrossAnalysisTab(tab)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition ${
                 crossAnalysisTab === tab
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-900"
+                  ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
+                  : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]"
               }`}
             >
               {tabLabels[tab]}
@@ -1923,14 +1923,14 @@ export default function SurveyResultsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-2 font-semibold text-gray-700">{columnLabel[crossAnalysisTab]}</th>
-                <th className="text-center py-3 px-2 font-semibold text-gray-700">Respuestas</th>
-                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-gray-700">Prioridad #1</th>}
-                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-gray-700">Prioridad #2</th>}
-                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-gray-700">Prioridad #3</th>}
-                {projectQuestion && <th className="text-left py-3 px-2 font-semibold text-gray-700">Obra Preferida</th>}
-                {ratingQuestion && <th className="text-right py-3 px-2 font-semibold text-gray-700">Calificación</th>}
+              <tr className="border-b border-white/10">
+                <th className="text-left py-3 px-2 font-semibold text-[#F2F3F4]/80">{columnLabel[crossAnalysisTab]}</th>
+                <th className="text-center py-3 px-2 font-semibold text-[#F2F3F4]/80">Respuestas</th>
+                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-[#F2F3F4]/80">Prioridad #1</th>}
+                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-[#F2F3F4]/80">Prioridad #2</th>}
+                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-[#F2F3F4]/80">Prioridad #3</th>}
+                {projectQuestion && <th className="text-left py-3 px-2 font-semibold text-[#F2F3F4]/80">Obra Preferida</th>}
+                {ratingQuestion && <th className="text-right py-3 px-2 font-semibold text-[#F2F3F4]/80">Calificación</th>}
               </tr>
             </thead>
             <tbody>
@@ -1944,14 +1944,14 @@ export default function SurveyResultsPage() {
                 const rating = getRating(ratingData);
 
                 // Color de rating
-                const ratingColor = rating && rating.average >= 4 ? "text-green-600"
+                const ratingColor = rating && rating.average >= 4 ? "text-[#00CCBA]"
                   : rating && rating.average >= 3 ? "text-orange-500"
                   : "text-red-500";
 
                 return (
-                  <tr key={groupName} className="border-b border-gray-100 hover:bg-gray-50 transition">
-                    <td className="py-3 px-2 font-medium text-gray-900">{groupName}</td>
-                    <td className="py-3 px-2 text-center text-gray-600">{count.toLocaleString()}</td>
+                  <tr key={groupName} className="border-b border-white/5 hover:bg-[#201631] transition">
+                    <td className="py-3 px-2 font-medium text-[#F2F3F4]">{groupName}</td>
+                    <td className="py-3 px-2 text-center text-[#F2F3F4]/70">{count.toLocaleString()}</td>
                     {budgetQuestion && [0, 1, 2].map((i) => (
                       <td key={i} className="py-3 px-2">
                         {priorities[i] ? (
@@ -1960,23 +1960,23 @@ export default function SurveyResultsPage() {
                               className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                               style={{ backgroundColor: budgetColorMap[priorities[i].label] || "#9CA3AF" }}
                             />
-                            <span className="text-gray-900">{priorities[i].label}</span>
-                            <span className="text-gray-400 text-xs">({priorities[i].percentage.toFixed(1)}%)</span>
+                            <span className="text-[#F2F3F4]">{priorities[i].label}</span>
+                            <span className="text-[#F2F3F4]/40 text-xs">({priorities[i].percentage.toFixed(1)}%)</span>
                           </div>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-[#F2F3F4]/30">—</span>
                         )}
                       </td>
                     ))}
                     {projectQuestion && (
                       <td className="py-3 px-2">
                         {topProject ? (
-                          <span className="text-gray-900">
+                          <span className="text-[#F2F3F4]">
                             {topProject.label.split("(")[0].trim()}{" "}
-                            <span className="text-gray-400 text-xs">({topProject.percentage.toFixed(1)}%)</span>
+                            <span className="text-[#F2F3F4]/40 text-xs">({topProject.percentage.toFixed(1)}%)</span>
                           </span>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-[#F2F3F4]/30">—</span>
                         )}
                       </td>
                     )}
@@ -1984,10 +1984,10 @@ export default function SurveyResultsPage() {
                       <td className="py-3 px-2 text-right">
                         {rating && rating.total > 0 ? (
                           <span className={`font-bold ${ratingColor}`}>
-                            {rating.average.toFixed(1)}<span className="text-gray-400 font-normal">/5</span>
+                            {rating.average.toFixed(1)}<span className="text-[#F2F3F4]/40 font-normal">/5</span>
                           </span>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-[#F2F3F4]/30">—</span>
                         )}
                       </td>
                     )}
@@ -1999,7 +1999,7 @@ export default function SurveyResultsPage() {
         </div>
 
         {crossAnalysisTab === "neighborhood" && groups.length > 10 && (
-          <p className="text-xs text-gray-400 mt-3">Mostrando los 10 barrios con más respuestas de {groups.length} totales</p>
+          <p className="text-xs text-[#F2F3F4]/40 mt-3">Mostrando los 10 barrios con más respuestas de {groups.length} totales</p>
         )}
       </div>
     );
@@ -2084,34 +2084,34 @@ export default function SurveyResultsPage() {
 
     return (
       <div className="mb-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="flex items-center gap-2 mb-6">
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-[#5941CE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
-            <h2 className="text-2xl font-bold text-gray-900">Predicciones y Proyecciones</h2>
+            <h2 className="text-2xl font-bold text-[#F2F3F4]">Predicciones y Proyecciones</h2>
           </div>
 
           <div className="space-y-4">
             {predictions.map((prediction, index) => (
-              <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-5">
+              <div key={index} className="bg-[#201631] border border-white/10 rounded-lg p-5">
                 <div className="flex items-start gap-4">
                   <div className="text-3xl flex-shrink-0">{prediction.icon}</div>
                   <div className="flex-1">
-                    <h3 className="text-base font-semibold text-gray-900 mb-2">
+                    <h3 className="text-base font-semibold text-[#F2F3F4] mb-2">
                       {prediction.title}
                     </h3>
-                    <p className="text-sm text-gray-600 mb-3">{prediction.description}</p>
+                    <p className="text-sm text-[#F2F3F4]/70 mb-3">{prediction.description}</p>
 
                     {/* Progress bar for confidence */}
                     <div className="flex items-center gap-3">
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div className="flex-1 bg-white/10 rounded-full h-2">
                         <div
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                          className="bg-[#5941CE] h-2 rounded-full transition-all duration-500"
                           style={{ width: `${prediction.confidence}%` }}
                         ></div>
                       </div>
-                      <span className="text-sm font-medium text-gray-700 min-w-[3rem] text-right">
+                      <span className="text-sm font-medium text-[#F2F3F4]/80 min-w-[3rem] text-right">
                         {prediction.confidence}%
                       </span>
                     </div>
@@ -2121,15 +2121,15 @@ export default function SurveyResultsPage() {
             ))}
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-gray-500 pt-4 border-t border-gray-200">
-            <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
+          <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-[#F2F3F4]/50 pt-4 border-t border-white/10">
+            <span className="bg-[#5941CE]/20 text-[#7B6FD4] px-3 py-1 rounded-full font-medium">
               {aiPredictions ? "Generado con Claude AI" : "Análisis Predictivo"}
             </span>
             {aiPredictions && (
               <button
                 onClick={generateAIPredictions}
                 disabled={loadingAiPredictions}
-                className="text-blue-600 hover:text-blue-700 font-medium underline"
+                className="text-[#5941CE] hover:text-[#7B6FD4] font-medium underline"
               >
                 {loadingAiPredictions ? "Regenerando..." : "Regenerar"}
               </button>
@@ -2138,7 +2138,7 @@ export default function SurveyResultsPage() {
               <button
                 onClick={generateAIPredictions}
                 disabled={loadingAiPredictions}
-                className="bg-blue-600 text-white px-3 py-1 rounded-full font-medium hover:bg-blue-700 transition-colors"
+                className="bg-[#5941CE] text-white px-3 py-1 rounded-full font-medium hover:bg-[#7B6FD4] transition-colors"
               >
                 {loadingAiPredictions ? "Generando..." : "Generar con IA"}
               </button>
@@ -2182,9 +2182,9 @@ export default function SurveyResultsPage() {
             recommendation: `Comunicar planes concretos de ${topCategory[1].label.toLowerCase()} y considerar ajustar asignaciones según preferencias expresadas`,
             impact: "Alta",
             icon: "target",
-            color: "text-red-600",
-            bgColor: "bg-red-50",
-            borderColor: "border-red-100"
+            color: "text-red-400",
+            bgColor: "bg-red-500/10",
+            borderColor: "border-red-500/20"
           });
         }
       }
@@ -2214,9 +2214,9 @@ export default function SurveyResultsPage() {
               recommendation: "Mantener frecuencia de encuestas mensuales y comunicar cómo sus respuestas impactan decisiones reales",
               impact: "Alta",
               icon: "trending-up",
-              color: "text-green-600",
-              bgColor: "bg-green-50",
-              borderColor: "border-green-100"
+              color: "text-[#00CCBA]",
+              bgColor: "bg-[#00CCBA]/10",
+              borderColor: "border-[#00CCBA]/20"
             });
           }
         }
@@ -2258,9 +2258,9 @@ export default function SurveyResultsPage() {
               recommendation: "Diseñar programas diferenciados por edad y crear espacios de diálogo intergeneracional",
               impact: "Media",
               icon: "users",
-              color: "text-amber-600",
-              bgColor: "bg-amber-50",
-              borderColor: "border-amber-100"
+              color: "text-amber-400",
+              bgColor: "bg-amber-500/10",
+              borderColor: "border-amber-500/20"
             });
           }
         }
@@ -2284,9 +2284,9 @@ export default function SurveyResultsPage() {
             recommendation: "Implementar estrategia de difusión dirigida en zonas con baja participación y evaluar barreras de acceso",
             impact: "Alta",
             icon: "map-pin",
-            color: "text-blue-600",
-            bgColor: "bg-blue-50",
-            borderColor: "border-blue-100"
+            color: "text-[#5941CE]",
+            bgColor: "bg-[#5941CE]/10",
+            borderColor: "border-[#5941CE]/20"
           });
         }
       }
@@ -2473,19 +2473,19 @@ export default function SurveyResultsPage() {
 
     return (
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Análisis Inteligente y Recomendaciones</h2>
+        <h2 className="text-2xl font-bold text-[#F2F3F4] mb-4">Análisis Inteligente y Recomendaciones</h2>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 bg-[#5941CE]/20 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-[#7B6FD4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Insights de IA para Toma de Decisiones</h3>
-                <p className="text-sm text-gray-500">
+                <h3 className="text-xl font-bold text-[#F2F3F4]">Insights de IA para Toma de Decisiones</h3>
+                <p className="text-sm text-[#F2F3F4]/50">
                   {aiInsights ? "Generado con Claude AI" : "Análisis basado en reglas"}
                 </p>
               </div>
@@ -2497,10 +2497,10 @@ export default function SurveyResultsPage() {
               disabled={loadingAiInsights}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
                 loadingAiInsights
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  ? "bg-[#201631] text-[#F2F3F4]/40 cursor-not-allowed"
                   : aiInsights
-                  ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
-                  : "bg-purple-600 text-white hover:bg-purple-700"
+                  ? "bg-[#5941CE]/20 text-[#7B6FD4] hover:bg-[#5941CE]/30"
+                  : "bg-[#5941CE] text-white hover:bg-[#7B6FD4]"
               }`}
             >
               {loadingAiInsights ? (
@@ -2531,14 +2531,14 @@ export default function SurveyResultsPage() {
 
           {/* Error message */}
           {aiInsightsError && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
               <div className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <p className="text-sm font-medium text-red-800">Error al generar insights</p>
-                  <p className="text-sm text-red-700 mt-1">{aiInsightsError}</p>
+                  <p className="text-sm font-medium text-red-400">Error al generar insights</p>
+                  <p className="text-sm text-red-400/80 mt-1">{aiInsightsError}</p>
                 </div>
               </div>
             </div>
@@ -2548,38 +2548,38 @@ export default function SurveyResultsPage() {
             {insights.map((insight) => (
               <div
                 key={insight.id}
-                className={`${insight.bgColor} ${insight.borderColor} border rounded-xl p-4`}
+                className="bg-white/5 border border-white/10 rounded-xl p-4"
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-3">
                     <div className={`${insight.color}`}>
                       {getIcon(insight.icon)}
                     </div>
-                    <h4 className="font-semibold text-gray-900">{insight.title}</h4>
+                    <h4 className="font-semibold text-[#F2F3F4]">{insight.title}</h4>
                   </div>
                   <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                     insight.impact === "Alta"
-                      ? "bg-red-100 text-red-700"
+                      ? "bg-red-500/20 text-red-400"
                       : insight.impact === "Media"
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-gray-100 text-gray-700"
+                      ? "bg-amber-500/20 text-amber-400"
+                      : "bg-[#201631] text-[#F2F3F4]/80"
                   }`}>
                     Impacto: {insight.impact}
                   </span>
                 </div>
 
-                <p className="text-sm text-gray-700 mb-3 ml-8">
+                <p className="text-sm text-[#F2F3F4]/80 mb-3 ml-8">
                   {insight.description}
                 </p>
 
-                <div className="ml-8 bg-white/60 rounded-lg p-3">
+                <div className="ml-8 bg-white/5 rounded-lg p-3">
                   <div className="flex items-start gap-2">
-                    <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                     <div>
-                      <p className="text-xs font-medium text-amber-700">Recomendación</p>
-                      <p className="text-sm text-gray-700">{insight.recommendation}</p>
+                      <p className="text-xs font-medium text-amber-400">Recomendación</p>
+                      <p className="text-sm text-[#F2F3F4]/80">{insight.recommendation}</p>
                     </div>
                   </div>
                 </div>
@@ -2596,21 +2596,21 @@ export default function SurveyResultsPage() {
     const maxValue = Math.max(...entries.map(([_, value]) => value), 1);
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">{title}</h3>
+      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+        <h3 className="text-lg font-bold text-[#F2F3F4] mb-4">{title}</h3>
         {entries.length === 0 ? (
-          <p className="text-gray-500 text-sm">No hay datos disponibles</p>
+          <p className="text-[#F2F3F4]/50 text-sm">No hay datos disponibles</p>
         ) : (
           <div className="space-y-3">
             {entries.map(([label, value]) => (
               <div key={label}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">{label}</span>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm font-medium text-[#F2F3F4]/80">{label}</span>
+                  <span className="text-sm text-[#F2F3F4]/70">
                     {value} ({calculatePercentage(value, results.total_responses)}%)
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div className="w-full bg-white/10 rounded-full h-2.5">
                   <div
                     className={`${color} h-2.5 rounded-full transition-all duration-300`}
                     style={{ width: `${(value / maxValue) * 100}%` }}
@@ -2625,12 +2625,12 @@ export default function SurveyResultsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#201631]">
       <div className="container mx-auto p-6 max-w-7xl">
         {/* Back button */}
         <button
           onClick={() => router.push("/client")}
-          className="text-blue-600 hover:text-blue-700 font-medium mb-4 flex items-center"
+          className="text-[#5941CE] hover:text-[#7B6FD4] font-medium mb-4 flex items-center"
         >
           <svg
             className="w-5 h-5 mr-1"
@@ -2652,10 +2652,10 @@ export default function SurveyResultsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900">
+              <h1 className="text-4xl font-bold text-[#F2F3F4]">
                 Panel de Encuestas Ciudadanas
               </h1>
-              <p className="text-gray-500 mt-2">
+              <p className="text-[#F2F3F4]/50 mt-2">
                 Democratizando la Voluntad Popular
               </p>
             </div>
@@ -2668,8 +2668,8 @@ export default function SurveyResultsPage() {
                   onClick={() => setShowPeriodPicker(!showPeriodPicker)}
                   className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition ${
                     activePeriodLabel
-                      ? "bg-blue-50 border-blue-300 text-blue-700"
-                      : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                      ? "bg-[#5941CE]/10 border-[#5941CE]/40 text-[#7B6FD4]"
+                      : "bg-[#3C2E51] border-white/20 text-[#F2F3F4]/80 hover:bg-[#201631]"
                   }`}
                 >
                   <svg
@@ -2698,7 +2698,7 @@ export default function SurveyResultsPage() {
                         setShowPeriodPicker(false);
                         fetchResults();
                       }}
-                      className="ml-1 text-blue-500 hover:text-blue-700 cursor-pointer"
+                      className="ml-1 text-[#5941CE] hover:text-[#7B6FD4] cursor-pointer"
                     >
                       ✕
                     </span>
@@ -2706,25 +2706,25 @@ export default function SurveyResultsPage() {
                 </button>
 
                 {showPeriodPicker && (
-                  <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-50 w-80">
-                    <p className="text-sm font-semibold text-gray-700 mb-3">Seleccionar período</p>
+                  <div className="absolute top-full right-0 mt-2 bg-[#3C2E51] border border-white/10 rounded-xl shadow-lg p-4 z-50 w-80">
+                    <p className="text-sm font-semibold text-[#F2F3F4]/80 mb-3">Seleccionar período</p>
                     <div className="flex gap-3 mb-3">
                       <div className="flex-1">
-                        <label className="text-xs text-gray-500 mb-1 block">Desde</label>
+                        <label className="text-xs text-[#F2F3F4]/50 mb-1 block">Desde</label>
                         <input
                           type="date"
                           value={periodFrom}
                           onChange={(e) => setPeriodFrom(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-white/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="text-xs text-gray-500 mb-1 block">Hasta</label>
+                        <label className="text-xs text-[#F2F3F4]/50 mb-1 block">Hasta</label>
                         <input
                           type="date"
                           value={periodTo}
                           onChange={(e) => setPeriodTo(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-white/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
@@ -2737,7 +2737,7 @@ export default function SurveyResultsPage() {
                           setShowPeriodPicker(false);
                           fetchResults();
                         }}
-                        className="flex-1 px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                        className="flex-1 px-3 py-2 text-sm text-[#F2F3F4]/70 border border-white/20 rounded-lg hover:bg-[#201631]"
                       >
                         Limpiar
                       </button>
@@ -2753,7 +2753,7 @@ export default function SurveyResultsPage() {
                           }
                           setShowPeriodPicker(false);
                         }}
-                        className="flex-1 px-3 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                        className="flex-1 px-3 py-2 text-sm text-white bg-[#5941CE] rounded-lg hover:bg-[#7B6FD4]"
                       >
                         Aplicar
                       </button>
@@ -2765,7 +2765,7 @@ export default function SurveyResultsPage() {
               {/* Exportar PDF */}
               <button
                 onClick={() => window.print()}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-[#5941CE] text-white rounded-lg hover:bg-[#7B6FD4] transition shadow-none"
               >
                 <svg
                   className="w-5 h-5"
@@ -2789,22 +2789,22 @@ export default function SurveyResultsPage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Card 1: Respuestas Totales */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-sm text-[#F2F3F4]/70 mb-2">
                   Respuestas Totales
                 </p>
-                <p className="text-4xl font-bold text-gray-900 mb-3">
+                <p className="text-4xl font-bold text-[#F2F3F4] mb-3">
                   {metrics.totalResponses.toLocaleString()}
                 </p>
-                <p className={`text-sm font-medium ${metrics.totalResponsesChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                <p className={`text-sm font-medium ${metrics.totalResponsesChange >= 0 ? 'text-[#00CCBA]' : 'text-red-500'}`}>
                   {metrics.totalResponsesChange >= 0 ? '+' : ''}{metrics.totalResponsesChange}% vs. mes anterior
                 </p>
               </div>
-              <div className="bg-blue-100 rounded-full p-3">
+              <div className="bg-[#5941CE]/20 rounded-full p-3">
                 <svg
-                  className="w-6 h-6 text-blue-600"
+                  className="w-6 h-6 text-[#5941CE]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -2821,22 +2821,22 @@ export default function SurveyResultsPage() {
           </div>
 
           {/* Card 2: Respuestas Este Mes */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-sm text-[#F2F3F4]/70 mb-2">
                   Respuestas Este Mes
                 </p>
-                <p className="text-4xl font-bold text-gray-900 mb-3">
+                <p className="text-4xl font-bold text-[#F2F3F4] mb-3">
                   {metrics.monthlyResponses.toLocaleString()}
                 </p>
-                <p className={`text-sm font-medium ${metrics.monthlyResponsesChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                <p className={`text-sm font-medium ${metrics.monthlyResponsesChange >= 0 ? 'text-[#00CCBA]' : 'text-red-500'}`}>
                   {metrics.monthlyResponsesChange >= 0 ? '+' : ''}{metrics.monthlyResponsesChange}% vs. mes anterior
                 </p>
               </div>
-              <div className="bg-purple-100 rounded-full p-3">
+              <div className="bg-[#5941CE]/20 rounded-full p-3">
                 <svg
-                  className="w-6 h-6 text-purple-600"
+                  className="w-6 h-6 text-[#7B6FD4]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -2853,22 +2853,22 @@ export default function SurveyResultsPage() {
           </div>
 
           {/* Card 3: Barrios Participantes */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-sm text-[#F2F3F4]/70 mb-2">
                   Barrios Participantes
                 </p>
-                <p className="text-4xl font-bold text-gray-900 mb-3">
+                <p className="text-4xl font-bold text-[#F2F3F4] mb-3">
                   {metrics.uniqueNeighborhoods}
                 </p>
-                <p className="text-sm text-gray-500 font-medium">
+                <p className="text-sm text-[#F2F3F4]/50 font-medium">
                   Cobertura geográfica
                 </p>
               </div>
-              <div className="bg-green-100 rounded-full p-3">
+              <div className="bg-[#00CCBA]/20 rounded-full p-3">
                 <svg
-                  className="w-6 h-6 text-green-600"
+                  className="w-6 h-6 text-[#00CCBA]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -2893,14 +2893,14 @@ export default function SurveyResultsPage() {
 
         {/* Tabs Navigation */}
         <div className="mb-8">
-          <div className="border-b border-gray-200">
+          <div className="border-b border-white/10">
             <nav className="-mb-px flex space-x-8">
               <button
                 onClick={() => setActiveTab("datos")}
                 className={`${
                   activeTab === "datos"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "border-[#5941CE] text-[#F2F3F4]"
+                    : "border-transparent text-[#F2F3F4]/50 hover:text-[#F2F3F4] hover:border-white/20"
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
               >
                 📊 Datos
@@ -2909,8 +2909,8 @@ export default function SurveyResultsPage() {
                 onClick={() => setActiveTab("ai-insights")}
                 className={`${
                   activeTab === "ai-insights"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "border-[#5941CE] text-[#F2F3F4]"
+                    : "border-transparent text-[#F2F3F4]/50 hover:text-[#F2F3F4] hover:border-white/20"
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
               >
                 🤖 AI Insights
@@ -2919,8 +2919,8 @@ export default function SurveyResultsPage() {
                 onClick={() => setActiveTab("reportes")}
                 className={`${
                   activeTab === "reportes"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "border-[#5941CE] text-[#F2F3F4]"
+                    : "border-transparent text-[#F2F3F4]/50 hover:text-[#F2F3F4] hover:border-white/20"
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
               >
                 📋 Reportes
@@ -2950,7 +2950,7 @@ export default function SurveyResultsPage() {
             {renderCrossAnalysis()}
 
             {/* Evolution Section Title */}
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Evolución Histórica</h2>
+            <h2 className="text-2xl font-bold text-[#F2F3F4] mb-4">Evolución Histórica</h2>
 
             {/* Evolution Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -2969,7 +2969,7 @@ export default function SurveyResultsPage() {
             </div>
 
             {/* Demographic Breakdown Section */}
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Desglose Demográfico</h2>
+            <h2 className="text-2xl font-bold text-[#F2F3F4] mb-4">Desglose Demográfico</h2>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Age Distribution Chart */}
@@ -2997,21 +2997,21 @@ export default function SurveyResultsPage() {
           <div>
             {/* Header */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900">Segmentacion por Preferencias</h2>
-              <p className="text-gray-500 mt-1">
+              <h2 className="text-2xl font-bold text-[#F2F3F4]">Segmentacion por Preferencias</h2>
+              <p className="text-[#F2F3F4]/50 mt-1">
                 Clasificacion de votantes segun las areas donde asignaron mayor porcentaje de inversion.
                 Ideal para enviar reportes personalizados a cada segmento.
               </p>
             </div>
 
             {/* Threshold Slider + Export */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6 mb-8">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700 block mb-2">
-                    Umbral minimo: <span className="text-blue-600 font-bold text-lg">{segmentThreshold}%</span>
+                  <label className="text-sm font-medium text-[#F2F3F4]/80 block mb-2">
+                    Umbral minimo: <span className="text-[#5941CE] font-bold text-lg">{segmentThreshold}%</span>
                   </label>
-                  <p className="text-xs text-gray-400 mb-3">
+                  <p className="text-xs text-[#F2F3F4]/40 mb-3">
                     Una persona se incluye en un segmento si asigno al menos este porcentaje al area
                   </p>
                   <input
@@ -3020,12 +3020,12 @@ export default function SurveyResultsPage() {
                     max="100"
                     value={segmentThreshold}
                     onChange={(e) => setSegmentThreshold(parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
                     style={{
                       background: `linear-gradient(to right, #2563eb 0%, #2563eb ${segmentThreshold}%, #e5e7eb ${segmentThreshold}%, #e5e7eb 100%)`,
                     }}
                   />
-                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <div className="flex justify-between text-xs text-[#F2F3F4]/40 mt-1">
                     <span>1%</span>
                     <span>50%</span>
                     <span>100%</span>
@@ -3034,7 +3034,7 @@ export default function SurveyResultsPage() {
                 <button
                   onClick={handleExportXLSX}
                   disabled={!segmentsData || segmentsData.segments.length === 0}
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+                  className="px-6 py-3 bg-[#00CCBA] text-white rounded-lg font-medium hover:bg-[#33D9C9] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -3048,7 +3048,7 @@ export default function SurveyResultsPage() {
             {loadingSegments && (
               <div className="flex justify-center py-12">
                 <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-                <span className="ml-3 text-gray-500">Cargando segmentos...</span>
+                <span className="ml-3 text-[#F2F3F4]/50">Cargando segmentos...</span>
               </div>
             )}
 
@@ -3056,23 +3056,23 @@ export default function SurveyResultsPage() {
             {segmentsData && !loadingSegments && (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-                  <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-                    <p className="text-2xl font-bold text-blue-600">{segmentsData.segments.length}</p>
-                    <p className="text-xs text-gray-500">Segmentos</p>
+                  <div className="bg-[#3C2E51] rounded-xl border border-white/10 p-4 text-center">
+                    <p className="text-2xl font-bold text-[#5941CE]">{segmentsData.segments.length}</p>
+                    <p className="text-xs text-[#F2F3F4]/50">Segmentos</p>
                   </div>
-                  <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-                    <p className="text-2xl font-bold text-gray-900">{segmentsData.total_respondents}</p>
-                    <p className="text-xs text-gray-500">Votantes totales</p>
+                  <div className="bg-[#3C2E51] rounded-xl border border-white/10 p-4 text-center">
+                    <p className="text-2xl font-bold text-[#F2F3F4]">{segmentsData.total_respondents}</p>
+                    <p className="text-xs text-[#F2F3F4]/50">Votantes totales</p>
                   </div>
-                  <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-                    <p className="text-2xl font-bold text-green-600">
+                  <div className="bg-[#3C2E51] rounded-xl border border-white/10 p-4 text-center">
+                    <p className="text-2xl font-bold text-[#00CCBA]">
                       {segmentsData.segments.reduce((sum: number, s: any) => sum + s.count, 0)}
                     </p>
-                    <p className="text-xs text-gray-500">Asignaciones totales</p>
+                    <p className="text-xs text-[#F2F3F4]/50">Asignaciones totales</p>
                   </div>
-                  <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-                    <p className="text-2xl font-bold text-purple-600">{segmentThreshold}%</p>
-                    <p className="text-xs text-gray-500">Umbral activo</p>
+                  <div className="bg-[#3C2E51] rounded-xl border border-white/10 p-4 text-center">
+                    <p className="text-2xl font-bold text-[#7B6FD4]">{segmentThreshold}%</p>
+                    <p className="text-xs text-[#F2F3F4]/50">Umbral activo</p>
                   </div>
                 </div>
 
@@ -3084,26 +3084,26 @@ export default function SurveyResultsPage() {
                     const pctOfTotal = ((segment.count / segmentsData.total_respondents) * 100).toFixed(1);
 
                     return (
-                      <div key={segment.area_key} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                      <div key={segment.area_key} className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 overflow-hidden">
                         {/* Segment Header */}
-                        <div className="p-6 border-b border-gray-100">
+                        <div className="p-6 border-b border-white/5">
                           <div className="flex items-center justify-between">
                             <div>
-                              <h3 className="text-lg font-bold text-gray-900">{segment.area}</h3>
-                              <p className="text-sm text-gray-500">
+                              <h3 className="text-lg font-bold text-[#F2F3F4]">{segment.area}</h3>
+                              <p className="text-sm text-[#F2F3F4]/50">
                                 {segment.count} persona{segment.count !== 1 ? "s" : ""} ({pctOfTotal}% del total)
                               </p>
                             </div>
                             <div className="flex items-center gap-3">
-                              <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold">
+                              <div className="bg-[#5941CE]/10 text-[#7B6FD4] px-4 py-2 rounded-full text-sm font-semibold">
                                 {segment.count}
                               </div>
                             </div>
                           </div>
                           {/* Mini bar */}
-                          <div className="mt-3 w-full bg-gray-100 rounded-full h-2">
+                          <div className="mt-3 w-full bg-[#201631] rounded-full h-2">
                             <div
-                              className="bg-blue-500 h-2 rounded-full transition-all"
+                              className="bg-[#5941CE] h-2 rounded-full transition-all"
                               style={{ width: `${pctOfTotal}%` }}
                             />
                           </div>
@@ -3112,21 +3112,21 @@ export default function SurveyResultsPage() {
                         {/* Users Table */}
                         <div className="overflow-x-auto">
                           <table className="w-full">
-                            <thead className="bg-gray-50">
+                            <thead className="bg-[#201631]">
                               <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barrio</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">% Asignado</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#F2F3F4]/50 uppercase">Nombre</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#F2F3F4]/50 uppercase">Email</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#F2F3F4]/50 uppercase">Barrio</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-[#F2F3F4]/50 uppercase">% Asignado</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-white/5">
                               {displayUsers.map((user: any, idx: number) => (
-                                <tr key={idx} className="hover:bg-gray-50">
-                                  <td className="px-6 py-3 text-sm text-gray-900">{user.name}</td>
-                                  <td className="px-6 py-3 text-sm text-gray-500">{user.email}</td>
-                                  <td className="px-6 py-3 text-sm text-gray-500">{user.neighborhood}</td>
-                                  <td className="px-6 py-3 text-sm text-right font-semibold text-blue-600">{user.percentage}%</td>
+                                <tr key={idx} className="hover:bg-[#201631]">
+                                  <td className="px-6 py-3 text-sm text-[#F2F3F4]">{user.name}</td>
+                                  <td className="px-6 py-3 text-sm text-[#F2F3F4]/50">{user.email}</td>
+                                  <td className="px-6 py-3 text-sm text-[#F2F3F4]/50">{user.neighborhood}</td>
+                                  <td className="px-6 py-3 text-sm text-right font-semibold text-[#5941CE]">{user.percentage}%</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -3135,7 +3135,7 @@ export default function SurveyResultsPage() {
 
                         {/* Show more/less */}
                         {segment.users.length > 5 && (
-                          <div className="px-6 py-3 border-t border-gray-100 bg-gray-50">
+                          <div className="px-6 py-3 border-t border-white/5 bg-[#201631]">
                             <button
                               onClick={() =>
                                 setExpandedSegments((prev) => ({
@@ -3143,7 +3143,7 @@ export default function SurveyResultsPage() {
                                   [segment.area_key]: !isExpanded,
                                 }))
                               }
-                              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                              className="text-sm text-[#5941CE] hover:text-[#7B6FD4] font-medium"
                             >
                               {isExpanded
                                 ? "Ver menos"
@@ -3157,8 +3157,8 @@ export default function SurveyResultsPage() {
                 </div>
 
                 {segmentsData.segments.length === 0 && (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-                    <p className="text-gray-500">No hay segmentos con el umbral seleccionado. Proba bajando el porcentaje.</p>
+                  <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-12 text-center">
+                    <p className="text-[#F2F3F4]/50">No hay segmentos con el umbral seleccionado. Proba bajando el porcentaje.</p>
                   </div>
                 )}
               </>
@@ -3168,9 +3168,9 @@ export default function SurveyResultsPage() {
 
         {/* Empty state */}
         {results.total_responses === 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
+          <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-12 text-center">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-12 w-12 text-[#F2F3F4]/40"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -3182,10 +3182,10 @@ export default function SurveyResultsPage() {
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
               />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
+            <h3 className="mt-2 text-sm font-medium text-[#F2F3F4]">
               No hay respuestas aún
             </h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-[#F2F3F4]/50">
               Esta encuesta aún no ha recibido respuestas de usuarios.
             </p>
           </div>

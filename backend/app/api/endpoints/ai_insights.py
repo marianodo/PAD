@@ -215,33 +215,33 @@ Responde SOLO con el JSON, sin texto adicional:
         category_config = {
             "participation": {
                 "icon": "trending-up",
-                "color": "text-green-600",
-                "bgColor": "bg-green-50",
-                "borderColor": "border-green-100"
+                "color": "text-[#00CCBA]",
+                "bgColor": "bg-[#00CCBA]/10",
+                "borderColor": "border-[#00CCBA]/20"
             },
             "satisfaction": {
                 "icon": "thumbs-up",
-                "color": "text-emerald-600",
-                "bgColor": "bg-emerald-50",
-                "borderColor": "border-emerald-100"
+                "color": "text-emerald-400",
+                "bgColor": "bg-emerald-500/10",
+                "borderColor": "border-emerald-500/20"
             },
             "demographics": {
                 "icon": "users",
-                "color": "text-amber-600",
-                "bgColor": "bg-amber-50",
-                "borderColor": "border-amber-100"
+                "color": "text-amber-400",
+                "bgColor": "bg-amber-500/10",
+                "borderColor": "border-amber-500/20"
             },
             "infrastructure": {
                 "icon": "building",
-                "color": "text-indigo-600",
-                "bgColor": "bg-indigo-50",
-                "borderColor": "border-indigo-100"
+                "color": "text-[#7B6FD4]",
+                "bgColor": "bg-[#5941CE]/10",
+                "borderColor": "border-[#5941CE]/20"
             },
             "consensus": {
                 "icon": "target",
-                "color": "text-red-600",
-                "bgColor": "bg-red-50",
-                "borderColor": "border-red-100"
+                "color": "text-red-400",
+                "bgColor": "bg-red-500/10",
+                "borderColor": "border-red-500/20"
             }
         }
 
