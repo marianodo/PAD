@@ -10,6 +10,8 @@ class QuestionOptionResponse(BaseModel):
     id: UUID
     option_text: str
     option_value: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
     order_index: Optional[int] = None
 
     class Config:
@@ -66,6 +68,8 @@ class SurveyResponse(BaseModel):
 class QuestionOptionCreate(BaseModel):
     option_text: str
     option_value: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
     order_index: Optional[int] = None
 
 
@@ -82,7 +86,7 @@ class SurveyCreate(BaseModel):
     title: str
     description: Optional[str] = None
     points_per_question: int = 10
-    bonus_points: int = 50
+    bonus_points: int = 70
     max_responses_per_user: int = 0
     expires_at: Optional[datetime] = None
     questions: List[QuestionCreate] = []

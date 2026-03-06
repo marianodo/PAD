@@ -10,6 +10,8 @@ export interface QuestionOption {
   id: string;
   option_text: string;
   option_value?: string;
+  description?: string;
+  image_url?: string;
   order_index?: number;
 }
 

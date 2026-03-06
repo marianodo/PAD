@@ -27,6 +27,12 @@ if not _TESTING:
             conn.execute(text("ALTER TABLE users ADD COLUMN gender VARCHAR(20)"))
             conn.commit()
 
+        # Migración: agregar image_url a question_options
+        qo_columns = [col["name"] for col in inspector.get_columns("question_options")]
+        if "image_url" not in qo_columns:
+            conn.execute(text("ALTER TABLE question_options ADD COLUMN image_url TEXT"))
+            conn.commit()
+
         # Migración: agregar client_id a users
         if "client_id" not in user_columns:
             conn.execute(text(
