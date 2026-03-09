@@ -856,14 +856,14 @@ export default function SurveyResultsPage() {
     );
   };
 
-  // Renderizar gráfico de Evolución de Preferencias Presupuestales
+  // Renderizar gráfico de Evolución de Preferencias
   const renderBudgetEvolutionChart = () => {
     const evolutionData = results?.evolution_data;
     if (!evolutionData || !evolutionData.percentage_distribution?.categories) {
       return (
         <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="mb-4">
-            <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Preferencias Presupuestales</h3>
+            <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Preferencias</h3>
             <p className="text-sm text-[#F2F3F4]/50">Tendencias mensuales de asignación ciudadana</p>
           </div>
           <div className="text-center text-[#F2F3F4]/50 py-12">
@@ -934,7 +934,7 @@ export default function SurveyResultsPage() {
     return (
       <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Preferencias Presupuestales</h3>
+          <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Preferencias</h3>
           <p className="text-sm text-[#F2F3F4]/50">Tendencias mensuales de asignación ciudadana</p>
         </div>
 
