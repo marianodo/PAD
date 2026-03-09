@@ -2946,6 +2946,11 @@ export default function SurveyResultsPage() {
               {renderRatingChart()}
             </div>
 
+            {/* Geographic Heat Map - Full width */}
+            <div className="mb-8">
+              {renderGeographicHeatMap()}
+            </div>
+
             {/* Cross Analysis */}
             {renderCrossAnalysis()}
 
@@ -2971,12 +2976,9 @@ export default function SurveyResultsPage() {
             {/* Demographic Breakdown Section */}
             <h2 className="text-2xl font-bold text-[#F2F3F4] mb-4">Desglose Demográfico</h2>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="mb-8">
               {/* Age Distribution Chart */}
               {renderAgeDistributionChart()}
-
-              {/* Geographic Heat Map */}
-              {renderGeographicHeatMap()}
             </div>
           </>
         )}
