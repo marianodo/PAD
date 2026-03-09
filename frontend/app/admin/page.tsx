@@ -195,7 +195,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Total Encuestas
+                  Total Consultas
                 </p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
                   {surveys.length}
@@ -223,7 +223,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Encuestas Activas
+                  Consultas Activas
                 </p>
                 <p className="text-3xl font-bold text-green-600 mt-2">
                   {surveys.filter((s) => s.is_active).length}
@@ -316,7 +316,7 @@ export default function AdminDashboard() {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                Encuestas
+                Consultas
               </button>
               <button
                 onClick={() => setActiveTab("clients")}
@@ -337,13 +337,13 @@ export default function AdminDashboard() {
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">Encuestas</h2>
+                    <h2 className="text-xl font-bold text-gray-900">Consultas</h2>
                     <p className="text-sm text-gray-600 mt-1">
-                      Gestiona todas las encuestas del sistema
+                      Gestiona todas las consultas del sistema
                     </p>
                   </div>
                   <button className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition shadow-lg">
-                    + Nueva Encuesta
+                    + Nueva Consulta
                   </button>
                 </div>
               </div>
@@ -457,10 +457,10 @@ export default function AdminDashboard() {
                     />
                   </svg>
                   <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    No hay encuestas
+                    No hay consultas
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Comienza creando una nueva encuesta
+                    Comienza creando una nueva consulta
                   </p>
                 </div>
               )}
@@ -498,7 +498,7 @@ export default function AdminDashboard() {
                         Email
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Encuestas
+                        Consultas
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Acciones

@@ -2211,7 +2211,7 @@ export default function SurveyResultsPage() {
               id: "tendencia-participacion",
               title: "Tendencia de Participación Positiva",
               description: `Satisfacción ciudadana creció ${growth.toFixed(1)}% desde ${firstMonth} - los ciudadanos están cada vez más comprometidos`,
-              recommendation: "Mantener frecuencia de encuestas mensuales y comunicar cómo sus respuestas impactan decisiones reales",
+              recommendation: "Mantener frecuencia de consultas mensuales y comunicar cómo sus respuestas impactan decisiones reales",
               impact: "Alta",
               icon: "trending-up",
               color: "text-[#00CCBA]",
@@ -2653,7 +2653,7 @@ export default function SurveyResultsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold text-[#F2F3F4]">
-                Panel de Encuestas Ciudadanas
+                Panel de Consultas Ciudadanas
               </h1>
               <p className="text-[#F2F3F4]/50 mt-2">
                 Democratizando la Voluntad Popular
@@ -3186,7 +3186,7 @@ export default function SurveyResultsPage() {
               No hay respuestas aún
             </h3>
             <p className="mt-1 text-sm text-[#F2F3F4]/50">
-              Esta encuesta aún no ha recibido respuestas de usuarios.
+              Esta consulta aún no ha recibido respuestas de usuarios.
             </p>
           </div>
         )}

@@ -240,7 +240,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
           </div>
           <div>
             <h3 className="text-white font-semibold text-sm">
-              Asistente de Encuesta
+              Asistente de Consulta
             </h3>
             <p className="text-blue-100 text-xs">Powered by Claude AI</p>
           </div>
@@ -290,7 +290,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
               </svg>
             </div>
             <p className="text-gray-600 text-sm mb-3">
-              Preguntame sobre los resultados de esta encuesta
+              Preguntame sobre los resultados de esta consulta
             </p>
             <div className="space-y-2">
               {[

@@ -401,7 +401,7 @@ export default function DashboardPage() {
         <div className="p-6 sm:p-8">
           {/* Stats row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
-            {/* Encuestas Respondidas */}
+            {/* Consultas Respondidas */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
               <div className="flex items-start justify-between mb-4">
                 <p className="text-sm text-gray-500 font-medium">Consultas Respondidas</p>
@@ -852,7 +852,7 @@ export default function DashboardPage() {
             <p className="text-gray-600 text-sm mb-2">Esta acción es <span className="font-semibold text-red-600">permanente e irreversible</span>. Se eliminarán:</p>
             <ul className="text-sm text-gray-500 space-y-1 mb-6 ml-4 list-disc">
               <li>Tu perfil y datos personales</li>
-              <li>Tu historial de participación en encuestas</li>
+              <li>Tu historial de participación en consultas</li>
               <li>Todos tus puntos acumulados y canjes</li>
             </ul>
             <div className="flex gap-2.5">

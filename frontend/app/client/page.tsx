@@ -173,7 +173,7 @@ export default function ClientDashboard() {
     },
     {
       key: "surveys",
-      label: "Encuestas",
+      label: "Consultas",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -356,7 +356,7 @@ export default function ClientDashboard() {
         {activeSection !== "reportes" && activeSection !== "settings" && (<>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-          {/* Total Encuestas */}
+          {/* Total Consultas */}
           <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-5">
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm font-medium text-[#F2F3F4]/60">Total Consultas</p>
@@ -373,7 +373,7 @@ export default function ClientDashboard() {
             <p className="text-xs text-[#F2F3F4]/40 mt-1">{activeSurveys} activa{activeSurveys !== 1 ? 's' : ''}, {inactiveSurveys} inactiva{inactiveSurveys !== 1 ? 's' : ''}</p>
           </div>
 
-          {/* Encuestas Activas */}
+          {/* Consultas Activas */}
           <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-5">
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm font-medium text-[#F2F3F4]/60">Consultas Activas</p>
@@ -437,7 +437,7 @@ export default function ClientDashboard() {
               </svg>
               <input
                 type="text"
-                placeholder="Buscar encuesta..."
+                placeholder="Buscar consulta..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 pr-4 py-2 bg-[#201631] border border-white/10 rounded-xl text-sm text-[#F2F3F4] placeholder-[#F2F3F4]/30 focus:border-[#5941CE] focus:ring-2 focus:ring-[#5941CE]/20 outline-none transition-all w-64"
@@ -450,7 +450,7 @@ export default function ClientDashboard() {
             <table className="w-full">
               <thead>
                 <tr className="border-t border-white/5">
-                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#F2F3F4]/30 uppercase tracking-wider">Encuesta</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#F2F3F4]/30 uppercase tracking-wider">Consulta</th>
                   <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#F2F3F4]/30 uppercase tracking-wider">Estado</th>
                   <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#F2F3F4]/30 uppercase tracking-wider">Respuestas</th>
                   <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#F2F3F4]/30 uppercase tracking-wider">Fecha de Creacion</th>
@@ -518,7 +518,7 @@ export default function ClientDashboard() {
                         <button
                           onClick={() => handleCopyLink(survey.id)}
                           className="inline-flex items-center justify-center gap-1.5 w-[110px] py-1.5 text-xs font-medium text-[#F2F3F4]/70 bg-white/5 border border-white/10 hover:bg-white/10 rounded-lg transition-colors"
-                          title="Copiar link de la encuesta"
+                          title="Copiar link de la consulta"
                         >
                           {copiedId === survey.id ? (
                             <>
@@ -581,12 +581,12 @@ export default function ClientDashboard() {
                 <line x1="16" y1="17" x2="8" y2="17" />
               </svg>
               <h3 className="mt-3 text-sm font-medium text-[#F2F3F4]/70">
-                {searchQuery ? "Sin resultados" : "No hay encuestas"}
+                {searchQuery ? "Sin resultados" : "No hay consultas"}
               </h3>
               <p className="mt-1 text-sm text-[#F2F3F4]/40">
                 {searchQuery
-                  ? `No se encontraron encuestas para "${searchQuery}"`
-                  : "Tus encuestas aparecerán aquí una vez que sean creadas"}
+                  ? `No se encontraron consultas para "${searchQuery}"`
+                  : "Tus consultas aparecerán aquí una vez que sean creadas"}
               </p>
             </div>
           )}
