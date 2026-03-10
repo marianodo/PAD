@@ -388,12 +388,12 @@ export default function SurveyResultsPage() {
     ageFilter: string, setAgeFilter: (v: string) => void,
     genderFilter: string, setGenderFilter: (v: string) => void
   ) => (
-    <div className="flex items-center gap-0 mb-6 bg-[#201631] rounded-lg p-1 w-fit">
+    <div className="flex items-center gap-0 mb-6 bg-[#201631] rounded-lg p-1 w-full">
       {ageFilterOptions.map((option) => (
         <button
           key={option}
           onClick={() => setAgeFilter(option)}
-          className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+          className={`flex-1 px-2 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
             ageFilter === option
               ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
               : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]"
@@ -402,12 +402,12 @@ export default function SurveyResultsPage() {
           {option}
         </button>
       ))}
-      <div className="w-px h-5 bg-white/20 mx-1.5" />
+      <div className="w-px h-5 bg-white/20 mx-1.5 shrink-0" />
       {genderFilterOptions.map((option) => (
         <button
           key={option}
           onClick={() => setGenderFilter(option)}
-          className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+          className={`flex-1 px-2 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
             genderFilter === option
               ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
               : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]"
@@ -1573,12 +1573,12 @@ export default function SurveyResultsPage() {
         </div>
 
         {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-6 bg-[#201631] rounded-lg p-1 w-fit">
+        <div className="flex gap-1 mb-6 bg-[#201631] rounded-lg p-1 w-full">
           {ageFilterOptions.map((option) => (
             <button
               key={option}
               onClick={() => setParticipationTrendAgeFilter(option)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition ${
+              className={`flex-1 px-2 py-2 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
                 participationTrendAgeFilter === option
                   ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
                   : "text-[#F2F3F4]/70 hover:text-[#F2F3F4]"
