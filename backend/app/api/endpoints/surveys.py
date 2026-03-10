@@ -64,43 +64,72 @@ def get_active_survey(db: Session = Depends(get_db)):
 
 @router.get("/participation-trend")
 def get_participation_trend(
+    gender: Optional[str] = None,
+    survey_id: Optional[str] = None,
+    age_range: Optional[str] = None,
     current_user: Union[User, Admin, Client] = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Devuelve la tendencia de participación mensual (respuestas por mes)
-    para todas las surveys del cliente, los últimos 12 meses.
+    Devuelve la tendencia de participación mensual (respuestas por mes).
+    Si se pasa survey_id, filtra solo esa survey. Si no, muestra todas las del cliente.
+    Opcionalmente filtrar por género (masculino/femenino) y/o rango de edad (18-30, 31-45, 46-60, 60+).
     """
     from app.models.response import SurveyResponse as SurveyResponseModel
     from app.models.survey import Survey
 
-    # Filtrar surveys según el tipo de usuario
-    if isinstance(current_user, Client):
-        survey_ids = [s.id for s in db.query(Survey.id).filter(Survey.client_id == current_user.id).all()]
-    elif isinstance(current_user, Admin):
-        survey_ids = [s.id for s in db.query(Survey.id).all()]
+    if survey_id:
+        target_survey_ids = [survey_id]
     else:
-        raise HTTPException(status_code=403, detail="No tienes permisos")
+        if isinstance(current_user, Client):
+            target_survey_ids = [str(s.id) for s in db.query(Survey.id).filter(Survey.client_id == current_user.id).all()]
+        elif isinstance(current_user, Admin):
+            target_survey_ids = [str(s.id) for s in db.query(Survey.id).all()]
+        else:
+            raise HTTPException(status_code=403, detail="No tienes permisos")
 
-    if not survey_ids:
+    if not target_survey_ids:
         return {"months": []}
 
-    # Consultar respuestas agrupadas por año-mes
-    results = (
+    query = (
         db.query(
             extract("year", SurveyResponseModel.completed_at).label("year"),
             extract("month", SurveyResponseModel.completed_at).label("month"),
             func.count(SurveyResponseModel.id).label("count"),
         )
         .filter(
-            SurveyResponseModel.survey_id.in_(survey_ids),
+            SurveyResponseModel.survey_id.in_(target_survey_ids),
             SurveyResponseModel.completed == True,
             SurveyResponseModel.completed_at.isnot(None),
         )
-        .group_by("year", "month")
-        .order_by("year", "month")
-        .all()
     )
+
+    needs_user_join = False
+
+    if gender and gender.lower() in ("masculino", "femenino"):
+        needs_user_join = True
+
+    if age_range and age_range in ("18-30", "31-45", "46-60", "60+"):
+        needs_user_join = True
+
+    if needs_user_join:
+        query = query.join(User, User.id == SurveyResponseModel.user_id)
+
+        if gender and gender.lower() in ("masculino", "femenino"):
+            query = query.filter(func.lower(User.gender) == gender.lower())
+
+        if age_range:
+            age_expr = extract("year", func.age(func.now(), User.birth_date))
+            if age_range == "18-30":
+                query = query.filter(User.birth_date.isnot(None), age_expr >= 18, age_expr <= 30)
+            elif age_range == "31-45":
+                query = query.filter(User.birth_date.isnot(None), age_expr >= 31, age_expr <= 45)
+            elif age_range == "46-60":
+                query = query.filter(User.birth_date.isnot(None), age_expr >= 46, age_expr <= 60)
+            elif age_range == "60+":
+                query = query.filter(User.birth_date.isnot(None), age_expr > 60)
+
+    results = query.group_by("year", "month").order_by("year", "month").all()
 
     # Construir lista de los últimos 12 meses con datos
     now = datetime.now()

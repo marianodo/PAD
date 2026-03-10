@@ -20,6 +20,7 @@ const GeographicHeatMap = dynamic(() => import("@/components/GeographicHeatMap")
 
 interface Demographics {
   by_age_group: Record<string, number>;
+  by_age_group_by_gender: Record<string, Record<string, number>>;
   by_city: Record<string, number>;
   by_neighborhood: Record<string, number>;
   by_gender: Record<string, number>;
@@ -133,6 +134,8 @@ export default function SurveyResultsPage() {
   const [projectsEvolutionAgeFilter, setProjectsEvolutionAgeFilter] = useState("General");
   const [ratingEvolutionAgeFilter, setRatingEvolutionAgeFilter] = useState("General");
   const [participationTrendAgeFilter, setParticipationTrendAgeFilter] = useState("General");
+  const [participationTrendGenderFilter, setParticipationTrendGenderFilter] = useState("Todos");
+  const [participationTrendData, setParticipationTrendData] = useState<{ months: string[], counts: number[] } | null>(null);
   const [budgetGenderFilter, setBudgetGenderFilter] = useState("Todos");
   const [projectsGenderFilter, setProjectsGenderFilter] = useState("Todos");
   const [ratingGenderFilter, setRatingGenderFilter] = useState("Todos");
@@ -140,6 +143,8 @@ export default function SurveyResultsPage() {
   const [projectsEvolutionGenderFilter, setProjectsEvolutionGenderFilter] = useState("Todos");
   const [ratingEvolutionGenderFilter, setRatingEvolutionGenderFilter] = useState("Todos");
   const [hoveredRatingPoint, setHoveredRatingPoint] = useState<{index: number, value: number, month: string} | null>(null);
+  const [hiddenBudgetCategories, setHiddenBudgetCategories] = useState<Set<string>>(new Set());
+  const [ageDistGenderFilter, setAgeDistGenderFilter] = useState("Todos");
   const [crossAnalysisTab, setCrossAnalysisTab] = useState<"neighborhood" | "age" | "gender">("gender");
   const [showPeriodPicker, setShowPeriodPicker] = useState(false);
   const [periodFrom, setPeriodFrom] = useState("");
@@ -240,6 +245,30 @@ export default function SurveyResultsPage() {
     fetchResults();
     loadCachedInsights();
   }, [surveyId, router]);
+
+  const fetchParticipationTrend = async (gender: string, ageRange: string) => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    const queryParams = new URLSearchParams();
+    queryParams.append("survey_id", surveyId);
+    if (gender !== "Todos") queryParams.append("gender", gender.toLowerCase());
+    if (ageRange !== "General") queryParams.append("age_range", ageRange);
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/participation-trend?${queryParams.toString()}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      setParticipationTrendData({
+        months: data.months.map((m: { label: string }) => m.label),
+        counts: data.months.map((m: { count: number }) => m.count),
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchParticipationTrend(participationTrendGenderFilter, participationTrendAgeFilter);
+  }, [participationTrendGenderFilter, participationTrendAgeFilter]);
 
   // Close period picker on click outside
   useEffect(() => {
@@ -989,7 +1018,7 @@ export default function SurveyResultsPage() {
                 ))}
 
                 {/* Lines for each category */}
-                {categories.map((category) => (
+                {categories.filter(c => !hiddenBudgetCategories.has(c.name)).map((category) => (
                   <g key={category.name}>
                     <path
                       d={generatePath(category.data)}
@@ -1016,17 +1045,35 @@ export default function SurveyResultsPage() {
               </svg>
             </div>
 
-            {/* Legend */}
+            {/* Legend (click to toggle) */}
             <div className="flex flex-wrap justify-center gap-4 mt-4">
-              {categories.map((category) => (
-                <div key={category.name} className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  <span className="text-sm text-[#F2F3F4]/70">{category.name}</span>
-                </div>
-              ))}
+              {categories.map((category) => {
+                const isHidden = hiddenBudgetCategories.has(category.name);
+                return (
+                  <button
+                    key={category.name}
+                    onClick={() => {
+                      setHiddenBudgetCategories(prev => {
+                        const next = new Set(prev);
+                        if (next.has(category.name)) {
+                          next.delete(category.name);
+                        } else {
+                          next.add(category.name);
+                        }
+                        return next;
+                      });
+                    }}
+                    className="flex items-center gap-2 transition-opacity"
+                    style={{ opacity: isHidden ? 0.3 : 1 }}
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: category.color }}
+                    />
+                    <span className={`text-sm ${isHidden ? 'line-through text-[#F2F3F4]/30' : 'text-[#F2F3F4]/70'}`}>{category.name}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Insight */}
@@ -1494,42 +1541,11 @@ export default function SurveyResultsPage() {
 
   // Renderizar gráfico de Tendencia de Participación
   const renderParticipationTrendChart = () => {
-    const evolutionData = results?.evolution_data;
-    if (!evolutionData || !evolutionData.months) {
-      return (
-        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
-          <div className="mb-4">
-            <h3 className="text-xl font-bold text-[#F2F3F4]">Tendencia de Participación</h3>
-            <p className="text-sm text-[#F2F3F4]/50">Evolución mensual de respuestas ciudadanas</p>
-          </div>
-          <div className="text-center text-[#F2F3F4]/50 py-12">
-            No hay datos históricos disponibles
-          </div>
-        </div>
-      );
-    }
 
-    const months = evolutionData.months;
+    const months = participationTrendData?.months ?? [];
+    const responsesData = participationTrendData?.counts ?? [];
 
-    // Calcular respuestas por mes según filtro de edad
-    // Para esto usamos los datos de rating evolution como proxy de participación
-    const participationData = participationTrendAgeFilter === "General"
-      ? evolutionData.rating?.data || []
-      : evolutionData.by_age[participationTrendAgeFilter]?.rating?.data || [];
-
-    // Si no hay datos de rating, intentamos con single_choice
-    const alternativeData = participationTrendAgeFilter === "General"
-      ? evolutionData.single_choice?.projects?.[0]?.data || []
-      : evolutionData.by_age[participationTrendAgeFilter]?.single_choice?.projects?.[0]?.data || [];
-
-    // Usar los datos disponibles (preferir rating, luego single_choice)
-    const rawData = participationData.length > 0 ? participationData : alternativeData;
-
-    // Convertir a números de respuestas (multiplicar por factor para simular)
-    // En producción, estos datos vendrían del backend con números reales de respuestas por mes
-    const responsesData = rawData.map(val => Math.round(val * 10)); // Factor para simular respuestas
-
-    const hasData = months.length > 0 && responsesData.length > 0 && responsesData.some(v => v > 0);
+    const hasData = months.length > 0 && responsesData.some(v => v > 0);
 
     const chartWidth = 800;
     const chartHeight = 300;
@@ -1537,8 +1553,7 @@ export default function SurveyResultsPage() {
     const graphWidth = chartWidth - padding.left - padding.right;
     const graphHeight = chartHeight - padding.top - padding.bottom;
 
-    // Calcular max dinámicamente
-    const maxValue = Math.max(100, Math.ceil(Math.max(...responsesData, 1) / 50) * 50);
+    const maxValue = Math.max(10, Math.ceil(Math.max(...responsesData, 1) / 50) * 50);
     const minValue = 0;
 
     const xStep = months.length > 1 ? graphWidth / (months.length - 1) : graphWidth;
@@ -1555,17 +1570,16 @@ export default function SurveyResultsPage() {
         .join(" ");
     };
 
-    // Calcular métricas
-    const firstMonthResponses = responsesData[0] || 0;
+    const prevMonthResponses = responsesData.length >= 2 ? responsesData[responsesData.length - 2] : 0;
     const lastMonthResponses = responsesData[responsesData.length - 1] || 0;
-    const growthPercentage = firstMonthResponses > 0
-      ? ((lastMonthResponses - firstMonthResponses) / firstMonthResponses * 100).toFixed(1)
-      : "0.0";
+    const growthPercentage = prevMonthResponses > 0
+      ? ((lastMonthResponses - prevMonthResponses) / prevMonthResponses * 100).toFixed(1)
+      : (lastMonthResponses > 0 ? "100.0" : "0.0");
     const isPositiveGrowth = parseFloat(growthPercentage) >= 0;
 
-    const totalResponses = responsesData.reduce((sum, val) => sum + val, 0);
+    const totalResponsesTrend = responsesData.reduce((sum, val) => sum + val, 0);
     const averagePerMonth = responsesData.length > 0
-      ? (totalResponses / responsesData.length).toFixed(0)
+      ? (totalResponsesTrend / responsesData.length).toFixed(0)
       : "0";
 
     return (
@@ -1575,21 +1589,38 @@ export default function SurveyResultsPage() {
           <p className="text-sm text-[#F2F3F4]/50">Evolución mensual de respuestas ciudadanas</p>
         </div>
 
-        {/* Age Filter Tabs */}
-        <div className="flex gap-1 mb-6 bg-[#201631] rounded-lg p-1 w-full">
-          {ageFilterOptions.map((option) => (
-            <button
-              key={option}
-              onClick={() => setParticipationTrendAgeFilter(option)}
-              className={`flex-1 px-2 py-2 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
-                participationTrendAgeFilter === option
-                  ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
-                  : "text-[#F2F3F4]/70 hover:text-[#F2F3F4]"
-              }`}
-            >
-              {option}
-            </button>
-          ))}
+        {/* Filters */}
+        <div className="flex flex-wrap gap-2 mb-6 w-full">
+          <div className="flex items-center gap-0 bg-[#201631] rounded-lg p-1 flex-1 min-w-fit">
+            {ageFilterOptions.map((option) => (
+              <button
+                key={option}
+                onClick={() => setParticipationTrendAgeFilter(option)}
+                className={`flex-1 px-2 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
+                  participationTrendAgeFilter === option
+                    ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
+                    : "text-[#F2F3F4]/70 hover:text-[#F2F3F4]"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-0 bg-[#201631] rounded-lg p-1 flex-1 min-w-fit">
+            {genderFilterOptions.map((option) => (
+              <button
+                key={option}
+                onClick={() => setParticipationTrendGenderFilter(option)}
+                className={`flex-1 px-2 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
+                  participationTrendGenderFilter === option
+                    ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
+                    : "text-[#F2F3F4]/70 hover:text-[#F2F3F4]"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Line Chart */}
@@ -1675,7 +1706,7 @@ export default function SurveyResultsPage() {
                 <p className={`text-2xl font-bold ${isPositiveGrowth ? 'text-[#00CCBA]' : 'text-red-400'}`}>
                   {isPositiveGrowth ? '+' : ''}{growthPercentage}%
                 </p>
-                <p className="text-xs text-[#5941CE]">desde {months[0] || 'inicio'}</p>
+                <p className="text-xs text-[#5941CE]">vs. mes anterior</p>
               </div>
               <div className="bg-[#5941CE]/10 border border-[#5941CE]/20 rounded-lg p-4">
                 <p className="text-sm text-[#7B6FD4]">Promedio/mes</p>
@@ -1693,13 +1724,35 @@ export default function SurveyResultsPage() {
 
   // Renderizar gráfico de distribución por edad (barras coloridas)
   const renderAgeDistributionChart = () => {
-    const ageData = results?.demographics.by_age_group;
+    const allAgeData = results?.demographics.by_age_group;
+    const ageDataByGender = results?.demographics.by_age_group_by_gender;
+
+    // Seleccionar datos según filtro de género
+    const ageData: Record<string, number> | undefined = ageDistGenderFilter === "Todos"
+      ? allAgeData
+      : ageDataByGender?.[ageDistGenderFilter.toLowerCase()] || {};
+
     if (!ageData || Object.keys(ageData).length === 0) {
       return (
         <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="mb-4">
             <h3 className="text-xl font-bold text-[#F2F3F4]">Desglose por Edad</h3>
             <p className="text-sm text-[#F2F3F4]/50">Participación por grupo etario</p>
+          </div>
+          <div className="flex items-center gap-0 bg-[#201631] rounded-lg p-1 mb-6">
+            {["Todos", "Masculino", "Femenino"].map((option) => (
+              <button
+                key={option}
+                onClick={() => setAgeDistGenderFilter(option)}
+                className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                  ageDistGenderFilter === option
+                    ? "bg-[#5941CE] text-white shadow-lg"
+                    : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]/70"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
           </div>
           <div className="text-center text-[#F2F3F4]/50 py-12">
             No hay datos demográficos disponibles
@@ -1750,6 +1803,23 @@ export default function SurveyResultsPage() {
         <div className="mb-6">
           <h3 className="text-xl font-bold text-[#F2F3F4]">Desglose por Edad</h3>
           <p className="text-sm text-[#F2F3F4]/50">Participación por grupo etario</p>
+        </div>
+
+        {/* Filtro de género */}
+        <div className="flex items-center gap-0 bg-[#201631] rounded-lg p-1 mb-6">
+          {["Todos", "Masculino", "Femenino"].map((option) => (
+            <button
+              key={option}
+              onClick={() => setAgeDistGenderFilter(option)}
+              className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                ageDistGenderFilter === option
+                  ? "bg-[#5941CE] text-white shadow-lg"
+                  : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]/70"
+              }`}
+            >
+              {option}
+            </button>
+          ))}
         </div>
 
         <div className="space-y-4 mb-6">

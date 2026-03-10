@@ -40,6 +40,19 @@ export default function ClientDashboard() {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const [trendData, setTrendData] = useState<TrendData | null>(null);
+  const [trendGender, setTrendGender] = useState("Todos");
+
+  const fetchTrend = async (gender: string) => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    const params = gender !== "Todos" ? `?gender=${gender.toLowerCase()}` : "";
+    const res = await fetch(`${API_URL}/api/v1/surveys/participation-trend${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) setTrendData(await res.json());
+  };
+
+  useEffect(() => { fetchTrend(trendGender); }, [trendGender]);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -446,11 +459,9 @@ export default function ClientDashboard() {
         {/* Tendencia de Participación Chart */}
         {trendData && trendData.months.length > 0 && (
           <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-bold text-[#F2F3F4]">Tendencia de Participacion</h2>
-                <p className="text-sm text-[#F2F3F4]/50 mt-0.5">Respuestas mensuales acumuladas</p>
-              </div>
+            <div className="mb-4">
+              <h2 className="text-lg font-bold text-[#F2F3F4]">Tendencia de Participacion</h2>
+              <p className="text-sm text-[#F2F3F4]/50 mt-0.5">Respuestas mensuales acumuladas</p>
             </div>
             {(() => {
               const months = trendData.months;
