@@ -16,6 +16,20 @@ interface Survey {
   total_responses?: number;
 }
 
+interface TrendMonth {
+  label: string;
+  year: number;
+  month: number;
+  count: number;
+}
+
+interface TrendData {
+  months: TrendMonth[];
+  current_month: number;
+  previous_month: number;
+  trend_percentage: number;
+}
+
 export default function ClientDashboard() {
   const router = useRouter();
   const [surveys, setSurveys] = useState<Survey[]>([]);
@@ -25,6 +39,7 @@ export default function ClientDashboard() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
+  const [trendData, setTrendData] = useState<TrendData | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -71,6 +86,20 @@ export default function ClientDashboard() {
         if (surveysResponse.ok) {
           const surveysData = await surveysResponse.json();
           setSurveys(surveysData);
+        }
+
+        const trendResponse = await fetch(
+          `${API_URL}/api/v1/surveys/participation-trend`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (trendResponse.ok) {
+          const trendResult = await trendResponse.json();
+          setTrendData(trendResult);
         }
 
         setLoading(false);
@@ -365,21 +394,6 @@ export default function ClientDashboard() {
             <p className="text-xs text-[#F2F3F4]/40 mt-1">{activeSurveys} activa{activeSurveys !== 1 ? 's' : ''}, {inactiveSurveys} inactiva{inactiveSurveys !== 1 ? 's' : ''}</p>
           </div>
 
-          {/* Consultas Activas */}
-          <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-medium text-[#F2F3F4]/60">Consultas Activas</p>
-              <div className="w-10 h-10 rounded-xl bg-[#00CCBA]/10 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#00CCBA]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-              </div>
-            </div>
-            <p className="text-3xl font-bold text-[#F2F3F4]">{activeSurveys}</p>
-            <p className="text-xs text-[#F2F3F4]/40 mt-1">{activeSurveys === surveys.length ? 'Todas en curso' : `${activeSurveys} de ${surveys.length} en curso`}</p>
-          </div>
-
           {/* Total Respuestas */}
           <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-5">
             <div className="flex items-center justify-between mb-4">
@@ -397,7 +411,7 @@ export default function ClientDashboard() {
             <p className="text-xs text-[#F2F3F4]/40 mt-1">Entre todas las consultas</p>
           </div>
 
-          {/* Promedio */}
+          {/* Promedio por Consulta */}
           <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-5">
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm font-medium text-[#F2F3F4]/60">Promedio por Consulta</p>
@@ -410,7 +424,105 @@ export default function ClientDashboard() {
             <p className="text-3xl font-bold text-[#F2F3F4]">{avgResponses.toLocaleString("es-AR")}</p>
             <p className="text-xs text-[#F2F3F4]/40 mt-1">Respuestas promedio</p>
           </div>
+
+          {/* Tendencia Mensual */}
+          <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-medium text-[#F2F3F4]/60">Tendencia Mensual</p>
+              <div className="w-10 h-10 rounded-xl bg-[#00CCBA]/10 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#00CCBA]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                  <polyline points="17 6 23 6 23 12" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-[#F2F3F4]">
+              {trendData ? `${trendData.trend_percentage >= 0 ? '+' : ''}${trendData.trend_percentage}%` : '—'}
+            </p>
+            <p className="text-xs text-[#F2F3F4]/40 mt-1">vs. mes anterior</p>
+          </div>
         </div>
+
+        {/* Tendencia de Participación Chart */}
+        {trendData && trendData.months.length > 0 && (
+          <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-[#F2F3F4]">Tendencia de Participacion</h2>
+                <p className="text-sm text-[#F2F3F4]/50 mt-0.5">Respuestas mensuales acumuladas</p>
+              </div>
+            </div>
+            {(() => {
+              const months = trendData.months;
+              const maxCount = Math.max(...months.map(m => m.count), 1);
+              const W = 700;
+              const H = 220;
+              const padL = 45;
+              const padR = 20;
+              const padT = 20;
+              const padB = 35;
+              const chartW = W - padL - padR;
+              const chartH = H - padT - padB;
+
+              const points = months.map((m, i) => {
+                const x = padL + (i / (months.length - 1)) * chartW;
+                const y = padT + chartH - (m.count / maxCount) * chartH;
+                return { x, y, ...m };
+              });
+
+              // Smooth curve using cubic bezier
+              const smoothLine = points.map((p, i) => {
+                if (i === 0) return `M ${p.x} ${p.y}`;
+                const prev = points[i - 1];
+                const cpx = (prev.x + p.x) / 2;
+                return `C ${cpx} ${prev.y}, ${cpx} ${p.y}, ${p.x} ${p.y}`;
+              }).join(' ');
+
+              const areaPath = `${smoothLine} L ${points[points.length - 1].x} ${padT + chartH} L ${points[0].x} ${padT + chartH} Z`;
+
+              // Y-axis ticks
+              const yTicks = 4;
+              const yTickValues = Array.from({ length: yTicks + 1 }, (_, i) => Math.round((maxCount / yTicks) * i));
+
+              return (
+                <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '240px' }}>
+                  <defs>
+                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#5941CE" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#5941CE" stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+                  {/* Horizontal grid lines + Y labels */}
+                  {yTickValues.map((val, i) => {
+                    const y = padT + chartH - (val / maxCount) * chartH;
+                    return (
+                      <g key={i}>
+                        <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="white" strokeOpacity="0.06" strokeWidth="1" />
+                        <text x={padL - 8} y={y + 4} textAnchor="end" fill="rgba(242,243,244,0.35)" fontSize="11" fontFamily="sans-serif">
+                          {val}
+                        </text>
+                      </g>
+                    );
+                  })}
+                  {/* Area */}
+                  <path d={areaPath} fill="url(#areaGrad)" />
+                  {/* Line */}
+                  <path d={smoothLine} fill="none" stroke="#5941CE" strokeWidth="2.5" strokeLinecap="round" />
+                  {/* Data points */}
+                  {points.map((p, i) => (
+                    <circle key={i} cx={p.x} cy={p.y} r="4" fill="#5941CE" stroke="#3C2E51" strokeWidth="2" />
+                  ))}
+                  {/* X-axis labels */}
+                  {points.map((p, i) => (
+                    <text key={i} x={p.x} y={H - 8} textAnchor="middle" fill="rgba(242,243,244,0.4)" fontSize="11" fontFamily="sans-serif">
+                      {p.label}
+                    </text>
+                  ))}
+                </svg>
+              );
+            })()}
+          </div>
+        )}
 
         {/* Surveys Table */}
         <div className="bg-[#3C2E51] rounded-2xl border border-white/5">
@@ -590,7 +702,7 @@ export default function ClientDashboard() {
         {activeSection === "reportes" && (
           <div className="mt-0">
             <div className="mb-6">
-              <h2 className="text-3xl font-serif font-bold text-[#F2F3F4]">Reportes</h2>
+              <h2 className="text-3xl font-bold text-[#F2F3F4]">Reportes</h2>
               <p className="text-sm text-[#F2F3F4]/50 mt-1">Informes de inversión publicados para cada municipio</p>
             </div>
 
