@@ -388,34 +388,37 @@ export default function SurveyResultsPage() {
     ageFilter: string, setAgeFilter: (v: string) => void,
     genderFilter: string, setGenderFilter: (v: string) => void
   ) => (
-    <div className="flex items-center gap-0 mb-6 bg-[#201631] rounded-lg p-1 w-full">
-      {ageFilterOptions.map((option) => (
-        <button
-          key={option}
-          onClick={() => setAgeFilter(option)}
-          className={`flex-1 px-2 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
-            ageFilter === option
-              ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
-              : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]"
-          }`}
-        >
-          {option}
-        </button>
-      ))}
-      <div className="w-px h-5 bg-white/20 mx-1.5 shrink-0" />
-      {genderFilterOptions.map((option) => (
-        <button
-          key={option}
-          onClick={() => setGenderFilter(option)}
-          className={`flex-1 px-2 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
-            genderFilter === option
-              ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
-              : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]"
-          }`}
-        >
-          {option}
-        </button>
-      ))}
+    <div className="flex flex-wrap gap-2 mb-6 w-full">
+      <div className="flex items-center gap-0 bg-[#201631] rounded-lg p-1 flex-1 min-w-fit">
+        {ageFilterOptions.map((option) => (
+          <button
+            key={option}
+            onClick={() => setAgeFilter(option)}
+            className={`flex-1 px-2 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
+              ageFilter === option
+                ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
+                : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]"
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-0 bg-[#201631] rounded-lg p-1 flex-1 min-w-fit">
+        {genderFilterOptions.map((option) => (
+          <button
+            key={option}
+            onClick={() => setGenderFilter(option)}
+            className={`flex-1 px-2 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
+              genderFilter === option
+                ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
+                : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]"
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
     </div>
   );
 
