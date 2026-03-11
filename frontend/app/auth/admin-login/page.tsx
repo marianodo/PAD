@@ -125,7 +125,7 @@ export default function AdminLoginPage() {
         {/* Top: Logo + Badge */}
         <div>
           <div className="flex items-center gap-3 mb-8">
-            <Image src="/logo_pad.png" alt="PAD" width={160} height={65} className="" />
+            <Image src="/logo_pad_white.png" alt="PAD" width={200} height={86} className="" />
           </div>
 
           <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-full px-4 py-1.5 mb-10">
