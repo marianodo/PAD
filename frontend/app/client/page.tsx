@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { API_URL } from "@/lib/config";
 
 interface Survey {
@@ -264,13 +265,7 @@ export default function ClientDashboard() {
         {/* Logo */}
         <div className="px-6 pt-6 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#5941CE]/20 border border-[#5941CE]/30 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#00CCBA]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                <line x1="8" y1="21" x2="16" y2="21" />
-                <line x1="12" y1="17" x2="12" y2="21" />
-              </svg>
-            </div>
+            <Image src="/logo.jpeg" alt="Data Insights" width={40} height={40} className="rounded-xl" />
             <div>
               <p className="text-[#F2F3F4]/40 text-[10px] font-medium tracking-widest uppercase">Panel de Gobierno</p>
               <p className="text-[#F2F3F4] text-base font-bold">PAD</p>

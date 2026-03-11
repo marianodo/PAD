@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { API_URL } from "@/lib/config";
 
 interface SurveyResponse {
@@ -323,8 +324,14 @@ export default function DashboardPage() {
 
       {/* Sidebar - Dark blue */}
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-[280px] bg-gradient-to-b from-[#1a2342] to-[#243058] flex flex-col transform transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
-        {/* Spacer top */}
-        <div className="pt-6" />
+        {/* Logo */}
+        <div className="px-6 pt-6 pb-4 flex items-center gap-3">
+          <Image src="/logo.jpeg" alt="Data Insights" width={40} height={40} className="rounded-xl" />
+          <div>
+            <p className="text-blue-200/50 text-[10px] font-medium tracking-widest uppercase">Portal Ciudadano</p>
+            <p className="text-white text-base font-bold">PAD</p>
+          </div>
+        </div>
 
         {/* User card */}
         <div className="mx-4 mb-5 p-4 rounded-2xl bg-white/10 backdrop-blur-sm">

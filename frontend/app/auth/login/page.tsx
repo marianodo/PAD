@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { API_URL } from "@/lib/config";
 
 function LoginForm() {
@@ -184,11 +185,8 @@ function LoginForm() {
       {/* Left Panel - Branding (fixed height, doesn't move with right panel) */}
       <div className="hidden lg:block lg:w-1/2 lg:fixed lg:inset-y-0 lg:left-0 bg-gradient-to-b from-[#0d1b33] via-[#152452] to-[#2a4494] overflow-hidden">
         {/* Top: Title + subtitle */}
-        <div className="relative z-10 text-center px-12 pt-[10vh]">
-          <h1 className="text-5xl font-bold text-white italic tracking-wide mb-3" style={{ fontFamily: "'Georgia', serif" }}>
-            P.A.D.
-          </h1>
-          <p className="text-blue-200 text-lg font-medium">Participación Activa Digital</p>
+        <div className="relative z-10 text-center px-8 pt-[4vh]">
+          <Image src="/logo_pad.png" alt="PAD - Participación Activa Digital" width={190} height={78} className="mx-auto" />
         </div>
 
         {/* Bottom: Description + Feature bullets */}
@@ -359,13 +357,6 @@ function LoginForm() {
       {/* Right Panel - Form */}
       <div className="flex-1 lg:ml-[50%] flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-4 py-8 lg:py-12 min-h-screen">
         <div className="w-full max-w-md">
-          {/* Portal badge - visible on mobile too */}
-          <div className="text-center mb-6">
-            <span className="inline-block bg-gray-100 border border-gray-200 rounded-full px-5 py-1.5 text-gray-600 text-xs font-medium tracking-wide uppercase">
-              P.A.D.
-            </span>
-          </div>
-
           {/* Card */}
           <div className="bg-white rounded-2xl shadow-xl p-7 md:p-9">
             <div className="mb-7">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Image from "next/image";
 import { API_URL } from "@/lib/config";
 import dynamic from "next/dynamic";
 import ChatBot from "@/components/ChatBot";
@@ -2724,13 +2725,16 @@ export default function SurveyResultsPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold text-[#F2F3F4]">
-                Panel de Consultas Ciudadanas
-              </h1>
-              <p className="text-[#F2F3F4]/50 mt-2">
-                Democratizando la Voluntad Popular
-              </p>
+            <div className="flex items-center gap-4">
+              <Image src="/logo.jpeg" alt="Data Insights" width={48} height={48} className="rounded-xl" />
+              <div>
+                <h1 className="text-4xl font-bold text-[#F2F3F4]">
+                  Panel de Consultas Ciudadanas
+                </h1>
+                <p className="text-[#F2F3F4]/50 mt-2">
+                  Democratizando la Voluntad Popular
+                </p>
+              </div>
             </div>
 
             {/* Action Buttons */}

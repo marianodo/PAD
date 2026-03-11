@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { API_URL } from "@/lib/config";
 
 export default function AdminLoginPage() {
@@ -124,17 +125,7 @@ export default function AdminLoginPage() {
         {/* Top: Logo + Badge */}
         <div>
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-11 h-11 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                <line x1="8" y1="21" x2="16" y2="21" />
-                <line x1="12" y1="17" x2="12" y2="21" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-blue-300/70 text-xs font-medium tracking-widest uppercase">Panel de Gobierno</p>
-              <p className="text-white text-lg font-bold">PAD Admin</p>
-            </div>
+            <Image src="/logo_pad.png" alt="PAD" width={160} height={65} className="" />
           </div>
 
           <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-full px-4 py-1.5 mb-10">
@@ -165,9 +156,11 @@ export default function AdminLoginPage() {
         {/* Footer */}
         <div className="flex items-center justify-between text-xs text-blue-200/40">
           <span>PAD &copy; 2026 &mdash; Participación Activa Digital</span>
-          <Link href="/auth/login" className="text-blue-300/60 hover:text-blue-300 transition-colors">
-            Portal de Participación
-          </Link>
+          <div className="flex items-center gap-2">
+            <span>Powered by</span>
+            <Image src="/logo.jpeg" alt="Data Insights" width={20} height={20} className="rounded-md opacity-60" />
+            <span className="text-blue-200/60 font-medium">Data Insights S.A.S</span>
+          </div>
         </div>
       </div>
 
