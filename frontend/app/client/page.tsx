@@ -179,7 +179,7 @@ export default function ClientDashboard() {
       municipality: "Municipalidad de Alta Gracia",
       slug: "alta-gracia",
       logo: "AG",
-      color: "bg-blue-600",
+      color: "bg-[#2962FF]",
       periods: [
         {
           period: "2026",
@@ -231,10 +231,10 @@ export default function ClientDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#201631]">
+      <div className="min-h-screen flex items-center justify-center bg-[#000000]">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-[#00CCBA] border-r-transparent"></div>
-          <p className="mt-4 text-[#F2F3F4]/60 font-sans">Cargando...</p>
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-[#00C853] border-r-transparent"></div>
+          <p className="mt-4 text-[#FFFFFF]/60 font-sans">Cargando...</p>
         </div>
       </div>
     );
@@ -242,8 +242,8 @@ export default function ClientDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#201631]">
-        <div className="bg-[#3C2E51] rounded-2xl p-8 max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-[#000000]">
+        <div className="bg-[#1a1a2e] rounded-2xl p-8 max-w-md">
           <p className="text-red-400 font-sans">{error}</p>
         </div>
       </div>
@@ -259,36 +259,36 @@ export default function ClientDashboard() {
     .toUpperCase();
 
   return (
-    <div className="min-h-screen flex bg-[#201631] font-sans">
+    <div className="min-h-screen flex bg-[#000000] font-sans">
       {/* Sidebar */}
-      <aside className="w-[280px] bg-[#201631] border-r border-white/5 flex flex-col fixed inset-y-0 left-0 z-30">
+      <aside className="w-[280px] bg-[#000000] border-r border-white/5 flex flex-col fixed inset-y-0 left-0 z-30">
         {/* Logo */}
         <div className="px-6 pt-6 pb-4">
           <div className="flex items-center gap-3">
             <Image src="/logo.jpeg" alt="Data Insights" width={40} height={40} className="rounded-xl" />
             <div>
-              <p className="text-[#F2F3F4]/40 text-[10px] font-medium tracking-widest uppercase">Panel de Gobierno</p>
-              <p className="text-[#F2F3F4] text-base font-bold">PAD</p>
+              <p className="text-[#FFFFFF]/40 text-[10px] font-medium tracking-widest uppercase">Panel de Gobierno</p>
+              <p className="text-[#FFFFFF] text-base font-bold">PAD</p>
             </div>
           </div>
         </div>
 
         {/* User card */}
         <div className="mx-4 mb-6">
-          <div className="bg-[#3C2E51] rounded-xl p-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#5941CE] flex items-center justify-center text-white text-sm font-bold shrink-0">
+          <div className="bg-[#1a1a2e] rounded-xl p-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-[#2962FF] flex items-center justify-center text-white text-sm font-bold shrink-0">
               {initials}
             </div>
             <div className="min-w-0">
-              <p className="text-[#F2F3F4] text-sm font-medium truncate">{userName}</p>
-              <p className="text-[#00CCBA] text-xs">Plan Profesional</p>
+              <p className="text-[#FFFFFF] text-sm font-medium truncate">{userName}</p>
+              <p className="text-[#00C853] text-xs">Plan Profesional</p>
             </div>
           </div>
         </div>
 
         {/* Menu */}
         <nav className="flex-1 px-4">
-          <p className="text-[#F2F3F4]/30 text-[10px] font-semibold tracking-widest uppercase mb-3 px-3">Menu</p>
+          <p className="text-[#FFFFFF]/30 text-[10px] font-semibold tracking-widest uppercase mb-3 px-3">Menu</p>
           <div className="space-y-1">
             {menuItems.map((item) => (
               <button
@@ -296,8 +296,8 @@ export default function ClientDashboard() {
                 onClick={() => setActiveSection(item.key)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   activeSection === item.key
-                    ? "bg-[#5941CE] text-white shadow-lg shadow-[#5941CE]/30"
-                    : "text-[#F2F3F4]/50 hover:text-[#F2F3F4] hover:bg-white/5"
+                    ? "bg-[#2962FF] text-white shadow-lg shadow-[#2962FF]/30"
+                    : "text-[#FFFFFF]/50 hover:text-[#FFFFFF] hover:bg-white/5"
                 }`}
               >
                 {item.icon}
@@ -315,7 +315,7 @@ export default function ClientDashboard() {
         {/* Bottom actions */}
         <div className="px-4 pb-6 space-y-1">
           <div className="relative group">
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#F2F3F4]/50 hover:text-[#F2F3F4] hover:bg-white/5 transition-all">
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#FFFFFF]/50 hover:text-[#FFFFFF] hover:bg-white/5 transition-all">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
@@ -324,22 +324,22 @@ export default function ClientDashboard() {
               Soporte
             </button>
             <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#2D1F45] border border-white/10 rounded-xl p-4 shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200 z-50">
-              <p className="text-xs text-[#F2F3F4]/50 uppercase tracking-wider mb-3">Contacto de Soporte</p>
+              <p className="text-xs text-[#FFFFFF]/50 uppercase tracking-wider mb-3">Contacto de Soporte</p>
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-[#F2F3F4]/80">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#00CCBA] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <div className="flex items-center gap-2 text-sm text-[#FFFFFF]/80">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#00C853] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                   </svg>
                   Mariano Dominguez
                 </div>
-                <a href="tel:3517157848" className="flex items-center gap-2 text-sm text-[#F2F3F4]/80 hover:text-[#00CCBA] transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#00CCBA] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <a href="tel:3517157848" className="flex items-center gap-2 text-sm text-[#FFFFFF]/80 hover:text-[#00C853] transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#00C853] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
                   </svg>
                   3517157848
                 </a>
-                <a href="mailto:mariano.dominguez@datainsights.com.ar" className="flex items-center gap-2 text-sm text-[#F2F3F4]/80 hover:text-[#00CCBA] transition-colors break-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#00CCBA] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <a href="mailto:mariano.dominguez@datainsights.com.ar" className="flex items-center gap-2 text-sm text-[#FFFFFF]/80 hover:text-[#00C853] transition-colors break-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#00C853] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
                   </svg>
                   mariano.dominguez@datainsights.com.ar
@@ -349,7 +349,7 @@ export default function ClientDashboard() {
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#F2F3F4]/50 hover:text-red-400 hover:bg-white/5 transition-all"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#FFFFFF]/50 hover:text-red-400 hover:bg-white/5 transition-all"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -362,17 +362,17 @@ export default function ClientDashboard() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 ml-[280px] p-8 bg-[#201631] min-h-screen">
+      <main className="flex-1 ml-[280px] p-8 bg-[#000000] min-h-screen">
         {/* Page header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-3xl font-bold text-[#F2F3F4]">Panel de Cliente</h1>
-            <span className="inline-flex items-center gap-1.5 bg-[#00CCBA]/10 border border-[#00CCBA]/30 text-[#00CCBA] text-xs font-medium px-3 py-1 rounded-full">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#00CCBA]" />
+            <h1 className="text-3xl font-bold text-[#FFFFFF]">Panel de Cliente</h1>
+            <span className="inline-flex items-center gap-1.5 bg-[#00C853]/10 border border-[#00C853]/30 text-[#00C853] text-xs font-medium px-3 py-1 rounded-full">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#00C853]" />
               Activo
             </span>
           </div>
-          <p className="text-[#F2F3F4]/50 text-sm flex items-center gap-2">
+          <p className="text-[#FFFFFF]/50 text-sm flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               <polyline points="9 22 9 12 15 12 15 22" />
@@ -386,11 +386,11 @@ export default function ClientDashboard() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
           {/* Total Consultas */}
-          <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-5">
+          <div className="bg-[#1a1a2e] rounded-2xl border border-white/5 p-5">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-medium text-[#F2F3F4]/60">Total Consultas</p>
-              <div className="w-10 h-10 rounded-xl bg-[#5941CE]/20 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5941CE]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <p className="text-sm font-medium text-[#FFFFFF]/60">Total Consultas</p>
+              <div className="w-10 h-10 rounded-xl bg-[#2962FF]/20 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#2962FF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                   <line x1="16" y1="13" x2="8" y2="13" />
@@ -398,16 +398,16 @@ export default function ClientDashboard() {
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-[#F2F3F4]">{surveys.length}</p>
-            <p className="text-xs text-[#F2F3F4]/40 mt-1">{activeSurveys} activa{activeSurveys !== 1 ? 's' : ''}, {inactiveSurveys} inactiva{inactiveSurveys !== 1 ? 's' : ''}</p>
+            <p className="text-3xl font-bold text-[#FFFFFF]">{surveys.length}</p>
+            <p className="text-xs text-[#FFFFFF]/40 mt-1">{activeSurveys} activa{activeSurveys !== 1 ? 's' : ''}, {inactiveSurveys} inactiva{inactiveSurveys !== 1 ? 's' : ''}</p>
           </div>
 
           {/* Total Respuestas */}
-          <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-5">
+          <div className="bg-[#1a1a2e] rounded-2xl border border-white/5 p-5">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-medium text-[#F2F3F4]/60">Total Respuestas</p>
-              <div className="w-10 h-10 rounded-xl bg-[#5941CE]/20 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#7B6FD4]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <p className="text-sm font-medium text-[#FFFFFF]/60">Total Respuestas</p>
+              <div className="w-10 h-10 rounded-xl bg-[#2962FF]/20 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E8AFF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -415,48 +415,48 @@ export default function ClientDashboard() {
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-[#F2F3F4]">{totalResponses.toLocaleString("es-AR")}</p>
-            <p className="text-xs text-[#F2F3F4]/40 mt-1">Entre todas las consultas</p>
+            <p className="text-3xl font-bold text-[#FFFFFF]">{totalResponses.toLocaleString("es-AR")}</p>
+            <p className="text-xs text-[#FFFFFF]/40 mt-1">Entre todas las consultas</p>
           </div>
 
           {/* Promedio por Consulta */}
-          <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-5">
+          <div className="bg-[#1a1a2e] rounded-2xl border border-white/5 p-5">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-medium text-[#F2F3F4]/60">Promedio por Consulta</p>
-              <div className="w-10 h-10 rounded-xl bg-[#00CCBA]/10 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#00CCBA]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <p className="text-sm font-medium text-[#FFFFFF]/60">Promedio por Consulta</p>
+              <div className="w-10 h-10 rounded-xl bg-[#00C853]/10 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#00C853]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-[#F2F3F4]">{avgResponses.toLocaleString("es-AR")}</p>
-            <p className="text-xs text-[#F2F3F4]/40 mt-1">Respuestas promedio</p>
+            <p className="text-3xl font-bold text-[#FFFFFF]">{avgResponses.toLocaleString("es-AR")}</p>
+            <p className="text-xs text-[#FFFFFF]/40 mt-1">Respuestas promedio</p>
           </div>
 
           {/* Tendencia Mensual */}
-          <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-5">
+          <div className="bg-[#1a1a2e] rounded-2xl border border-white/5 p-5">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-medium text-[#F2F3F4]/60">Tendencia Mensual</p>
-              <div className="w-10 h-10 rounded-xl bg-[#00CCBA]/10 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#00CCBA]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <p className="text-sm font-medium text-[#FFFFFF]/60">Tendencia Mensual</p>
+              <div className="w-10 h-10 rounded-xl bg-[#00C853]/10 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#00C853]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
                   <polyline points="17 6 23 6 23 12" />
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-[#F2F3F4]">
+            <p className="text-3xl font-bold text-[#FFFFFF]">
               {trendData ? `${trendData.trend_percentage >= 0 ? '+' : ''}${trendData.trend_percentage}%` : '—'}
             </p>
-            <p className="text-xs text-[#F2F3F4]/40 mt-1">vs. mes anterior</p>
+            <p className="text-xs text-[#FFFFFF]/40 mt-1">vs. mes anterior</p>
           </div>
         </div>
 
         {/* Tendencia de Participación Chart */}
         {trendData && trendData.months.length > 0 && (
-          <div className="bg-[#3C2E51] rounded-2xl border border-white/5 p-6 mb-8">
+          <div className="bg-[#1a1a2e] rounded-2xl border border-white/5 p-6 mb-8">
             <div className="mb-4">
-              <h2 className="text-lg font-bold text-[#F2F3F4]">Tendencia de Participacion</h2>
-              <p className="text-sm text-[#F2F3F4]/50 mt-0.5">Respuestas mensuales acumuladas</p>
+              <h2 className="text-lg font-bold text-[#FFFFFF]">Tendencia de Participacion</h2>
+              <p className="text-sm text-[#FFFFFF]/50 mt-0.5">Respuestas mensuales acumuladas</p>
             </div>
             {(() => {
               const months = trendData.months;
@@ -494,8 +494,8 @@ export default function ClientDashboard() {
                 <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '240px' }}>
                   <defs>
                     <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#5941CE" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#5941CE" stopOpacity="0.02" />
+                      <stop offset="0%" stopColor="#2962FF" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#2962FF" stopOpacity="0.02" />
                     </linearGradient>
                   </defs>
                   {/* Horizontal grid lines + Y labels */}
@@ -513,10 +513,10 @@ export default function ClientDashboard() {
                   {/* Area */}
                   <path d={areaPath} fill="url(#areaGrad)" />
                   {/* Line */}
-                  <path d={smoothLine} fill="none" stroke="#5941CE" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d={smoothLine} fill="none" stroke="#2962FF" strokeWidth="2.5" strokeLinecap="round" />
                   {/* Data points */}
                   {points.map((p, i) => (
-                    <circle key={i} cx={p.x} cy={p.y} r="4" fill="#5941CE" stroke="#3C2E51" strokeWidth="2" />
+                    <circle key={i} cx={p.x} cy={p.y} r="4" fill="#2962FF" stroke="#1a1a2e" strokeWidth="2" />
                   ))}
                   {/* X-axis labels */}
                   {points.map((p, i) => (
@@ -531,17 +531,17 @@ export default function ClientDashboard() {
         )}
 
         {/* Surveys Table */}
-        <div className="bg-[#3C2E51] rounded-2xl border border-white/5">
+        <div className="bg-[#1a1a2e] rounded-2xl border border-white/5">
           {/* Table header */}
           <div className="p-6 flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-[#F2F3F4]">Mis Consultas</h2>
-              <p className="text-sm text-[#F2F3F4]/50 mt-0.5">
+              <h2 className="text-xl font-bold text-[#FFFFFF]">Mis Consultas</h2>
+              <p className="text-sm text-[#FFFFFF]/50 mt-0.5">
                 Visualiza y gestiona las consultas de tu organización
               </p>
             </div>
             <div className="relative">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F2F3F4]/30 absolute left-3 top-1/2 -translate-y-1/2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#FFFFFF]/30 absolute left-3 top-1/2 -translate-y-1/2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
@@ -550,7 +550,7 @@ export default function ClientDashboard() {
                 placeholder="Buscar consulta..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 py-2 bg-[#201631] border border-white/10 rounded-xl text-sm text-[#F2F3F4] placeholder-[#F2F3F4]/30 focus:border-[#5941CE] focus:ring-2 focus:ring-[#5941CE]/20 outline-none transition-all w-64"
+                className="pl-9 pr-4 py-2 bg-[#000000] border border-white/10 rounded-xl text-sm text-[#FFFFFF] placeholder-[#FFFFFF]/30 focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all w-64"
               />
             </div>
           </div>
@@ -560,39 +560,39 @@ export default function ClientDashboard() {
             <table className="w-full">
               <thead>
                 <tr className="border-t border-white/5">
-                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#F2F3F4]/30 uppercase tracking-wider">Consulta</th>
-                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#F2F3F4]/30 uppercase tracking-wider">Estado</th>
-                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#F2F3F4]/30 uppercase tracking-wider">Respuestas</th>
-                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#F2F3F4]/30 uppercase tracking-wider">Fecha de Creacion</th>
-                  <th className="px-6 py-3 text-right text-[11px] font-semibold text-[#F2F3F4]/30 uppercase tracking-wider">Acciones</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#FFFFFF]/30 uppercase tracking-wider">Consulta</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#FFFFFF]/30 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#FFFFFF]/30 uppercase tracking-wider">Respuestas</th>
+                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-[#FFFFFF]/30 uppercase tracking-wider">Fecha de Creacion</th>
+                  <th className="px-6 py-3 text-right text-[11px] font-semibold text-[#FFFFFF]/30 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filteredSurveys.map((survey) => (
                   <tr key={survey.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-[#F2F3F4]">{survey.title}</div>
-                      <div className="text-xs text-[#F2F3F4]/40 mt-0.5">
+                      <div className="text-sm font-semibold text-[#FFFFFF]">{survey.title}</div>
+                      <div className="text-xs text-[#FFFFFF]/40 mt-0.5">
                         {survey.description?.substring(0, 50)}
                         {survey.description && survey.description.length > 50 && "..."}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {survey.is_active ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#00CCBA]">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#00CCBA]" />
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#00C853]">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#00C853]" />
                           Activa
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#F2F3F4]/40">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#534A68]" />
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#FFFFFF]/40">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#2d2d44]" />
                           Inactiva
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 text-sm text-[#F2F3F4]/70">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F2F3F4]/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <div className="flex items-center gap-1.5 text-sm text-[#FFFFFF]/70">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#FFFFFF]/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                           <circle cx="9" cy="7" r="4" />
                           <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -602,8 +602,8 @@ export default function ClientDashboard() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 text-sm text-[#F2F3F4]/50">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F2F3F4]/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <div className="flex items-center gap-1.5 text-sm text-[#FFFFFF]/50">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#FFFFFF]/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                           <line x1="16" y1="2" x2="16" y2="6" />
                           <line x1="8" y1="2" x2="8" y2="6" />
@@ -616,7 +616,7 @@ export default function ClientDashboard() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => router.push(`/client/results/${survey.id}`)}
-                          className="inline-flex items-center justify-center gap-1.5 w-[130px] py-1.5 text-xs font-medium text-white bg-[#5941CE] hover:bg-[#7B6FD4] rounded-lg transition-colors"
+                          className="inline-flex items-center justify-center gap-1.5 w-[130px] py-1.5 text-xs font-medium text-white bg-[#2962FF] hover:bg-[#5E8AFF] rounded-lg transition-colors"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="18" y1="20" x2="18" y2="10" />
@@ -627,15 +627,15 @@ export default function ClientDashboard() {
                         </button>
                         <button
                           onClick={() => handleCopyLink(survey.id)}
-                          className="inline-flex items-center justify-center gap-1.5 w-[110px] py-1.5 text-xs font-medium text-[#F2F3F4]/70 bg-white/5 border border-white/10 hover:bg-white/10 rounded-lg transition-colors"
+                          className="inline-flex items-center justify-center gap-1.5 w-[110px] py-1.5 text-xs font-medium text-[#FFFFFF]/70 bg-white/5 border border-white/10 hover:bg-white/10 rounded-lg transition-colors"
                           title="Copiar link de la consulta"
                         >
                           {copiedId === survey.id ? (
                             <>
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-[#00CCBA]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-[#00C853]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="20 6 9 17 4 12" />
                               </svg>
-                              <span className="text-[#00CCBA]">Copiado</span>
+                              <span className="text-[#00C853]">Copiado</span>
                             </>
                           ) : (
                             <>
@@ -652,7 +652,7 @@ export default function ClientDashboard() {
                           className={`inline-flex items-center justify-center gap-1.5 w-[110px] py-1.5 text-xs font-medium rounded-lg transition-colors border ${
                             survey.is_active
                               ? "text-red-400 bg-red-400/10 border-red-400/20 hover:bg-red-400/20"
-                              : "text-[#00CCBA] bg-[#00CCBA]/10 border-[#00CCBA]/20 hover:bg-[#00CCBA]/20"
+                              : "text-[#00C853] bg-[#00C853]/10 border-[#00C853]/20 hover:bg-[#00C853]/20"
                           }`}
                         >
                           {survey.is_active ? (
@@ -684,16 +684,16 @@ export default function ClientDashboard() {
 
           {filteredSurveys.length === 0 && (
             <div className="text-center py-16">
-              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-[#F2F3F4]/20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-[#FFFFFF]/20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
                 <line x1="16" y1="13" x2="8" y2="13" />
                 <line x1="16" y1="17" x2="8" y2="17" />
               </svg>
-              <h3 className="mt-3 text-sm font-medium text-[#F2F3F4]/70">
+              <h3 className="mt-3 text-sm font-medium text-[#FFFFFF]/70">
                 {searchQuery ? "Sin resultados" : "No hay consultas"}
               </h3>
-              <p className="mt-1 text-sm text-[#F2F3F4]/40">
+              <p className="mt-1 text-sm text-[#FFFFFF]/40">
                 {searchQuery
                   ? `No se encontraron consultas para "${searchQuery}"`
                   : "Tus consultas aparecerán aquí una vez que sean creadas"}
@@ -708,21 +708,21 @@ export default function ClientDashboard() {
         {activeSection === "reportes" && (
           <div className="mt-0">
             <div className="mb-6">
-              <h2 className="text-3xl font-bold text-[#F2F3F4]">Reportes</h2>
-              <p className="text-sm text-[#F2F3F4]/50 mt-1">Informes de inversión publicados para cada municipio</p>
+              <h2 className="text-3xl font-bold text-[#FFFFFF]">Reportes</h2>
+              <p className="text-sm text-[#FFFFFF]/50 mt-1">Informes de inversión publicados para cada municipio</p>
             </div>
 
             <div className="space-y-6">
               {clientReports.map((client) => (
-                <div key={client.slug} className="bg-[#3C2E51] rounded-2xl border border-white/5 overflow-hidden">
+                <div key={client.slug} className="bg-[#1a1a2e] rounded-2xl border border-white/5 overflow-hidden">
                   {/* Client header */}
                   <div className="p-6 border-b border-white/5 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-[#5941CE] flex items-center justify-center text-white font-bold text-lg">
+                    <div className="w-12 h-12 rounded-xl bg-[#2962FF] flex items-center justify-center text-white font-bold text-lg">
                       {client.logo}
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-[#F2F3F4]">{client.municipality}</h3>
-                      <p className="text-sm text-[#F2F3F4]/50">{client.periods.length} reporte{client.periods.length !== 1 ? "s" : ""} disponible{client.periods.length !== 1 ? "s" : ""}</p>
+                      <h3 className="text-lg font-bold text-[#FFFFFF]">{client.municipality}</h3>
+                      <p className="text-sm text-[#FFFFFF]/50">{client.periods.length} reporte{client.periods.length !== 1 ? "s" : ""} disponible{client.periods.length !== 1 ? "s" : ""}</p>
                     </div>
                   </div>
 
@@ -731,21 +731,21 @@ export default function ClientDashboard() {
                     {client.periods.map((report) => (
                       <div key={report.period} className="p-6 flex items-start justify-between gap-4">
                         <div className="flex items-start gap-4 flex-1 min-w-0">
-                          <div className="w-10 h-10 rounded-lg bg-[#201631] flex items-center justify-center shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5941CE]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <div className="w-10 h-10 rounded-lg bg-[#000000] flex items-center justify-center shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#2962FF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                               <polyline points="14 2 14 8 20 8" />
                             </svg>
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="text-sm font-semibold text-[#F2F3F4]">{report.title}</h4>
-                              <span className="text-xs bg-[#00CCBA]/10 text-[#00CCBA] font-medium px-2 py-0.5 rounded-full border border-[#00CCBA]/20">{report.date}</span>
+                              <h4 className="text-sm font-semibold text-[#FFFFFF]">{report.title}</h4>
+                              <span className="text-xs bg-[#00C853]/10 text-[#00C853] font-medium px-2 py-0.5 rounded-full border border-[#00C853]/20">{report.date}</span>
                             </div>
-                            <p className="text-sm text-[#F2F3F4]/50 mt-0.5">{report.description}</p>
+                            <p className="text-sm text-[#FFFFFF]/50 mt-0.5">{report.description}</p>
                             <div className="flex flex-wrap gap-1.5 mt-3">
                               {report.segments.map((seg) => (
-                                <span key={seg} className="text-xs bg-[#201631] text-[#F2F3F4]/50 px-2 py-0.5 rounded-full border border-white/5">{seg}</span>
+                                <span key={seg} className="text-xs bg-[#000000] text-[#FFFFFF]/50 px-2 py-0.5 rounded-full border border-white/5">{seg}</span>
                               ))}
                             </div>
                           </div>
@@ -754,7 +754,7 @@ export default function ClientDashboard() {
                           href={report.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-[#5941CE] hover:bg-[#7B6FD4] rounded-lg transition-colors"
+                          className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-[#2962FF] hover:bg-[#5E8AFF] rounded-lg transition-colors"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />

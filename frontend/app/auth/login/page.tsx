@@ -136,240 +136,119 @@ function LoginForm() {
     return digits.slice(0, 11);
   };
 
-  // SVG Icons
-  const UserIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-
-  const LockIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  );
-
-  const EyeIcon = ({ open }: { open: boolean }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 hover:text-gray-600 cursor-pointer" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      {open ? (
-        <>
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-          <circle cx="12" cy="12" r="3" />
-        </>
-      ) : (
-        <>
-          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-          <line x1="1" y1="1" x2="23" y2="23" />
-          <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
-        </>
-      )}
-    </svg>
-  );
-
-  const MailIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-      <polyline points="22,6 12,13 2,6" />
-    </svg>
-  );
-
-  const inputClass = "w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-gray-50 focus:bg-white text-sm";
-  const inputWithEyeClass = "w-full pl-11 pr-12 py-3.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-gray-50 focus:bg-white text-sm";
-  const labelClass = "block text-sm font-semibold text-gray-700 mb-1.5";
+  const features = [
+    {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      title: "Rápido",
+      desc: "Participá en solo 1 minuto",
+    },
+    {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+        </svg>
+      ),
+      title: "Simple",
+      desc: "Sin registros complicados",
+    },
+    {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      ),
+      title: "Impacto",
+      desc: "Participá y marcá la diferencia",
+    },
+    {
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <polyline points="9 12 11 14 15 10" />
+        </svg>
+      ),
+      title: "Seguro",
+      desc: "Tus datos están protegidos",
+    },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Left Panel - Branding (fixed height, doesn't move with right panel) */}
-      <div className="hidden lg:block lg:w-1/2 lg:fixed lg:inset-y-0 lg:left-0 bg-gradient-to-b from-[#0d1b33] via-[#152452] to-[#2a4494] overflow-hidden">
-        {/* Top: Title + subtitle */}
-        <div className="relative z-10 text-center px-8 pt-[4vh]">
-          <Image src="/logo_pad.png" alt="PAD - Participación Activa Digital" width={190} height={78} className="mx-auto" />
-        </div>
-
-        {/* Bottom: Description + Feature bullets */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 px-12 pb-[8vh]">
-          <div className="max-w-sm mx-auto">
-            <p className="text-blue-100/80 text-base leading-relaxed text-center mb-8">
-              Tu voz importa. Participá, accedé a beneficios y transformá la democracia.
-            </p>
+      {/* Left Panel - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 lg:fixed lg:inset-y-0 lg:left-0 bg-gradient-to-b from-[#000000] via-[#0a0a1a] to-[#1a1a2e] flex-col justify-between p-10 overflow-hidden">
+        {/* Top: Logo + Badge */}
+        <div>
+          <div className="flex items-center gap-3 mb-8">
+            <Image src="/logo_pad_white.png" alt="PAD" width={200} height={86} className="" />
           </div>
-          <div className="max-w-sm mx-auto space-y-4">
-            {[
-              { icon: <><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></>, text: "En solo 1 minuto" },
-              { icon: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" /></>, text: "Sin registros complicados" },
-              { icon: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></>, text: "Participá y marcá la diferencia" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    {item.icon}
-                  </svg>
-                </div>
-                <span className="text-blue-100/90 text-sm">{item.text}</span>
+
+          <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-full px-4 py-1.5 mb-10">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-green-400 text-xs font-medium">Plataforma activa</span>
+          </div>
+
+          {/* Hero text */}
+          <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight mb-5">
+            Tu voz importa. Participá y transformá la democracia.
+          </h1>
+          <p className="text-white/60 text-base leading-relaxed max-w-md mb-10">
+            Accedé a las consultas ciudadanas, votá por tus preferencias y sé parte de las decisiones que importan en tu comunidad.
+          </p>
+
+          {/* Feature cards 2x2 */}
+          <div className="grid grid-cols-2 gap-3">
+            {features.map((f, i) => (
+              <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                <div className="text-[#00C853] mb-3">{f.icon}</div>
+                <p className="text-white font-semibold text-sm mb-0.5">{f.title}</p>
+                <p className="text-white/50 text-xs">{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Gears and circles - background decoration (centered) */}
-        <div className="absolute inset-0">
-          {/* Orbit rings */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px]">
-            {/* Outer ring */}
-            <div className="absolute inset-0 rounded-full border border-blue-400/20" />
-            {/* Middle ring */}
-            <div className="absolute inset-[50px] rounded-full border border-blue-400/15" />
-            {/* Inner ring */}
-            <div className="absolute inset-[100px] rounded-full border border-blue-300/10" />
-
-            {/* Dots on outer ring */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-400/50 rounded-full" />
-            <div className="absolute top-[12%] right-[5%] w-2 h-2 bg-blue-300/40 rounded-full" />
-            <div className="absolute top-[12%] left-[5%] w-2.5 h-2.5 bg-blue-400/35 rounded-full" />
-            <div className="absolute bottom-[12%] right-[5%] w-3 h-3 bg-blue-400/40 rounded-full" />
-            <div className="absolute bottom-[12%] left-[5%] w-2 h-2 bg-blue-300/30 rounded-full" />
-            <div className="absolute top-1/2 right-0 -translate-y-1/2 w-2.5 h-2.5 bg-blue-400/40 rounded-full" />
-            <div className="absolute top-1/2 left-0 -translate-y-1/2 w-2 h-2 bg-blue-300/30 rounded-full" />
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-blue-400/35 rounded-full" />
-
-            {/* Dots on middle ring */}
-            <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-2 h-2 bg-blue-300/30 rounded-full" />
-            <div className="absolute top-[30%] right-[15%] w-2.5 h-2.5 bg-blue-400/35 rounded-full" />
-            <div className="absolute bottom-[25%] left-[13%] w-2 h-2 bg-blue-300/25 rounded-full" />
-
-            {/* Connecting lines from center outward */}
-            <div className="absolute top-0 left-1/2 w-px h-[50px] bg-gradient-to-b from-blue-400/30 to-transparent" />
-            <div className="absolute bottom-0 left-1/2 w-px h-[50px] bg-gradient-to-t from-blue-400/30 to-transparent" />
-            <div className="absolute top-1/2 right-0 w-[50px] h-px bg-gradient-to-l from-blue-400/30 to-transparent" />
-            <div className="absolute top-1/2 left-0 w-[50px] h-px bg-gradient-to-r from-blue-400/30 to-transparent" />
-            {/* Diagonal lines */}
-            <div className="absolute top-[10%] right-[10%] w-px h-[40px] bg-gradient-to-b from-blue-400/20 to-transparent rotate-45 origin-top" />
-            <div className="absolute top-[10%] left-[10%] w-px h-[40px] bg-gradient-to-b from-blue-400/20 to-transparent -rotate-45 origin-top" />
+        {/* Footer */}
+        <div className="flex items-center justify-between text-xs text-white/40">
+          <span>PAD &copy; 2026 &mdash; Participación Activa Digital</span>
+          <div className="flex items-center gap-2">
+            <span>Powered by</span>
+            <Image src="/logo.jpeg" alt="Data Insights" width={20} height={20} className="rounded-md opacity-60" />
+            <span className="text-white/60 font-medium">Data Insights S.A.S</span>
           </div>
-
-          {/* Gears SVG - centered */}
-          <svg className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] text-blue-400/25" viewBox="0 0 420 420" fill="none">
-            {/* Large center gear */}
-            <g transform="translate(210, 210)">
-              <circle r="70" stroke="currentColor" strokeWidth="2" fill="none" />
-              <circle r="50" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.7" />
-              <circle r="30" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.5" />
-              <circle r="10" fill="currentColor" opacity="0.3" />
-              {/* Gear teeth */}
-              {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle) => (
-                <rect
-                  key={`lg-${angle}`}
-                  x="-6"
-                  y="-82"
-                  width="12"
-                  height="16"
-                  rx="2"
-                  fill="currentColor"
-                  opacity="0.35"
-                  transform={`rotate(${angle})`}
-                />
-              ))}
-              {/* Inner spokes */}
-              {[0, 60, 120, 180, 240, 300].map((angle) => (
-                <line
-                  key={`spoke-${angle}`}
-                  x1="0" y1="-30" x2="0" y2="-50"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  opacity="0.3"
-                  transform={`rotate(${angle})`}
-                />
-              ))}
-            </g>
-            {/* Medium gear top-right */}
-            <g transform="translate(315, 120)">
-              <circle r="42" stroke="currentColor" strokeWidth="1.5" fill="none" />
-              <circle r="28" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6" />
-              <circle r="14" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.4" />
-              <circle r="5" fill="currentColor" opacity="0.3" />
-              {[0, 40, 80, 120, 160, 200, 240, 280, 320].map((angle) => (
-                <rect
-                  key={`md-${angle}`}
-                  x="-5"
-                  y="-51"
-                  width="10"
-                  height="13"
-                  rx="2"
-                  fill="currentColor"
-                  opacity="0.3"
-                  transform={`rotate(${angle})`}
-                />
-              ))}
-            </g>
-            {/* Medium gear bottom-left */}
-            <g transform="translate(115, 310)">
-              <circle r="45" stroke="currentColor" strokeWidth="1.5" fill="none" />
-              <circle r="30" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6" />
-              <circle r="15" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.4" />
-              <circle r="6" fill="currentColor" opacity="0.3" />
-              {[0, 36, 72, 108, 144, 180, 216, 252, 288, 324].map((angle) => (
-                <rect
-                  key={`bl-${angle}`}
-                  x="-5"
-                  y="-54"
-                  width="10"
-                  height="13"
-                  rx="2"
-                  fill="currentColor"
-                  opacity="0.3"
-                  transform={`rotate(${angle})`}
-                />
-              ))}
-            </g>
-            {/* Small gear bottom-right */}
-            <g transform="translate(320, 320)">
-              <circle r="25" stroke="currentColor" strokeWidth="1.5" fill="none" />
-              <circle r="12" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.5" />
-              <circle r="4" fill="currentColor" opacity="0.3" />
-              {[0, 51, 102, 153, 204, 255, 306].map((angle) => (
-                <rect
-                  key={`sm-${angle}`}
-                  x="-4"
-                  y="-31"
-                  width="8"
-                  height="10"
-                  rx="2"
-                  fill="currentColor"
-                  opacity="0.3"
-                  transform={`rotate(${angle})`}
-                />
-              ))}
-            </g>
-          </svg>
-        </div>
-
-        {/* Decorative star bottom-right */}
-        <div className="absolute bottom-6 right-6 text-blue-300/25">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
-          </svg>
         </div>
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 lg:ml-[50%] flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-4 py-8 lg:py-12 min-h-screen">
-        <div className="w-full max-w-md">
-          {/* Card */}
-          <div className="bg-white rounded-2xl shadow-xl p-7 md:p-9">
-            <div className="mb-7">
-              <h2 className="text-3xl font-bold text-gray-900 mb-1">
-                Bienvenido
-              </h2>
+      <div className="flex-1 lg:ml-[50%] flex flex-col min-h-screen bg-gray-50">
+        {/* Top bar with admin link */}
+        <div className="flex justify-end px-4 py-4 lg:p-6">
+          <Link href="/auth/admin-login" className="text-sm text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap">
+            ¿Sos administrador? <span className="font-semibold text-[#2962FF]">Ingresá acá</span>
+          </Link>
+        </div>
+
+        {/* Mobile logo */}
+        <div className="lg:hidden flex justify-center pt-2 pb-4">
+          <Image src="/logo_pad_dark.png" alt="PAD - Participación Activa Digital" width={160} height={65} />
+        </div>
+
+        {/* Form centered */}
+        <div className="flex-1 flex items-center justify-center px-4 py-6 lg:px-6 lg:py-8">
+          <div className="w-full max-w-md">
+            <div className="mb-6">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Portal Ciudadano</h2>
               <p className="text-gray-500 text-sm">
-                Accede a tu portal de participación
+                Ingresá con tu CUIL para participar en las consultas de tu municipio.
               </p>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-3 mb-7">
+            <div className="flex gap-3 mb-6">
               <button
                 onClick={() => {
                   setActiveTab("login");
@@ -378,7 +257,7 @@ function LoginForm() {
                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   activeTab === "login"
                     ? "bg-white border border-gray-300 text-gray-900 shadow-sm"
-                    : "bg-gray-50 text-gray-500 hover:bg-gray-100 border border-transparent"
+                    : "bg-gray-100 text-gray-500 hover:bg-gray-200 border border-transparent"
                 }`}
               >
                 Iniciar Sesión
@@ -391,7 +270,7 @@ function LoginForm() {
                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   activeTab === "register"
                     ? "bg-white border border-gray-300 text-gray-900 shadow-sm"
-                    : "bg-gray-50 text-gray-500 hover:bg-gray-100 border border-transparent"
+                    : "bg-gray-100 text-gray-500 hover:bg-gray-200 border border-transparent"
                 }`}
               >
                 Registrarse
@@ -408,42 +287,39 @@ function LoginForm() {
             {activeTab === "login" && (
               <form onSubmit={handleLoginSubmit} className="space-y-5">
                 <div>
-                  <label htmlFor="cuil" className={labelClass}>
+                  <label htmlFor="cuil" className="block text-sm font-semibold text-gray-700 mb-1.5">
                     CUIL
                   </label>
-                  <div className="relative">
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                      <UserIcon />
-                    </div>
-                    <input
-                      id="cuil"
-                      type="text"
-                      value={loginData.cuil}
-                      onChange={(e) =>
-                        setLoginData({
-                          ...loginData,
-                          cuil: formatCuil(e.target.value),
-                        })
-                      }
-                      placeholder="20122456789"
-                      required
-                      maxLength={11}
-                      className={inputClass}
-                    />
-                  </div>
+                  <input
+                    id="cuil"
+                    type="text"
+                    value={loginData.cuil}
+                    onChange={(e) =>
+                      setLoginData({
+                        ...loginData,
+                        cuil: formatCuil(e.target.value),
+                      })
+                    }
+                    placeholder="20122456789"
+                    required
+                    maxLength={11}
+                    className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
+                  />
                   <p className="mt-1 text-xs text-gray-400">
                     11 dígitos sin guiones
                   </p>
                 </div>
 
                 <div>
-                  <label htmlFor="password" className={labelClass}>
-                    Contraseña
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+                      Contraseña
+                    </label>
+                    <a href="#" className="text-sm text-[#2962FF] hover:text-[#1a4fd4] font-medium">
+                      ¿Olvidaste tu contraseña?
+                    </a>
+                  </div>
                   <div className="relative">
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                      <LockIcon />
-                    </div>
                     <input
                       id="password"
                       type={showPassword ? "text" : "password"}
@@ -451,43 +327,57 @@ function LoginForm() {
                       onChange={(e) =>
                         setLoginData({ ...loginData, password: e.target.value })
                       }
-                      placeholder="••••••••"
+                      placeholder="Tu contraseña"
                       required
                       minLength={6}
-                      className={inputWithEyeClass}
+                      className="w-full px-4 pr-12 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       tabIndex={-1}
                     >
-                      <EyeIcon open={showPassword} />
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        {showPassword ? (
+                          <>
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </>
+                        ) : (
+                          <>
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                          </>
+                        )}
+                      </svg>
                     </button>
                   </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <a href="#" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                    ¿Olvidaste tu contraseña?
-                  </a>
                 </div>
 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-blue-700 to-blue-900 text-white py-3.5 rounded-xl font-semibold hover:from-blue-800 hover:to-blue-950 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm"
+                  className="w-full bg-[#2962FF] hover:bg-[#1a4fd4] text-white py-3.5 rounded-full font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#2962FF]/25 text-sm flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
-                    <span className="flex items-center justify-center gap-2">
+                    <>
                       <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
                       Ingresando...
-                    </span>
+                    </>
                   ) : (
-                    "Iniciar Sesión"
+                    <>
+                      Iniciar Sesión
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                        <polyline points="12 5 19 12 12 19" />
+                      </svg>
+                    </>
                   )}
                 </button>
               </form>
@@ -498,85 +388,67 @@ function LoginForm() {
               <form onSubmit={handleRegisterSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="reg-cuil" className={labelClass}>
+                    <label htmlFor="reg-cuil" className="block text-sm font-semibold text-gray-700 mb-1.5">
                       CUIL <span className="text-red-500">*</span>
                     </label>
-                    <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                        <UserIcon />
-                      </div>
-                      <input
-                        id="reg-cuil"
-                        type="text"
-                        value={registerData.cuil}
-                        onChange={(e) =>
-                          setRegisterData({
-                            ...registerData,
-                            cuil: formatCuil(e.target.value),
-                          })
-                        }
-                        placeholder="20123456789"
-                        required
-                        maxLength={11}
-                        className={inputClass}
-                      />
-                    </div>
+                    <input
+                      id="reg-cuil"
+                      type="text"
+                      value={registerData.cuil}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          cuil: formatCuil(e.target.value),
+                        })
+                      }
+                      placeholder="20123456789"
+                      required
+                      maxLength={11}
+                      className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
+                    />
                   </div>
 
                   <div>
-                    <label htmlFor="reg-name" className={labelClass}>
+                    <label htmlFor="reg-name" className="block text-sm font-semibold text-gray-700 mb-1.5">
                       Nombre Completo <span className="text-red-500">*</span>
                     </label>
-                    <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                        <UserIcon />
-                      </div>
-                      <input
-                        id="reg-name"
-                        type="text"
-                        value={registerData.name}
-                        onChange={(e) =>
-                          setRegisterData({ ...registerData, name: e.target.value })
-                        }
-                        placeholder="Juan Pérez"
-                        required
-                        className={inputClass}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="reg-email" className={labelClass}>
-                    Correo electrónico <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                      <MailIcon />
-                    </div>
                     <input
-                      id="reg-email"
-                      type="email"
-                      value={registerData.email}
+                      id="reg-name"
+                      type="text"
+                      value={registerData.name}
                       onChange={(e) =>
-                        setRegisterData({ ...registerData, email: e.target.value })
+                        setRegisterData({ ...registerData, name: e.target.value })
                       }
-                      placeholder="tu@email.com"
+                      placeholder="Juan Pérez"
                       required
-                      className={inputClass}
+                      className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
                     />
                   </div>
                 </div>
 
+                <div>
+                  <label htmlFor="reg-email" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Correo electrónico <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="reg-email"
+                    type="email"
+                    value={registerData.email}
+                    onChange={(e) =>
+                      setRegisterData({ ...registerData, email: e.target.value })
+                    }
+                    placeholder="tu@email.com"
+                    required
+                    className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="reg-password" className={labelClass}>
+                    <label htmlFor="reg-password" className="block text-sm font-semibold text-gray-700 mb-1.5">
                       Contraseña <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                        <LockIcon />
-                      </div>
                       <input
                         id="reg-password"
                         type={showRegPassword ? "text" : "password"}
@@ -590,27 +462,38 @@ function LoginForm() {
                         placeholder="••••••••"
                         required
                         minLength={6}
-                        className={inputWithEyeClass}
+                        className="w-full px-4 pr-12 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
                       />
                       <button
                         type="button"
                         onClick={() => setShowRegPassword(!showRegPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                         tabIndex={-1}
                       >
-                        <EyeIcon open={showRegPassword} />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          {showRegPassword ? (
+                            <>
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </>
+                          ) : (
+                            <>
+                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                              <line x1="1" y1="1" x2="23" y2="23" />
+                              <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                            </>
+                          )}
+                        </svg>
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="reg-confirm-password" className={labelClass}>
+                    <label htmlFor="reg-confirm-password" className="block text-sm font-semibold text-gray-700 mb-1.5">
                       Confirmar <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2">
-                        <LockIcon />
-                      </div>
                       <input
                         id="reg-confirm-password"
                         type={showRegConfirmPassword ? "text" : "password"}
@@ -624,15 +507,29 @@ function LoginForm() {
                         placeholder="••••••••"
                         required
                         minLength={6}
-                        className={inputWithEyeClass}
+                        className="w-full px-4 pr-12 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
                       />
                       <button
                         type="button"
                         onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                         tabIndex={-1}
                       >
-                        <EyeIcon open={showRegConfirmPassword} />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          {showRegConfirmPassword ? (
+                            <>
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </>
+                          ) : (
+                            <>
+                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                              <line x1="1" y1="1" x2="23" y2="23" />
+                              <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                            </>
+                          )}
+                        </svg>
                       </button>
                     </div>
                   </div>
@@ -641,36 +538,55 @@ function LoginForm() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-blue-700 to-blue-900 text-white py-3.5 rounded-xl font-semibold hover:from-blue-800 hover:to-blue-950 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm"
+                  className="w-full bg-[#2962FF] hover:bg-[#1a4fd4] text-white py-3.5 rounded-full font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#2962FF]/25 text-sm flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
-                    <span className="flex items-center justify-center gap-2">
+                    <>
                       <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
                       Registrando...
-                    </span>
+                    </>
                   ) : (
-                    "Crear Cuenta"
+                    <>
+                      Crear Cuenta
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                        <polyline points="12 5 19 12 12 19" />
+                      </svg>
+                    </>
                   )}
                 </button>
               </form>
             )}
 
-            {/* Link to Admin/Client Login */}
-            <div className="mt-6 pt-5 border-t border-gray-100">
-              <p className="text-center text-xs text-gray-500">
-                ¿Eres administrador o cliente?{" "}
-                <Link
-                  href="/auth/admin-login"
-                  className="text-blue-600 hover:text-blue-700 font-semibold"
-                >
-                  Accede aquí
-                </Link>
-              </p>
+            {/* Security badge */}
+            <div className="mt-6 flex items-start gap-3 bg-gray-50 border border-gray-100 rounded-xl p-4">
+              <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center shrink-0 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Participación segura</p>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Tu identidad y tus respuestas están protegidas con encriptación de extremo a extremo.
+                </p>
+              </div>
             </div>
           </div>
+        </div>
+
+        {/* Bottom footer */}
+        <div className="px-6 py-5 text-center">
+          <p className="text-xs text-gray-400">
+            ¿Problemas para acceder?{" "}
+            <a href="#" className="text-[#2962FF] hover:text-[#1a4fd4] font-medium">
+              Contactar soporte técnico
+            </a>
+          </p>
         </div>
       </div>
     </div>
@@ -679,8 +595,8 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="animate-spin h-8 w-8 border-4 border-[#2962FF] border-t-transparent rounded-full" />
     </div>}>
       <LoginForm />
     </Suspense>

@@ -11,9 +11,9 @@ import ChatBot from "@/components/ChatBot";
 const GeographicHeatMap = dynamic(() => import("@/components/GeographicHeatMap"), {
   ssr: false,
   loading: () => (
-    <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
-      <div className="h-96 bg-[#201631] rounded-lg flex items-center justify-center">
-        <p className="text-[#F2F3F4]/50">Cargando mapa...</p>
+    <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
+      <div className="h-96 bg-[#000000] rounded-lg flex items-center justify-center">
+        <p className="text-[#FFFFFF]/50">Cargando mapa...</p>
       </div>
     </div>
   ),
@@ -348,10 +348,10 @@ export default function SurveyResultsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#201631]">
+      <div className="min-h-screen flex items-center justify-center bg-[#000000]">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-          <p className="mt-4 text-[#F2F3F4]/70">Cargando resultados...</p>
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-[#2962FF] border-r-transparent"></div>
+          <p className="mt-4 text-[#FFFFFF]/70">Cargando resultados...</p>
         </div>
       </div>
     );
@@ -359,12 +359,12 @@ export default function SurveyResultsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#201631]">
-        <div className="bg-[#3C2E51] rounded-lg shadow-lg p-8 max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-[#000000]">
+        <div className="bg-[#1a1a2e] rounded-lg shadow-lg p-8 max-w-md">
           <p className="text-red-400">{error}</p>
           <button
             onClick={() => router.push("/client")}
-            className="mt-4 px-4 py-2 bg-[#5941CE] text-white rounded-lg hover:bg-[#7B6FD4]"
+            className="mt-4 px-4 py-2 bg-[#2962FF] text-white rounded-lg hover:bg-[#5E8AFF]"
           >
             Volver al Dashboard
           </button>
@@ -419,30 +419,30 @@ export default function SurveyResultsPage() {
     genderFilter: string, setGenderFilter: (v: string) => void
   ) => (
     <div className="flex flex-wrap gap-2 mb-6 w-full">
-      <div className="flex items-center gap-0 bg-[#201631] rounded-lg p-1 flex-1 min-w-fit">
+      <div className="flex items-center gap-0 bg-[#000000] rounded-lg p-1 flex-1 min-w-fit">
         {ageFilterOptions.map((option) => (
           <button
             key={option}
             onClick={() => setAgeFilter(option)}
             className={`flex-1 px-2 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
               ageFilter === option
-                ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
-                : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]"
+                ? "bg-[#1a1a2e] text-[#FFFFFF] shadow-none"
+                : "text-[#FFFFFF]/50 hover:text-[#FFFFFF]"
             }`}
           >
             {option}
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-0 bg-[#201631] rounded-lg p-1 flex-1 min-w-fit">
+      <div className="flex items-center gap-0 bg-[#000000] rounded-lg p-1 flex-1 min-w-fit">
         {genderFilterOptions.map((option) => (
           <button
             key={option}
             onClick={() => setGenderFilter(option)}
             className={`flex-1 px-2 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
               genderFilter === option
-                ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
-                : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]"
+                ? "bg-[#1a1a2e] text-[#FFFFFF] shadow-none"
+                : "text-[#FFFFFF]/50 hover:text-[#FFFFFF]"
             }`}
           >
             {option}
@@ -506,16 +506,16 @@ export default function SurveyResultsPage() {
     const topPercentage = topCategory ? (topCategory[1] as PercentageResult).percentage : 0;
 
     return (
-      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-[#F2F3F4]">Distribución de Preferencias</h3>
-          <p className="text-sm text-[#F2F3F4]/50">Preferencias promedio de inversión ciudadana</p>
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Distribución de Preferencias</h3>
+          <p className="text-sm text-[#FFFFFF]/50">Preferencias promedio de inversión ciudadana</p>
         </div>
 
         {renderCombinedFilters(budgetAgeFilter, setBudgetAgeFilter, budgetGenderFilter, setBudgetGenderFilter)}
 
         {!hasData ? (
-          <div className="text-center text-[#F2F3F4]/50 py-12">
+          <div className="text-center text-[#FFFFFF]/50 py-12">
             No hay datos para este filtro
           </div>
         ) : (
@@ -588,16 +588,16 @@ export default function SurveyResultsPage() {
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: segment.color }}
                     />
-                    <span className="text-sm text-[#F2F3F4]/70">{segment.label}</span>
+                    <span className="text-sm text-[#FFFFFF]/70">{segment.label}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Insight */}
-            <div className="mt-6 bg-[#5941CE]/10 border border-[#5941CE]/20 rounded-lg p-4">
-              <p className="text-sm font-semibold text-[#7B6FD4]">Insight Principal</p>
-              <p className="text-sm text-[#7B6FD4]">
+            <div className="mt-6 bg-[#2962FF]/10 border border-[#2962FF]/20 rounded-lg p-4">
+              <p className="text-sm font-semibold text-[#5E8AFF]">Insight Principal</p>
+              <p className="text-sm text-[#5E8AFF]">
                 {topLabel} es la prioridad #1 con {topPercentage.toFixed(1)}% del presupuesto preferido
               </p>
             </div>
@@ -618,10 +618,10 @@ export default function SurveyResultsPage() {
     const totalOtros = otrosSummary.reduce((sum, item) => sum + item.count, 0);
 
     return (
-      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6 mb-8">
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6 mb-8">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-[#F2F3F4]">Otras Propuestas Ciudadanas</h3>
-          <p className="text-sm text-[#F2F3F4]/50">{totalOtros} personas sugirieron áreas adicionales de inversión</p>
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Otras Propuestas Ciudadanas</h3>
+          <p className="text-sm text-[#FFFFFF]/50">{totalOtros} personas sugirieron áreas adicionales de inversión</p>
         </div>
 
         <div className="space-y-3">
@@ -631,12 +631,12 @@ export default function SurveyResultsPage() {
               <div key={index} className="flex items-center gap-3">
                 <div className="flex-1">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium text-[#F2F3F4]/80">{item.text}</span>
-                    <span className="text-sm text-[#F2F3F4]/50">{item.count} mención{item.count !== 1 ? 'es' : ''}</span>
+                    <span className="text-sm font-medium text-[#FFFFFF]/80">{item.text}</span>
+                    <span className="text-sm text-[#FFFFFF]/50">{item.count} mención{item.count !== 1 ? 'es' : ''}</span>
                   </div>
-                  <div className="w-full bg-[#201631] rounded-full h-2">
+                  <div className="w-full bg-[#000000] rounded-full h-2">
                     <div
-                      className="bg-[#5941CE] h-2 rounded-full transition-all"
+                      className="bg-[#2962FF] h-2 rounded-full transition-all"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -670,16 +670,16 @@ export default function SurveyResultsPage() {
     const winnerResult = winner ? (winner[1] as SingleChoiceResult) : null;
 
     return (
-      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-[#F2F3F4]">Obras Públicas Prioritarias</h3>
-          <p className="text-sm text-[#F2F3F4]/50">Votación ciudadana sobre proyectos</p>
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Obras Públicas Prioritarias</h3>
+          <p className="text-sm text-[#FFFFFF]/50">Votación ciudadana sobre proyectos</p>
         </div>
 
         {renderCombinedFilters(projectsAgeFilter, setProjectsAgeFilter, projectsGenderFilter, setProjectsGenderFilter)}
 
         {!hasData ? (
-          <div className="text-center text-[#F2F3F4]/50 py-12">
+          <div className="text-center text-[#FFFFFF]/50 py-12">
             No hay datos para este filtro
           </div>
         ) : (
@@ -707,23 +707,23 @@ export default function SurveyResultsPage() {
                           {projectIcons[index % 3]}
                         </div>
                         <div>
-                          <h4 className="font-semibold text-[#F2F3F4]">{projectName}</h4>
+                          <h4 className="font-semibold text-[#FFFFFF]">{projectName}</h4>
                           {location && (
-                            <p className="text-sm text-[#F2F3F4]/50">{location}</p>
+                            <p className="text-sm text-[#FFFFFF]/50">{location}</p>
                           )}
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-[#F2F3F4]">
+                        <p className="text-2xl font-bold text-[#FFFFFF]">
                           {result.percentage.toFixed(1)}%
                         </p>
-                        <p className="text-sm text-[#F2F3F4]/50">
+                        <p className="text-sm text-[#FFFFFF]/50">
                           {result.votes.toLocaleString()} votos
                         </p>
                       </div>
                     </div>
                     {/* Progress bar */}
-                    <div className="mt-3 w-full bg-[#201631] rounded-full h-2">
+                    <div className="mt-3 w-full bg-[#000000] rounded-full h-2">
                       <div
                         className="h-2 rounded-full transition-all duration-300"
                         style={{
@@ -806,16 +806,16 @@ export default function SurveyResultsPage() {
       : 1;
 
     return (
-      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-[#F2F3F4]">Calificación de Gestión</h3>
-          <p className="text-sm text-[#F2F3F4]/50">Satisfacción ciudadana general</p>
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Calificación de Gestión</h3>
+          <p className="text-sm text-[#FFFFFF]/50">Satisfacción ciudadana general</p>
         </div>
 
         {renderCombinedFilters(ratingAgeFilter, setRatingAgeFilter, ratingGenderFilter, setRatingGenderFilter)}
 
         {!hasData ? (
-          <div className="text-center text-[#F2F3F4]/50 py-12">
+          <div className="text-center text-[#FFFFFF]/50 py-12">
             No hay datos para este filtro
           </div>
         ) : (
@@ -829,7 +829,7 @@ export default function SurveyResultsPage() {
                     className={`w-8 h-8 ${
                       star <= Math.round(average)
                         ? "text-yellow-400"
-                        : "text-[#F2F3F4]/30"
+                        : "text-[#FFFFFF]/30"
                     }`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
@@ -838,8 +838,8 @@ export default function SurveyResultsPage() {
                   </svg>
                 ))}
               </div>
-              <p className="text-4xl font-bold text-[#F2F3F4]">{average.toFixed(1)}</p>
-              <p className="text-sm text-[#F2F3F4]/50">de 5 estrellas</p>
+              <p className="text-4xl font-bold text-[#FFFFFF]">{average.toFixed(1)}</p>
+              <p className="text-sm text-[#FFFFFF]/50">de 5 estrellas</p>
             </div>
 
             {/* Distribution bars */}
@@ -851,10 +851,10 @@ export default function SurveyResultsPage() {
 
                   return (
                     <div key={rating} className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-[#F2F3F4]/70 w-6">
+                      <span className="text-sm font-medium text-[#FFFFFF]/70 w-6">
                         {rating}★
                       </span>
-                      <div className="flex-1 bg-[#201631] rounded-full h-4 overflow-hidden">
+                      <div className="flex-1 bg-[#000000] rounded-full h-4 overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-300"
                           style={{
@@ -863,7 +863,7 @@ export default function SurveyResultsPage() {
                           }}
                         />
                       </div>
-                      <span className="text-sm text-[#F2F3F4]/50 w-20 text-right">
+                      <span className="text-sm text-[#FFFFFF]/50 w-20 text-right">
                         {count.toLocaleString()} ({percentage.toFixed(1)}%)
                       </span>
                     </div>
@@ -873,9 +873,9 @@ export default function SurveyResultsPage() {
             )}
 
             {/* Insight */}
-            <div className="bg-[#201631] border border-white/10 rounded-lg p-4">
-              <p className="text-sm text-[#F2F3F4]/80">
-                <span className="font-semibold text-[#F2F3F4]">
+            <div className="bg-[#000000] border border-white/10 rounded-lg p-4">
+              <p className="text-sm text-[#FFFFFF]/80">
+                <span className="font-semibold text-[#FFFFFF]">
                   {goodRatingPercentage > 0 ? `${goodRatingPercentage.toFixed(1)}%` : `${average.toFixed(1)} promedio`}
                 </span>
                 {goodRatingPercentage > 0
@@ -894,12 +894,12 @@ export default function SurveyResultsPage() {
     const evolutionData = results?.evolution_data;
     if (!evolutionData || !evolutionData.percentage_distribution?.categories) {
       return (
-        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+        <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="mb-4">
-            <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Preferencias</h3>
-            <p className="text-sm text-[#F2F3F4]/50">Tendencias mensuales de asignación ciudadana</p>
+            <h3 className="text-xl font-bold text-[#FFFFFF]">Evolución de Preferencias</h3>
+            <p className="text-sm text-[#FFFFFF]/50">Tendencias mensuales de asignación ciudadana</p>
           </div>
-          <div className="text-center text-[#F2F3F4]/50 py-12">
+          <div className="text-center text-[#FFFFFF]/50 py-12">
             No hay datos históricos disponibles
           </div>
         </div>
@@ -965,10 +965,10 @@ export default function SurveyResultsPage() {
     const trendCategoryName = firstCategoryWithData?.name || "";
 
     return (
-      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Preferencias</h3>
-          <p className="text-sm text-[#F2F3F4]/50">Tendencias mensuales de asignación ciudadana</p>
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Evolución de Preferencias</h3>
+          <p className="text-sm text-[#FFFFFF]/50">Tendencias mensuales de asignación ciudadana</p>
         </div>
 
         {/* Age Filter Tabs */}
@@ -976,7 +976,7 @@ export default function SurveyResultsPage() {
 
         {/* Line Chart */}
         {!hasData ? (
-          <div className="text-center text-[#F2F3F4]/50 py-12">
+          <div className="text-center text-[#FFFFFF]/50 py-12">
             No hay datos para este grupo de edad
           </div>
         ) : (
@@ -1071,7 +1071,7 @@ export default function SurveyResultsPage() {
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: category.color }}
                     />
-                    <span className={`text-sm ${isHidden ? 'line-through text-[#F2F3F4]/30' : 'text-[#F2F3F4]/70'}`}>{category.name}</span>
+                    <span className={`text-sm ${isHidden ? 'line-through text-[#FFFFFF]/30' : 'text-[#FFFFFF]/70'}`}>{category.name}</span>
                   </button>
                 );
               })}
@@ -1079,9 +1079,9 @@ export default function SurveyResultsPage() {
 
             {/* Insight */}
             {trendCategoryName && (
-              <div className="mt-6 bg-[#5941CE]/10 border border-[#5941CE]/20 rounded-lg p-4">
-                <p className="text-sm font-semibold text-[#7B6FD4]">Tendencia Principal</p>
-                <p className="text-sm text-[#7B6FD4]">
+              <div className="mt-6 bg-[#2962FF]/10 border border-[#2962FF]/20 rounded-lg p-4">
+                <p className="text-sm font-semibold text-[#5E8AFF]">Tendencia Principal</p>
+                <p className="text-sm text-[#5E8AFF]">
                   La preferencia por {trendCategoryName} {trendDirection} de {startValue}% a {endValue}% en el período analizado
                 </p>
               </div>
@@ -1097,12 +1097,12 @@ export default function SurveyResultsPage() {
     const evolutionData = results?.evolution_data;
     if (!evolutionData || !evolutionData.single_choice?.projects) {
       return (
-        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+        <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="mb-4">
-            <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Votación de Obras</h3>
-            <p className="text-sm text-[#F2F3F4]/50">Cambios en preferencia de proyectos prioritarios</p>
+            <h3 className="text-xl font-bold text-[#FFFFFF]">Evolución de Votación de Obras</h3>
+            <p className="text-sm text-[#FFFFFF]/50">Cambios en preferencia de proyectos prioritarios</p>
           </div>
-          <div className="text-center text-[#F2F3F4]/50 py-12">
+          <div className="text-center text-[#FFFFFF]/50 py-12">
             No hay datos históricos disponibles
           </div>
         </div>
@@ -1166,10 +1166,10 @@ export default function SurveyResultsPage() {
     const leader = latestData.sort((a, b) => b.value - a.value)[0];
 
     return (
-      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Votación de Obras</h3>
-          <p className="text-sm text-[#F2F3F4]/50">Cambios en preferencia de proyectos prioritarios</p>
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Evolución de Votación de Obras</h3>
+          <p className="text-sm text-[#FFFFFF]/50">Cambios en preferencia de proyectos prioritarios</p>
         </div>
 
         {/* Age Filter Tabs */}
@@ -1177,7 +1177,7 @@ export default function SurveyResultsPage() {
 
         {/* Line Chart */}
         {!hasData ? (
-          <div className="text-center text-[#F2F3F4]/50 py-12">
+          <div className="text-center text-[#FFFFFF]/50 py-12">
             No hay datos para este filtro
           </div>
         ) : (
@@ -1255,7 +1255,7 @@ export default function SurveyResultsPage() {
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: project.color }}
                   />
-                  <span className="text-sm text-[#F2F3F4]/70">{project.name}</span>
+                  <span className="text-sm text-[#FFFFFF]/70">{project.name}</span>
                 </div>
               ))}
             </div>
@@ -1280,15 +1280,15 @@ export default function SurveyResultsPage() {
     const evolutionData = results?.evolution_data;
     if (!evolutionData || !evolutionData.rating?.data) {
       return (
-        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+        <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="flex items-center gap-2 mb-1">
             <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
-            <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Satisfacción Ciudadana</h3>
+            <h3 className="text-xl font-bold text-[#FFFFFF]">Evolución de Satisfacción Ciudadana</h3>
           </div>
-          <p className="text-sm text-[#F2F3F4]/50 mb-4">Calificación promedio mensual</p>
-          <div className="text-center text-[#F2F3F4]/50 py-12">
+          <p className="text-sm text-[#FFFFFF]/50 mb-4">Calificación promedio mensual</p>
+          <div className="text-center text-[#FFFFFF]/50 py-12">
             No hay datos históricos disponibles
           </div>
         </div>
@@ -1367,19 +1367,19 @@ export default function SurveyResultsPage() {
       : "Estable";
 
     return (
-      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="flex items-center gap-2 mb-1">
           <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
           </svg>
-          <h3 className="text-xl font-bold text-[#F2F3F4]">Evolución de Satisfacción Ciudadana</h3>
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Evolución de Satisfacción Ciudadana</h3>
         </div>
-        <p className="text-sm text-[#F2F3F4]/50 mb-4">Calificación promedio mensual</p>
+        <p className="text-sm text-[#FFFFFF]/50 mb-4">Calificación promedio mensual</p>
 
         {renderCombinedFilters(ratingEvolutionAgeFilter, setRatingEvolutionAgeFilter, ratingEvolutionGenderFilter, setRatingEvolutionGenderFilter)}
 
         {!hasData ? (
-          <div className="text-center text-[#F2F3F4]/50 py-12">
+          <div className="text-center text-[#FFFFFF]/50 py-12">
             No hay datos para este filtro
           </div>
         ) : (
@@ -1521,14 +1521,14 @@ export default function SurveyResultsPage() {
             <div className="grid grid-cols-2 gap-4 mt-6">
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                 <p className="text-sm text-amber-400">Mejora</p>
-                <p className={`text-xl font-bold ${isPositive ? 'text-[#00CCBA]' : 'text-red-400'}`}>
+                <p className={`text-xl font-bold ${isPositive ? 'text-[#00C853]' : 'text-red-400'}`}>
                   {isPositive ? '+' : ''}{improvement.toFixed(1)}%
                 </p>
                 <p className="text-xs text-amber-400/70">desde {months[0] || 'inicio'}</p>
               </div>
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                 <p className="text-sm text-amber-400">Tendencia</p>
-                <p className={`text-xl font-bold ${trend3Months === 'Positiva' ? 'text-[#00CCBA]' : trend3Months === 'Negativa' ? 'text-red-400' : 'text-[#F2F3F4]/70'}`}>
+                <p className={`text-xl font-bold ${trend3Months === 'Positiva' ? 'text-[#00C853]' : trend3Months === 'Negativa' ? 'text-red-400' : 'text-[#FFFFFF]/70'}`}>
                   {trend3Months}
                 </p>
                 <p className="text-xs text-amber-400/70">últimos 3 meses</p>
@@ -1584,38 +1584,38 @@ export default function SurveyResultsPage() {
       : "0";
 
     return (
-      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-[#F2F3F4]">Tendencia de Participación</h3>
-          <p className="text-sm text-[#F2F3F4]/50">Evolución mensual de respuestas ciudadanas</p>
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Tendencia de Participación</h3>
+          <p className="text-sm text-[#FFFFFF]/50">Evolución mensual de respuestas ciudadanas</p>
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap gap-2 mb-6 w-full">
-          <div className="flex items-center gap-0 bg-[#201631] rounded-lg p-1 flex-1 min-w-fit">
+          <div className="flex items-center gap-0 bg-[#000000] rounded-lg p-1 flex-1 min-w-fit">
             {ageFilterOptions.map((option) => (
               <button
                 key={option}
                 onClick={() => setParticipationTrendAgeFilter(option)}
                 className={`flex-1 px-2 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
                   participationTrendAgeFilter === option
-                    ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
-                    : "text-[#F2F3F4]/70 hover:text-[#F2F3F4]"
+                    ? "bg-[#1a1a2e] text-[#FFFFFF] shadow-none"
+                    : "text-[#FFFFFF]/70 hover:text-[#FFFFFF]"
                 }`}
               >
                 {option}
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-0 bg-[#201631] rounded-lg p-1 flex-1 min-w-fit">
+          <div className="flex items-center gap-0 bg-[#000000] rounded-lg p-1 flex-1 min-w-fit">
             {genderFilterOptions.map((option) => (
               <button
                 key={option}
                 onClick={() => setParticipationTrendGenderFilter(option)}
                 className={`flex-1 px-2 py-1.5 text-sm font-medium rounded-md transition whitespace-nowrap text-center ${
                   participationTrendGenderFilter === option
-                    ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
-                    : "text-[#F2F3F4]/70 hover:text-[#F2F3F4]"
+                    ? "bg-[#1a1a2e] text-[#FFFFFF] shadow-none"
+                    : "text-[#FFFFFF]/70 hover:text-[#FFFFFF]"
                 }`}
               >
                 {option}
@@ -1626,7 +1626,7 @@ export default function SurveyResultsPage() {
 
         {/* Line Chart */}
         {!hasData ? (
-          <div className="text-center text-[#F2F3F4]/50 py-12">
+          <div className="text-center text-[#FFFFFF]/50 py-12">
             No hay datos para este grupo de edad
           </div>
         ) : (
@@ -1702,19 +1702,19 @@ export default function SurveyResultsPage() {
 
             {/* Metrics Cards */}
             <div className="grid grid-cols-2 gap-4 mt-6">
-              <div className="bg-[#5941CE]/10 border border-[#5941CE]/20 rounded-lg p-4">
-                <p className="text-sm text-[#7B6FD4]">Crecimiento</p>
-                <p className={`text-2xl font-bold ${isPositiveGrowth ? 'text-[#00CCBA]' : 'text-red-400'}`}>
+              <div className="bg-[#2962FF]/10 border border-[#2962FF]/20 rounded-lg p-4">
+                <p className="text-sm text-[#5E8AFF]">Crecimiento</p>
+                <p className={`text-2xl font-bold ${isPositiveGrowth ? 'text-[#00C853]' : 'text-red-400'}`}>
                   {isPositiveGrowth ? '+' : ''}{growthPercentage}%
                 </p>
-                <p className="text-xs text-[#5941CE]">vs. mes anterior</p>
+                <p className="text-xs text-[#2962FF]">vs. mes anterior</p>
               </div>
-              <div className="bg-[#5941CE]/10 border border-[#5941CE]/20 rounded-lg p-4">
-                <p className="text-sm text-[#7B6FD4]">Promedio/mes</p>
-                <p className="text-2xl font-bold text-[#7B6FD4]">
+              <div className="bg-[#2962FF]/10 border border-[#2962FF]/20 rounded-lg p-4">
+                <p className="text-sm text-[#5E8AFF]">Promedio/mes</p>
+                <p className="text-2xl font-bold text-[#5E8AFF]">
                   {averagePerMonth}
                 </p>
-                <p className="text-xs text-[#5941CE]">respuestas mensuales</p>
+                <p className="text-xs text-[#2962FF]">respuestas mensuales</p>
               </div>
             </div>
           </>
@@ -1735,27 +1735,27 @@ export default function SurveyResultsPage() {
 
     if (!ageData || Object.keys(ageData).length === 0) {
       return (
-        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+        <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="mb-4">
-            <h3 className="text-xl font-bold text-[#F2F3F4]">Desglose por Edad</h3>
-            <p className="text-sm text-[#F2F3F4]/50">Participación por grupo etario</p>
+            <h3 className="text-xl font-bold text-[#FFFFFF]">Desglose por Edad</h3>
+            <p className="text-sm text-[#FFFFFF]/50">Participación por grupo etario</p>
           </div>
-          <div className="flex items-center gap-0 bg-[#201631] rounded-lg p-1 mb-6">
+          <div className="flex items-center gap-0 bg-[#000000] rounded-lg p-1 mb-6">
             {["Todos", "Masculino", "Femenino"].map((option) => (
               <button
                 key={option}
                 onClick={() => setAgeDistGenderFilter(option)}
                 className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
                   ageDistGenderFilter === option
-                    ? "bg-[#5941CE] text-white shadow-lg"
-                    : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]/70"
+                    ? "bg-[#2962FF] text-white shadow-lg"
+                    : "text-[#FFFFFF]/50 hover:text-[#FFFFFF]/70"
                 }`}
               >
                 {option}
               </button>
             ))}
           </div>
-          <div className="text-center text-[#F2F3F4]/50 py-12">
+          <div className="text-center text-[#FFFFFF]/50 py-12">
             No hay datos demográficos disponibles
           </div>
         </div>
@@ -1765,9 +1765,9 @@ export default function SurveyResultsPage() {
     const entries = Object.entries(ageData).filter(([key]) => key !== "Sin especificar");
     if (entries.length === 0) {
       return (
-        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
-          <h3 className="text-xl font-bold text-[#F2F3F4] mb-2">Desglose por Edad</h3>
-          <p className="text-[#F2F3F4]/50 text-sm">No hay datos demográficos disponibles aún.</p>
+        <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
+          <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">Desglose por Edad</h3>
+          <p className="text-[#FFFFFF]/50 text-sm">No hay datos demográficos disponibles aún.</p>
         </div>
       );
     }
@@ -1800,22 +1800,22 @@ export default function SurveyResultsPage() {
     const topPercentage = ((topGroup[1] / total) * 100).toFixed(1);
 
     return (
-      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-6">
-          <h3 className="text-xl font-bold text-[#F2F3F4]">Desglose por Edad</h3>
-          <p className="text-sm text-[#F2F3F4]/50">Participación por grupo etario</p>
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Desglose por Edad</h3>
+          <p className="text-sm text-[#FFFFFF]/50">Participación por grupo etario</p>
         </div>
 
         {/* Filtro de género */}
-        <div className="flex items-center gap-0 bg-[#201631] rounded-lg p-1 mb-6">
+        <div className="flex items-center gap-0 bg-[#000000] rounded-lg p-1 mb-6">
           {["Todos", "Masculino", "Femenino"].map((option) => (
             <button
               key={option}
               onClick={() => setAgeDistGenderFilter(option)}
               className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
                 ageDistGenderFilter === option
-                  ? "bg-[#5941CE] text-white shadow-lg"
-                  : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]/70"
+                  ? "bg-[#2962FF] text-white shadow-lg"
+                  : "text-[#FFFFFF]/50 hover:text-[#FFFFFF]/70"
               }`}
             >
               {option}
@@ -1831,10 +1831,10 @@ export default function SurveyResultsPage() {
             return (
               <div key={label}>
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium text-[#F2F3F4]/80">{label}</span>
-                  <span className="text-sm text-[#F2F3F4]/50">{value.toLocaleString()}</span>
+                  <span className="text-sm font-medium text-[#FFFFFF]/80">{label}</span>
+                  <span className="text-sm text-[#FFFFFF]/50">{value.toLocaleString()}</span>
                 </div>
-                <div className="relative h-8 bg-[#201631] rounded-lg overflow-hidden">
+                <div className="relative h-8 bg-[#000000] rounded-lg overflow-hidden">
                   <div
                     className="h-full flex items-center justify-end pr-3 text-white text-xs font-semibold transition-all duration-500"
                     style={{
@@ -1845,7 +1845,7 @@ export default function SurveyResultsPage() {
                     {percentage >= 10 && `${percentage.toFixed(0)}%`}
                   </div>
                   {percentage < 10 && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#F2F3F4]/70">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#FFFFFF]/70">
                       {percentage.toFixed(0)}%
                     </span>
                   )}
@@ -1856,10 +1856,10 @@ export default function SurveyResultsPage() {
         </div>
 
         {/* Insight */}
-        <div className="bg-[#201631] border border-white/10 rounded-lg p-4">
-          <p className="text-sm text-[#F2F3F4]/70">
-            El grupo etario <span className="font-semibold text-[#F2F3F4]">{topGroup[0]} años</span> representa la mayor participación con{" "}
-            <span className="font-semibold text-[#F2F3F4]">{topPercentage}%</span>
+        <div className="bg-[#000000] border border-white/10 rounded-lg p-4">
+          <p className="text-sm text-[#FFFFFF]/70">
+            El grupo etario <span className="font-semibold text-[#FFFFFF]">{topGroup[0]} años</span> representa la mayor participación con{" "}
+            <span className="font-semibold text-[#FFFFFF]">{topPercentage}%</span>
           </p>
         </div>
       </div>
@@ -1903,10 +1903,10 @@ export default function SurveyResultsPage() {
 
     if (groups.length === 0) {
       return (
-        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6 mb-8">
-          <h3 className="text-xl font-bold text-[#F2F3F4] mb-1">Análisis Cruzado</h3>
-          <p className="text-sm text-[#F2F3F4]/50 mb-4">Compara preferencias segmentando por diferentes dimensiones</p>
-          <div className="text-center text-[#F2F3F4]/50 py-12">No hay datos disponibles</div>
+        <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6 mb-8">
+          <h3 className="text-xl font-bold text-[#FFFFFF] mb-1">Análisis Cruzado</h3>
+          <p className="text-sm text-[#FFFFFF]/50 mb-4">Compara preferencias segmentando por diferentes dimensiones</p>
+          <div className="text-center text-[#FFFFFF]/50 py-12">No hay datos disponibles</div>
         </div>
       );
     }
@@ -1970,22 +1970,22 @@ export default function SurveyResultsPage() {
     const displayGroups = crossAnalysisTab === "neighborhood" ? groups.slice(0, 10) : groups;
 
     return (
-      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6 mb-8">
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6 mb-8">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-[#F2F3F4]">Análisis Cruzado</h3>
-          <p className="text-sm text-[#F2F3F4]/50">Compara preferencias segmentando por diferentes dimensiones</p>
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Análisis Cruzado</h3>
+          <p className="text-sm text-[#FFFFFF]/50">Compara preferencias segmentando por diferentes dimensiones</p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-[#201631] rounded-lg p-1 w-fit">
+        <div className="flex gap-1 mb-6 bg-[#000000] rounded-lg p-1 w-fit">
           {(["neighborhood", "age", "gender"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setCrossAnalysisTab(tab)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition ${
                 crossAnalysisTab === tab
-                  ? "bg-[#3C2E51] text-[#F2F3F4] shadow-none"
-                  : "text-[#F2F3F4]/50 hover:text-[#F2F3F4]"
+                  ? "bg-[#1a1a2e] text-[#FFFFFF] shadow-none"
+                  : "text-[#FFFFFF]/50 hover:text-[#FFFFFF]"
               }`}
             >
               {tabLabels[tab]}
@@ -1998,13 +1998,13 @@ export default function SurveyResultsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="text-left py-3 px-2 font-semibold text-[#F2F3F4]/80">{columnLabel[crossAnalysisTab]}</th>
-                <th className="text-center py-3 px-2 font-semibold text-[#F2F3F4]/80">Respuestas</th>
-                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-[#F2F3F4]/80">Prioridad #1</th>}
-                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-[#F2F3F4]/80">Prioridad #2</th>}
-                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-[#F2F3F4]/80">Prioridad #3</th>}
-                {projectQuestion && <th className="text-left py-3 px-2 font-semibold text-[#F2F3F4]/80">Obra Preferida</th>}
-                {ratingQuestion && <th className="text-right py-3 px-2 font-semibold text-[#F2F3F4]/80">Calificación</th>}
+                <th className="text-left py-3 px-2 font-semibold text-[#FFFFFF]/80">{columnLabel[crossAnalysisTab]}</th>
+                <th className="text-center py-3 px-2 font-semibold text-[#FFFFFF]/80">Respuestas</th>
+                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-[#FFFFFF]/80">Prioridad #1</th>}
+                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-[#FFFFFF]/80">Prioridad #2</th>}
+                {budgetQuestion && <th className="text-left py-3 px-2 font-semibold text-[#FFFFFF]/80">Prioridad #3</th>}
+                {projectQuestion && <th className="text-left py-3 px-2 font-semibold text-[#FFFFFF]/80">Obra Preferida</th>}
+                {ratingQuestion && <th className="text-right py-3 px-2 font-semibold text-[#FFFFFF]/80">Calificación</th>}
               </tr>
             </thead>
             <tbody>
@@ -2018,14 +2018,14 @@ export default function SurveyResultsPage() {
                 const rating = getRating(ratingData);
 
                 // Color de rating
-                const ratingColor = rating && rating.average >= 4 ? "text-[#00CCBA]"
+                const ratingColor = rating && rating.average >= 4 ? "text-[#00C853]"
                   : rating && rating.average >= 3 ? "text-orange-500"
                   : "text-red-500";
 
                 return (
-                  <tr key={groupName} className="border-b border-white/5 hover:bg-[#201631] transition">
-                    <td className="py-3 px-2 font-medium text-[#F2F3F4]">{groupName}</td>
-                    <td className="py-3 px-2 text-center text-[#F2F3F4]/70">{count.toLocaleString()}</td>
+                  <tr key={groupName} className="border-b border-white/5 hover:bg-[#000000] transition">
+                    <td className="py-3 px-2 font-medium text-[#FFFFFF]">{groupName}</td>
+                    <td className="py-3 px-2 text-center text-[#FFFFFF]/70">{count.toLocaleString()}</td>
                     {budgetQuestion && [0, 1, 2].map((i) => (
                       <td key={i} className="py-3 px-2">
                         {priorities[i] ? (
@@ -2034,23 +2034,23 @@ export default function SurveyResultsPage() {
                               className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                               style={{ backgroundColor: budgetColorMap[priorities[i].label] || "#9CA3AF" }}
                             />
-                            <span className="text-[#F2F3F4]">{priorities[i].label}</span>
-                            <span className="text-[#F2F3F4]/40 text-xs">({priorities[i].percentage.toFixed(1)}%)</span>
+                            <span className="text-[#FFFFFF]">{priorities[i].label}</span>
+                            <span className="text-[#FFFFFF]/40 text-xs">({priorities[i].percentage.toFixed(1)}%)</span>
                           </div>
                         ) : (
-                          <span className="text-[#F2F3F4]/30">—</span>
+                          <span className="text-[#FFFFFF]/30">—</span>
                         )}
                       </td>
                     ))}
                     {projectQuestion && (
                       <td className="py-3 px-2">
                         {topProject ? (
-                          <span className="text-[#F2F3F4]">
+                          <span className="text-[#FFFFFF]">
                             {topProject.label.split("(")[0].trim()}{" "}
-                            <span className="text-[#F2F3F4]/40 text-xs">({topProject.percentage.toFixed(1)}%)</span>
+                            <span className="text-[#FFFFFF]/40 text-xs">({topProject.percentage.toFixed(1)}%)</span>
                           </span>
                         ) : (
-                          <span className="text-[#F2F3F4]/30">—</span>
+                          <span className="text-[#FFFFFF]/30">—</span>
                         )}
                       </td>
                     )}
@@ -2058,10 +2058,10 @@ export default function SurveyResultsPage() {
                       <td className="py-3 px-2 text-right">
                         {rating && rating.total > 0 ? (
                           <span className={`font-bold ${ratingColor}`}>
-                            {rating.average.toFixed(1)}<span className="text-[#F2F3F4]/40 font-normal">/5</span>
+                            {rating.average.toFixed(1)}<span className="text-[#FFFFFF]/40 font-normal">/5</span>
                           </span>
                         ) : (
-                          <span className="text-[#F2F3F4]/30">—</span>
+                          <span className="text-[#FFFFFF]/30">—</span>
                         )}
                       </td>
                     )}
@@ -2073,7 +2073,7 @@ export default function SurveyResultsPage() {
         </div>
 
         {crossAnalysisTab === "neighborhood" && groups.length > 10 && (
-          <p className="text-xs text-[#F2F3F4]/40 mt-3">Mostrando los 10 barrios con más respuestas de {groups.length} totales</p>
+          <p className="text-xs text-[#FFFFFF]/40 mt-3">Mostrando los 10 barrios con más respuestas de {groups.length} totales</p>
         )}
       </div>
     );
@@ -2158,34 +2158,34 @@ export default function SurveyResultsPage() {
 
     return (
       <div className="mb-8">
-        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+        <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="flex items-center gap-2 mb-6">
-            <svg className="w-6 h-6 text-[#5941CE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-[#2962FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
-            <h2 className="text-2xl font-bold text-[#F2F3F4]">Predicciones y Proyecciones</h2>
+            <h2 className="text-2xl font-bold text-[#FFFFFF]">Predicciones y Proyecciones</h2>
           </div>
 
           <div className="space-y-4">
             {predictions.map((prediction, index) => (
-              <div key={index} className="bg-[#201631] border border-white/10 rounded-lg p-5">
+              <div key={index} className="bg-[#000000] border border-white/10 rounded-lg p-5">
                 <div className="flex items-start gap-4">
                   <div className="text-3xl flex-shrink-0">{prediction.icon}</div>
                   <div className="flex-1">
-                    <h3 className="text-base font-semibold text-[#F2F3F4] mb-2">
+                    <h3 className="text-base font-semibold text-[#FFFFFF] mb-2">
                       {prediction.title}
                     </h3>
-                    <p className="text-sm text-[#F2F3F4]/70 mb-3">{prediction.description}</p>
+                    <p className="text-sm text-[#FFFFFF]/70 mb-3">{prediction.description}</p>
 
                     {/* Progress bar for confidence */}
                     <div className="flex items-center gap-3">
                       <div className="flex-1 bg-white/10 rounded-full h-2">
                         <div
-                          className="bg-[#5941CE] h-2 rounded-full transition-all duration-500"
+                          className="bg-[#2962FF] h-2 rounded-full transition-all duration-500"
                           style={{ width: `${prediction.confidence}%` }}
                         ></div>
                       </div>
-                      <span className="text-sm font-medium text-[#F2F3F4]/80 min-w-[3rem] text-right">
+                      <span className="text-sm font-medium text-[#FFFFFF]/80 min-w-[3rem] text-right">
                         {prediction.confidence}%
                       </span>
                     </div>
@@ -2195,15 +2195,15 @@ export default function SurveyResultsPage() {
             ))}
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-[#F2F3F4]/50 pt-4 border-t border-white/10">
-            <span className="bg-[#5941CE]/20 text-[#7B6FD4] px-3 py-1 rounded-full font-medium">
+          <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-[#FFFFFF]/50 pt-4 border-t border-white/10">
+            <span className="bg-[#2962FF]/20 text-[#5E8AFF] px-3 py-1 rounded-full font-medium">
               {aiPredictions ? "Generado con Claude AI" : "Análisis Predictivo"}
             </span>
             {aiPredictions && (
               <button
                 onClick={generateAIPredictions}
                 disabled={loadingAiPredictions}
-                className="text-[#5941CE] hover:text-[#7B6FD4] font-medium underline"
+                className="text-[#2962FF] hover:text-[#5E8AFF] font-medium underline"
               >
                 {loadingAiPredictions ? "Regenerando..." : "Regenerar"}
               </button>
@@ -2212,7 +2212,7 @@ export default function SurveyResultsPage() {
               <button
                 onClick={generateAIPredictions}
                 disabled={loadingAiPredictions}
-                className="bg-[#5941CE] text-white px-3 py-1 rounded-full font-medium hover:bg-[#7B6FD4] transition-colors"
+                className="bg-[#2962FF] text-white px-3 py-1 rounded-full font-medium hover:bg-[#5E8AFF] transition-colors"
               >
                 {loadingAiPredictions ? "Generando..." : "Generar con IA"}
               </button>
@@ -2288,9 +2288,9 @@ export default function SurveyResultsPage() {
               recommendation: "Mantener frecuencia de consultas mensuales y comunicar cómo sus respuestas impactan decisiones reales",
               impact: "Alta",
               icon: "trending-up",
-              color: "text-[#00CCBA]",
-              bgColor: "bg-[#00CCBA]/10",
-              borderColor: "border-[#00CCBA]/20"
+              color: "text-[#00C853]",
+              bgColor: "bg-[#00C853]/10",
+              borderColor: "border-[#00C853]/20"
             });
           }
         }
@@ -2358,9 +2358,9 @@ export default function SurveyResultsPage() {
             recommendation: "Implementar estrategia de difusión dirigida en zonas con baja participación y evaluar barreras de acceso",
             impact: "Alta",
             icon: "map-pin",
-            color: "text-[#5941CE]",
-            bgColor: "bg-[#5941CE]/10",
-            borderColor: "border-[#5941CE]/20"
+            color: "text-[#2962FF]",
+            bgColor: "bg-[#2962FF]/10",
+            borderColor: "border-[#2962FF]/20"
           });
         }
       }
@@ -2388,9 +2388,9 @@ export default function SurveyResultsPage() {
             recommendation: `Priorizar comunicación de avances de ${leader.option_text} y establecer cronograma público de ejecución`,
             impact: "Alta",
             icon: "building",
-            color: "text-indigo-600",
-            bgColor: "bg-indigo-50",
-            borderColor: "border-indigo-100"
+            color: "text-[#2962FF]",
+            bgColor: "bg-[#2962FF]/5",
+            borderColor: "border-[#2962FF]/10"
           });
         }
       }
@@ -2547,19 +2547,19 @@ export default function SurveyResultsPage() {
 
     return (
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-[#F2F3F4] mb-4">Análisis Inteligente y Recomendaciones</h2>
+        <h2 className="text-2xl font-bold text-[#FFFFFF] mb-4">Análisis Inteligente y Recomendaciones</h2>
 
-        <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+        <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#5941CE]/20 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-[#7B6FD4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 bg-[#2962FF]/20 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-[#5E8AFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-[#F2F3F4]">Insights de IA para Toma de Decisiones</h3>
-                <p className="text-sm text-[#F2F3F4]/50">
+                <h3 className="text-xl font-bold text-[#FFFFFF]">Insights de IA para Toma de Decisiones</h3>
+                <p className="text-sm text-[#FFFFFF]/50">
                   {aiInsights ? "Generado con Claude AI" : "Análisis basado en reglas"}
                 </p>
               </div>
@@ -2571,10 +2571,10 @@ export default function SurveyResultsPage() {
               disabled={loadingAiInsights}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
                 loadingAiInsights
-                  ? "bg-[#201631] text-[#F2F3F4]/40 cursor-not-allowed"
+                  ? "bg-[#000000] text-[#FFFFFF]/40 cursor-not-allowed"
                   : aiInsights
-                  ? "bg-[#5941CE]/20 text-[#7B6FD4] hover:bg-[#5941CE]/30"
-                  : "bg-[#5941CE] text-white hover:bg-[#7B6FD4]"
+                  ? "bg-[#2962FF]/20 text-[#5E8AFF] hover:bg-[#2962FF]/30"
+                  : "bg-[#2962FF] text-white hover:bg-[#5E8AFF]"
               }`}
             >
               {loadingAiInsights ? (
@@ -2629,20 +2629,20 @@ export default function SurveyResultsPage() {
                     <div className={`${insight.color}`}>
                       {getIcon(insight.icon)}
                     </div>
-                    <h4 className="font-semibold text-[#F2F3F4]">{insight.title}</h4>
+                    <h4 className="font-semibold text-[#FFFFFF]">{insight.title}</h4>
                   </div>
                   <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                     insight.impact === "Alta"
                       ? "bg-red-500/20 text-red-400"
                       : insight.impact === "Media"
                       ? "bg-amber-500/20 text-amber-400"
-                      : "bg-[#201631] text-[#F2F3F4]/80"
+                      : "bg-[#000000] text-[#FFFFFF]/80"
                   }`}>
                     Impacto: {insight.impact}
                   </span>
                 </div>
 
-                <p className="text-sm text-[#F2F3F4]/80 mb-3 ml-8">
+                <p className="text-sm text-[#FFFFFF]/80 mb-3 ml-8">
                   {insight.description}
                 </p>
 
@@ -2653,7 +2653,7 @@ export default function SurveyResultsPage() {
                     </svg>
                     <div>
                       <p className="text-xs font-medium text-amber-400">Recomendación</p>
-                      <p className="text-sm text-[#F2F3F4]/80">{insight.recommendation}</p>
+                      <p className="text-sm text-[#FFFFFF]/80">{insight.recommendation}</p>
                     </div>
                   </div>
                 </div>
@@ -2670,17 +2670,17 @@ export default function SurveyResultsPage() {
     const maxValue = Math.max(...entries.map(([_, value]) => value), 1);
 
     return (
-      <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
-        <h3 className="text-lg font-bold text-[#F2F3F4] mb-4">{title}</h3>
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
+        <h3 className="text-lg font-bold text-[#FFFFFF] mb-4">{title}</h3>
         {entries.length === 0 ? (
-          <p className="text-[#F2F3F4]/50 text-sm">No hay datos disponibles</p>
+          <p className="text-[#FFFFFF]/50 text-sm">No hay datos disponibles</p>
         ) : (
           <div className="space-y-3">
             {entries.map(([label, value]) => (
               <div key={label}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-[#F2F3F4]/80">{label}</span>
-                  <span className="text-sm text-[#F2F3F4]/70">
+                  <span className="text-sm font-medium text-[#FFFFFF]/80">{label}</span>
+                  <span className="text-sm text-[#FFFFFF]/70">
                     {value} ({calculatePercentage(value, results.total_responses)}%)
                   </span>
                 </div>
@@ -2699,12 +2699,12 @@ export default function SurveyResultsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#201631]">
+    <div className="min-h-screen bg-[#000000]">
       <div className="container mx-auto p-6 max-w-7xl">
         {/* Back button */}
         <button
           onClick={() => router.push("/client")}
-          className="text-[#5941CE] hover:text-[#7B6FD4] font-medium mb-4 flex items-center"
+          className="text-[#2962FF] hover:text-[#5E8AFF] font-medium mb-4 flex items-center"
         >
           <svg
             className="w-5 h-5 mr-1"
@@ -2728,10 +2728,10 @@ export default function SurveyResultsPage() {
             <div className="flex items-center gap-4">
               <Image src="/logo.jpeg" alt="Data Insights" width={48} height={48} className="rounded-xl" />
               <div>
-                <h1 className="text-4xl font-bold text-[#F2F3F4]">
+                <h1 className="text-4xl font-bold text-[#FFFFFF]">
                   Panel de Consultas Ciudadanas
                 </h1>
-                <p className="text-[#F2F3F4]/50 mt-2">
+                <p className="text-[#FFFFFF]/50 mt-2">
                   Democratizando la Voluntad Popular
                 </p>
               </div>
@@ -2745,8 +2745,8 @@ export default function SurveyResultsPage() {
                   onClick={() => setShowPeriodPicker(!showPeriodPicker)}
                   className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition ${
                     activePeriodLabel
-                      ? "bg-[#5941CE]/10 border-[#5941CE]/40 text-[#7B6FD4]"
-                      : "bg-[#3C2E51] border-white/20 text-[#F2F3F4]/80 hover:bg-[#201631]"
+                      ? "bg-[#2962FF]/10 border-[#2962FF]/40 text-[#5E8AFF]"
+                      : "bg-[#1a1a2e] border-white/20 text-[#FFFFFF]/80 hover:bg-[#000000]"
                   }`}
                 >
                   <svg
@@ -2775,7 +2775,7 @@ export default function SurveyResultsPage() {
                         setShowPeriodPicker(false);
                         fetchResults();
                       }}
-                      className="ml-1 text-[#5941CE] hover:text-[#7B6FD4] cursor-pointer"
+                      className="ml-1 text-[#2962FF] hover:text-[#5E8AFF] cursor-pointer"
                     >
                       ✕
                     </span>
@@ -2783,25 +2783,25 @@ export default function SurveyResultsPage() {
                 </button>
 
                 {showPeriodPicker && (
-                  <div className="absolute top-full right-0 mt-2 bg-[#3C2E51] border border-white/10 rounded-xl shadow-lg p-4 z-50 w-80">
-                    <p className="text-sm font-semibold text-[#F2F3F4]/80 mb-3">Seleccionar período</p>
+                  <div className="absolute top-full right-0 mt-2 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-lg p-4 z-50 w-80">
+                    <p className="text-sm font-semibold text-[#FFFFFF]/80 mb-3">Seleccionar período</p>
                     <div className="flex gap-3 mb-3">
                       <div className="flex-1">
-                        <label className="text-xs text-[#F2F3F4]/50 mb-1 block">Desde</label>
+                        <label className="text-xs text-[#FFFFFF]/50 mb-1 block">Desde</label>
                         <input
                           type="date"
                           value={periodFrom}
                           onChange={(e) => setPeriodFrom(e.target.value)}
-                          className="w-full px-3 py-2 border border-white/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-white/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2962FF]"
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="text-xs text-[#F2F3F4]/50 mb-1 block">Hasta</label>
+                        <label className="text-xs text-[#FFFFFF]/50 mb-1 block">Hasta</label>
                         <input
                           type="date"
                           value={periodTo}
                           onChange={(e) => setPeriodTo(e.target.value)}
-                          className="w-full px-3 py-2 border border-white/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-white/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2962FF]"
                         />
                       </div>
                     </div>
@@ -2814,7 +2814,7 @@ export default function SurveyResultsPage() {
                           setShowPeriodPicker(false);
                           fetchResults();
                         }}
-                        className="flex-1 px-3 py-2 text-sm text-[#F2F3F4]/70 border border-white/20 rounded-lg hover:bg-[#201631]"
+                        className="flex-1 px-3 py-2 text-sm text-[#FFFFFF]/70 border border-white/20 rounded-lg hover:bg-[#000000]"
                       >
                         Limpiar
                       </button>
@@ -2830,7 +2830,7 @@ export default function SurveyResultsPage() {
                           }
                           setShowPeriodPicker(false);
                         }}
-                        className="flex-1 px-3 py-2 text-sm text-white bg-[#5941CE] rounded-lg hover:bg-[#7B6FD4]"
+                        className="flex-1 px-3 py-2 text-sm text-white bg-[#2962FF] rounded-lg hover:bg-[#5E8AFF]"
                       >
                         Aplicar
                       </button>
@@ -2842,7 +2842,7 @@ export default function SurveyResultsPage() {
               {/* Exportar PDF */}
               <button
                 onClick={() => window.print()}
-                className="flex items-center gap-2 px-4 py-2 bg-[#5941CE] text-white rounded-lg hover:bg-[#7B6FD4] transition shadow-none"
+                className="flex items-center gap-2 px-4 py-2 bg-[#2962FF] text-white rounded-lg hover:bg-[#5E8AFF] transition shadow-none"
               >
                 <svg
                   className="w-5 h-5"
@@ -2866,22 +2866,22 @@ export default function SurveyResultsPage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Card 1: Respuestas Totales */}
-          <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+          <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-sm text-[#F2F3F4]/70 mb-2">
+                <p className="text-sm text-[#FFFFFF]/70 mb-2">
                   Respuestas Totales
                 </p>
-                <p className="text-4xl font-bold text-[#F2F3F4] mb-3">
+                <p className="text-4xl font-bold text-[#FFFFFF] mb-3">
                   {metrics.totalResponses.toLocaleString()}
                 </p>
-                <p className={`text-sm font-medium ${metrics.totalResponsesChange >= 0 ? 'text-[#00CCBA]' : 'text-red-500'}`}>
+                <p className={`text-sm font-medium ${metrics.totalResponsesChange >= 0 ? 'text-[#00C853]' : 'text-red-500'}`}>
                   {metrics.totalResponsesChange >= 0 ? '+' : ''}{metrics.totalResponsesChange}% vs. mes anterior
                 </p>
               </div>
-              <div className="bg-[#5941CE]/20 rounded-full p-3">
+              <div className="bg-[#2962FF]/20 rounded-full p-3">
                 <svg
-                  className="w-6 h-6 text-[#5941CE]"
+                  className="w-6 h-6 text-[#2962FF]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -2898,22 +2898,22 @@ export default function SurveyResultsPage() {
           </div>
 
           {/* Card 2: Respuestas Este Mes */}
-          <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+          <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-sm text-[#F2F3F4]/70 mb-2">
+                <p className="text-sm text-[#FFFFFF]/70 mb-2">
                   Respuestas Este Mes
                 </p>
-                <p className="text-4xl font-bold text-[#F2F3F4] mb-3">
+                <p className="text-4xl font-bold text-[#FFFFFF] mb-3">
                   {metrics.monthlyResponses.toLocaleString()}
                 </p>
-                <p className={`text-sm font-medium ${metrics.monthlyResponsesChange >= 0 ? 'text-[#00CCBA]' : 'text-red-500'}`}>
+                <p className={`text-sm font-medium ${metrics.monthlyResponsesChange >= 0 ? 'text-[#00C853]' : 'text-red-500'}`}>
                   {metrics.monthlyResponsesChange >= 0 ? '+' : ''}{metrics.monthlyResponsesChange}% vs. mes anterior
                 </p>
               </div>
-              <div className="bg-[#5941CE]/20 rounded-full p-3">
+              <div className="bg-[#2962FF]/20 rounded-full p-3">
                 <svg
-                  className="w-6 h-6 text-[#7B6FD4]"
+                  className="w-6 h-6 text-[#5E8AFF]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -2930,22 +2930,22 @@ export default function SurveyResultsPage() {
           </div>
 
           {/* Card 3: Barrios Participantes */}
-          <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6">
+          <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-sm text-[#F2F3F4]/70 mb-2">
+                <p className="text-sm text-[#FFFFFF]/70 mb-2">
                   Barrios Participantes
                 </p>
-                <p className="text-4xl font-bold text-[#F2F3F4] mb-3">
+                <p className="text-4xl font-bold text-[#FFFFFF] mb-3">
                   {metrics.uniqueNeighborhoods}
                 </p>
-                <p className="text-sm text-[#F2F3F4]/50 font-medium">
+                <p className="text-sm text-[#FFFFFF]/50 font-medium">
                   Cobertura geográfica
                 </p>
               </div>
-              <div className="bg-[#00CCBA]/20 rounded-full p-3">
+              <div className="bg-[#00C853]/20 rounded-full p-3">
                 <svg
-                  className="w-6 h-6 text-[#00CCBA]"
+                  className="w-6 h-6 text-[#00C853]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -2976,8 +2976,8 @@ export default function SurveyResultsPage() {
                 onClick={() => setActiveTab("datos")}
                 className={`${
                   activeTab === "datos"
-                    ? "border-[#5941CE] text-[#F2F3F4]"
-                    : "border-transparent text-[#F2F3F4]/50 hover:text-[#F2F3F4] hover:border-white/20"
+                    ? "border-[#2962FF] text-[#FFFFFF]"
+                    : "border-transparent text-[#FFFFFF]/50 hover:text-[#FFFFFF] hover:border-white/20"
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
               >
                 📊 Datos
@@ -2986,8 +2986,8 @@ export default function SurveyResultsPage() {
                 onClick={() => setActiveTab("ai-insights")}
                 className={`${
                   activeTab === "ai-insights"
-                    ? "border-[#5941CE] text-[#F2F3F4]"
-                    : "border-transparent text-[#F2F3F4]/50 hover:text-[#F2F3F4] hover:border-white/20"
+                    ? "border-[#2962FF] text-[#FFFFFF]"
+                    : "border-transparent text-[#FFFFFF]/50 hover:text-[#FFFFFF] hover:border-white/20"
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
               >
                 🤖 AI Insights
@@ -2996,8 +2996,8 @@ export default function SurveyResultsPage() {
                 onClick={() => setActiveTab("reportes")}
                 className={`${
                   activeTab === "reportes"
-                    ? "border-[#5941CE] text-[#F2F3F4]"
-                    : "border-transparent text-[#F2F3F4]/50 hover:text-[#F2F3F4] hover:border-white/20"
+                    ? "border-[#2962FF] text-[#FFFFFF]"
+                    : "border-transparent text-[#FFFFFF]/50 hover:text-[#FFFFFF] hover:border-white/20"
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
               >
                 📋 Reportes
@@ -3032,7 +3032,7 @@ export default function SurveyResultsPage() {
             {renderCrossAnalysis()}
 
             {/* Evolution Section Title */}
-            <h2 className="text-2xl font-bold text-[#F2F3F4] mb-4">Evolución Histórica</h2>
+            <h2 className="text-2xl font-bold text-[#FFFFFF] mb-4">Evolución Histórica</h2>
 
             {/* Evolution Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -3051,7 +3051,7 @@ export default function SurveyResultsPage() {
             </div>
 
             {/* Demographic Breakdown Section */}
-            <h2 className="text-2xl font-bold text-[#F2F3F4] mb-4">Desglose Demográfico</h2>
+            <h2 className="text-2xl font-bold text-[#FFFFFF] mb-4">Desglose Demográfico</h2>
 
             <div className="mb-8">
               {/* Age Distribution Chart */}
@@ -3076,21 +3076,21 @@ export default function SurveyResultsPage() {
           <div>
             {/* Header */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-[#F2F3F4]">Segmentacion por Preferencias</h2>
-              <p className="text-[#F2F3F4]/50 mt-1">
+              <h2 className="text-2xl font-bold text-[#FFFFFF]">Segmentacion por Preferencias</h2>
+              <p className="text-[#FFFFFF]/50 mt-1">
                 Clasificacion de votantes segun las areas donde asignaron mayor porcentaje de inversion.
                 Ideal para enviar reportes personalizados a cada segmento.
               </p>
             </div>
 
             {/* Threshold Slider + Export */}
-            <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-6 mb-8">
+            <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6 mb-8">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex-1">
-                  <label className="text-sm font-medium text-[#F2F3F4]/80 block mb-2">
-                    Umbral minimo: <span className="text-[#5941CE] font-bold text-lg">{segmentThreshold}%</span>
+                  <label className="text-sm font-medium text-[#FFFFFF]/80 block mb-2">
+                    Umbral minimo: <span className="text-[#2962FF] font-bold text-lg">{segmentThreshold}%</span>
                   </label>
-                  <p className="text-xs text-[#F2F3F4]/40 mb-3">
+                  <p className="text-xs text-[#FFFFFF]/40 mb-3">
                     Una persona se incluye en un segmento si asigno al menos este porcentaje al area
                   </p>
                   <input
@@ -3104,7 +3104,7 @@ export default function SurveyResultsPage() {
                       background: `linear-gradient(to right, #2563eb 0%, #2563eb ${segmentThreshold}%, #e5e7eb ${segmentThreshold}%, #e5e7eb 100%)`,
                     }}
                   />
-                  <div className="flex justify-between text-xs text-[#F2F3F4]/40 mt-1">
+                  <div className="flex justify-between text-xs text-[#FFFFFF]/40 mt-1">
                     <span>1%</span>
                     <span>50%</span>
                     <span>100%</span>
@@ -3113,7 +3113,7 @@ export default function SurveyResultsPage() {
                 <button
                   onClick={handleExportXLSX}
                   disabled={!segmentsData || segmentsData.segments.length === 0}
-                  className="px-6 py-3 bg-[#00CCBA] text-white rounded-lg font-medium hover:bg-[#33D9C9] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+                  className="px-6 py-3 bg-[#00C853] text-white rounded-lg font-medium hover:bg-[#33D968] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -3126,8 +3126,8 @@ export default function SurveyResultsPage() {
             {/* Loading */}
             {loadingSegments && (
               <div className="flex justify-center py-12">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-                <span className="ml-3 text-[#F2F3F4]/50">Cargando segmentos...</span>
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#2962FF] border-r-transparent"></div>
+                <span className="ml-3 text-[#FFFFFF]/50">Cargando segmentos...</span>
               </div>
             )}
 
@@ -3135,23 +3135,23 @@ export default function SurveyResultsPage() {
             {segmentsData && !loadingSegments && (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-                  <div className="bg-[#3C2E51] rounded-xl border border-white/10 p-4 text-center">
-                    <p className="text-2xl font-bold text-[#5941CE]">{segmentsData.segments.length}</p>
-                    <p className="text-xs text-[#F2F3F4]/50">Segmentos</p>
+                  <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-4 text-center">
+                    <p className="text-2xl font-bold text-[#2962FF]">{segmentsData.segments.length}</p>
+                    <p className="text-xs text-[#FFFFFF]/50">Segmentos</p>
                   </div>
-                  <div className="bg-[#3C2E51] rounded-xl border border-white/10 p-4 text-center">
-                    <p className="text-2xl font-bold text-[#F2F3F4]">{segmentsData.total_respondents}</p>
-                    <p className="text-xs text-[#F2F3F4]/50">Votantes totales</p>
+                  <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-4 text-center">
+                    <p className="text-2xl font-bold text-[#FFFFFF]">{segmentsData.total_respondents}</p>
+                    <p className="text-xs text-[#FFFFFF]/50">Votantes totales</p>
                   </div>
-                  <div className="bg-[#3C2E51] rounded-xl border border-white/10 p-4 text-center">
-                    <p className="text-2xl font-bold text-[#00CCBA]">
+                  <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-4 text-center">
+                    <p className="text-2xl font-bold text-[#00C853]">
                       {segmentsData.segments.reduce((sum: number, s: any) => sum + s.count, 0)}
                     </p>
-                    <p className="text-xs text-[#F2F3F4]/50">Asignaciones totales</p>
+                    <p className="text-xs text-[#FFFFFF]/50">Asignaciones totales</p>
                   </div>
-                  <div className="bg-[#3C2E51] rounded-xl border border-white/10 p-4 text-center">
-                    <p className="text-2xl font-bold text-[#7B6FD4]">{segmentThreshold}%</p>
-                    <p className="text-xs text-[#F2F3F4]/50">Umbral activo</p>
+                  <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-4 text-center">
+                    <p className="text-2xl font-bold text-[#5E8AFF]">{segmentThreshold}%</p>
+                    <p className="text-xs text-[#FFFFFF]/50">Umbral activo</p>
                   </div>
                 </div>
 
@@ -3163,26 +3163,26 @@ export default function SurveyResultsPage() {
                     const pctOfTotal = ((segment.count / segmentsData.total_respondents) * 100).toFixed(1);
 
                     return (
-                      <div key={segment.area_key} className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 overflow-hidden">
+                      <div key={segment.area_key} className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 overflow-hidden">
                         {/* Segment Header */}
                         <div className="p-6 border-b border-white/5">
                           <div className="flex items-center justify-between">
                             <div>
-                              <h3 className="text-lg font-bold text-[#F2F3F4]">{segment.area}</h3>
-                              <p className="text-sm text-[#F2F3F4]/50">
+                              <h3 className="text-lg font-bold text-[#FFFFFF]">{segment.area}</h3>
+                              <p className="text-sm text-[#FFFFFF]/50">
                                 {segment.count} persona{segment.count !== 1 ? "s" : ""} ({pctOfTotal}% del total)
                               </p>
                             </div>
                             <div className="flex items-center gap-3">
-                              <div className="bg-[#5941CE]/10 text-[#7B6FD4] px-4 py-2 rounded-full text-sm font-semibold">
+                              <div className="bg-[#2962FF]/10 text-[#5E8AFF] px-4 py-2 rounded-full text-sm font-semibold">
                                 {segment.count}
                               </div>
                             </div>
                           </div>
                           {/* Mini bar */}
-                          <div className="mt-3 w-full bg-[#201631] rounded-full h-2">
+                          <div className="mt-3 w-full bg-[#000000] rounded-full h-2">
                             <div
-                              className="bg-[#5941CE] h-2 rounded-full transition-all"
+                              className="bg-[#2962FF] h-2 rounded-full transition-all"
                               style={{ width: `${pctOfTotal}%` }}
                             />
                           </div>
@@ -3191,21 +3191,21 @@ export default function SurveyResultsPage() {
                         {/* Users Table */}
                         <div className="overflow-x-auto">
                           <table className="w-full">
-                            <thead className="bg-[#201631]">
+                            <thead className="bg-[#000000]">
                               <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#F2F3F4]/50 uppercase">Nombre</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#F2F3F4]/50 uppercase">Email</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#F2F3F4]/50 uppercase">Barrio</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-[#F2F3F4]/50 uppercase">% Asignado</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#FFFFFF]/50 uppercase">Nombre</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#FFFFFF]/50 uppercase">Email</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#FFFFFF]/50 uppercase">Barrio</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-[#FFFFFF]/50 uppercase">% Asignado</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
                               {displayUsers.map((user: any, idx: number) => (
-                                <tr key={idx} className="hover:bg-[#201631]">
-                                  <td className="px-6 py-3 text-sm text-[#F2F3F4]">{user.name}</td>
-                                  <td className="px-6 py-3 text-sm text-[#F2F3F4]/50">{user.email}</td>
-                                  <td className="px-6 py-3 text-sm text-[#F2F3F4]/50">{user.neighborhood}</td>
-                                  <td className="px-6 py-3 text-sm text-right font-semibold text-[#5941CE]">{user.percentage}%</td>
+                                <tr key={idx} className="hover:bg-[#000000]">
+                                  <td className="px-6 py-3 text-sm text-[#FFFFFF]">{user.name}</td>
+                                  <td className="px-6 py-3 text-sm text-[#FFFFFF]/50">{user.email}</td>
+                                  <td className="px-6 py-3 text-sm text-[#FFFFFF]/50">{user.neighborhood}</td>
+                                  <td className="px-6 py-3 text-sm text-right font-semibold text-[#2962FF]">{user.percentage}%</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -3214,7 +3214,7 @@ export default function SurveyResultsPage() {
 
                         {/* Show more/less */}
                         {segment.users.length > 5 && (
-                          <div className="px-6 py-3 border-t border-white/5 bg-[#201631]">
+                          <div className="px-6 py-3 border-t border-white/5 bg-[#000000]">
                             <button
                               onClick={() =>
                                 setExpandedSegments((prev) => ({
@@ -3222,7 +3222,7 @@ export default function SurveyResultsPage() {
                                   [segment.area_key]: !isExpanded,
                                 }))
                               }
-                              className="text-sm text-[#5941CE] hover:text-[#7B6FD4] font-medium"
+                              className="text-sm text-[#2962FF] hover:text-[#5E8AFF] font-medium"
                             >
                               {isExpanded
                                 ? "Ver menos"
@@ -3236,8 +3236,8 @@ export default function SurveyResultsPage() {
                 </div>
 
                 {segmentsData.segments.length === 0 && (
-                  <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-12 text-center">
-                    <p className="text-[#F2F3F4]/50">No hay segmentos con el umbral seleccionado. Proba bajando el porcentaje.</p>
+                  <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-12 text-center">
+                    <p className="text-[#FFFFFF]/50">No hay segmentos con el umbral seleccionado. Proba bajando el porcentaje.</p>
                   </div>
                 )}
               </>
@@ -3247,9 +3247,9 @@ export default function SurveyResultsPage() {
 
         {/* Empty state */}
         {results.total_responses === 0 && (
-          <div className="bg-[#3C2E51] rounded-2xl shadow-none border border-white/10 p-12 text-center">
+          <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-12 text-center">
             <svg
-              className="mx-auto h-12 w-12 text-[#F2F3F4]/40"
+              className="mx-auto h-12 w-12 text-[#FFFFFF]/40"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -3261,10 +3261,10 @@ export default function SurveyResultsPage() {
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
               />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-[#F2F3F4]">
+            <h3 className="mt-2 text-sm font-medium text-[#FFFFFF]">
               No hay respuestas aún
             </h3>
-            <p className="mt-1 text-sm text-[#F2F3F4]/50">
+            <p className="mt-1 text-sm text-[#FFFFFF]/50">
               Esta consulta aún no ha recibido respuestas de usuarios.
             </p>
           </div>

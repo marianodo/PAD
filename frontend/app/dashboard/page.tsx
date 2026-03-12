@@ -142,8 +142,8 @@ export default function DashboardPage() {
             {answer.percentage_data && Object.entries(answer.percentage_data).map(([key, value]) => (
               <div key={key} className="flex items-center gap-3">
                 <span className="text-gray-600 text-sm flex-1">{key}</span>
-                <div className="w-32 bg-gray-100 rounded-full h-2"><div className="bg-blue-500 h-2 rounded-full" style={{ width: `${value}%` }} /></div>
-                <span className="text-blue-600 font-semibold text-sm w-10 text-right">{value}%</span>
+                <div className="w-32 bg-gray-100 rounded-full h-2"><div className="bg-[#2962FF]/50 h-2 rounded-full" style={{ width: `${value}%` }} /></div>
+                <span className="text-[#2962FF] font-semibold text-sm w-10 text-right">{value}%</span>
               </div>
             ))}
           </div>
@@ -263,8 +263,8 @@ export default function DashboardPage() {
       case "Bronce": return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-300", bar: "from-amber-400 to-amber-600", icon: "text-amber-600" };
       case "Plata": return { bg: "bg-slate-50", text: "text-slate-700", border: "border-slate-300", bar: "from-slate-400 to-slate-600", icon: "text-slate-500" };
       case "Oro": return { bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-300", bar: "from-yellow-400 to-yellow-600", icon: "text-yellow-500" };
-      case "Platino": return { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-300", bar: "from-purple-400 to-purple-600", icon: "text-purple-500" };
-      default: return { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-300", bar: "from-blue-400 to-blue-600", icon: "text-blue-500" };
+      case "Platino": return { bg: "bg-[#2962FF]/5", text: "text-[#1a4fd4]", border: "border-[#5E8AFF]", bar: "from-[#5E8AFF] to-[#2962FF]", icon: "text-[#2962FF]" };
+      default: return { bg: "bg-[#2962FF]/5", text: "text-[#1a4fd4]", border: "border-[#2962FF]", bar: "from-[#2962FF] to-[#1a4fd4]", icon: "text-[#5E8AFF]" };
     }
   };
 
@@ -295,7 +295,7 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50/80">
         <div className="text-center">
-          <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-[#2962FF] border-t-transparent" />
           <p className="mt-3 text-gray-500 text-sm">Cargando...</p>
         </div>
       </div>
@@ -323,12 +323,12 @@ export default function DashboardPage() {
       )}
 
       {/* Sidebar - Dark blue */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-[280px] bg-gradient-to-b from-[#1a2342] to-[#243058] flex flex-col transform transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
+      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-[280px] bg-gradient-to-b from-[#000000] to-[#1a1a2e] flex flex-col transform transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
         {/* Logo */}
         <div className="px-6 pt-6 pb-4 flex items-center gap-3">
           <Image src="/logo.jpeg" alt="Data Insights" width={40} height={40} className="rounded-xl" />
           <div>
-            <p className="text-blue-200/50 text-[10px] font-medium tracking-widest uppercase">Portal Ciudadano</p>
+            <p className="text-white/60 text-[10px] font-medium tracking-widest uppercase">Portal Ciudadano</p>
             <p className="text-white text-base font-bold">PAD</p>
           </div>
         </div>
@@ -336,19 +336,19 @@ export default function DashboardPage() {
         {/* User card */}
         <div className="mx-4 mb-5 p-4 rounded-2xl bg-white/10 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#2962FF] to-[#1a4fd4] flex items-center justify-center text-white text-sm font-bold shrink-0">
               {userName.split(" ").map(n => n.charAt(0).toUpperCase()).slice(0, 2).join("")}
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white truncate">{userName}</p>
-              <p className="text-[11px] text-blue-200/70">{stats.total_responses} consulta{stats.total_responses !== 1 ? "s" : ""} completada{stats.total_responses !== 1 ? "s" : ""}</p>
+              <p className="text-[11px] text-white/60">{stats.total_responses} consulta{stats.total_responses !== 1 ? "s" : ""} completada{stats.total_responses !== 1 ? "s" : ""}</p>
             </div>
           </div>
         </div>
 
         {/* Menu label */}
         <div className="px-6 mb-2">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-300/50">Menu</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#5E8AFF]/50">Menu</span>
         </div>
 
         {/* Navigation */}
@@ -359,8 +359,8 @@ export default function DashboardPage() {
               onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 mb-1 ${
                 activeTab === item.id
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                  : "text-blue-200/70 hover:bg-white/10 hover:text-white"
+                  ? "bg-[#2962FF] text-white shadow-lg shadow-[#2962FF]/30"
+                  : "text-white/60 hover:bg-white/10 hover:text-white"
               }`}
             >
               <span className="flex items-center gap-3">
@@ -378,7 +378,7 @@ export default function DashboardPage() {
         <div className="p-4 border-t border-white/10">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-blue-200/50 hover:text-red-300 hover:bg-white/10 transition-all duration-200"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-red-300 hover:bg-white/10 transition-all duration-200"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -397,7 +397,7 @@ export default function DashboardPage() {
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-gray-500 hover:text-gray-800 mr-1">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>
-            <span className="inline-block bg-blue-100 text-blue-700 rounded-full px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+            <span className="inline-block bg-[#2962FF]/10 text-[#1a4fd4] rounded-full px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
               Portal de Participación
             </span>
           </div>
@@ -412,8 +412,8 @@ export default function DashboardPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
               <div className="flex items-start justify-between mb-4">
                 <p className="text-sm text-gray-500 font-medium">Consultas Respondidas</p>
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                <div className="w-10 h-10 rounded-xl bg-[#2962FF]/5 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-[#2962FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                 </div>
               </div>
               <div className="text-3xl font-bold text-gray-900">{stats.total_responses}</div>
@@ -459,7 +459,7 @@ export default function DashboardPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
               <div className="flex items-start justify-between mb-4">
                 <p className="text-sm text-gray-500 font-medium">Nivel de Participacion</p>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stats.level === "Bronce" ? "bg-amber-50" : stats.level === "Plata" ? "bg-slate-50" : stats.level === "Oro" ? "bg-yellow-50" : "bg-purple-50"}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stats.level === "Bronce" ? "bg-amber-50" : stats.level === "Plata" ? "bg-slate-50" : stats.level === "Oro" ? "bg-yellow-50" : "bg-[#2962FF]/5"}`}>
                   <LevelIcon level={stats.level} className="w-5 h-5" />
                 </div>
               </div>
@@ -520,12 +520,12 @@ export default function DashboardPage() {
 
               {responses.length === 0 ? (
                 <div className="text-center py-16 px-4">
-                  <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                  <div className="w-16 h-16 rounded-full bg-[#2962FF]/5 flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-[#00C853]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                   </div>
                   <p className="text-gray-900 font-semibold mb-1">Sin consultas todavía</p>
                   <p className="text-gray-400 text-sm mb-4">Completá tu primera consulta para ganar puntos</p>
-                  <Link href="/" className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200 font-medium">
+                  <Link href="/" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#2962FF] text-white text-sm rounded-xl hover:bg-[#1a4fd4] transition-all shadow-md shadow-[#2962FF]/20 font-medium">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     Explorar Consultas
                   </Link>
@@ -585,7 +585,7 @@ export default function DashboardPage() {
                             <button
                               onClick={() => fetchResponseDetail(response.id)}
                               disabled={loadingDetail}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg text-xs font-medium hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all duration-200 disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg text-xs font-medium hover:bg-[#2962FF]/5 hover:text-[#2962FF] hover:border-[#2962FF]/20 transition-all duration-200 disabled:opacity-50"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                               Ver Detalles
@@ -593,7 +593,7 @@ export default function DashboardPage() {
                           ) : (
                             <Link
                               href={`/survey/${response.survey_id}`}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-all duration-200 shadow-sm"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2962FF] text-white rounded-lg text-xs font-medium hover:bg-[#1a4fd4] transition-all duration-200 shadow-sm"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                               Continuar
@@ -660,7 +660,7 @@ export default function DashboardPage() {
                           </div>
                           <div>
                             <h4 className="font-bold text-gray-900 text-sm">{level.name}</h4>
-                            {isActive && <span className="inline-block mt-1 px-2 py-0.5 bg-blue-600 text-white text-[10px] font-semibold rounded-full">Actual</span>}
+                            {isActive && <span className="inline-block mt-1 px-2 py-0.5 bg-[#2962FF] text-white text-[10px] font-semibold rounded-full">Actual</span>}
                           </div>
                         </div>
                       </div>
@@ -747,14 +747,14 @@ export default function DashboardPage() {
                     <p className="text-gray-400 text-sm">Administra tu información personal y de contacto</p>
                   </div>
                   {!isEditing ? (
-                    <button onClick={handleEditClick} className="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-200 rounded-xl text-gray-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-sm font-medium">
+                    <button onClick={handleEditClick} className="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-200 rounded-xl text-gray-600 hover:text-[#2962FF] hover:border-[#2962FF] hover:bg-[#2962FF]/5 transition-all duration-200 text-sm font-medium">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                       Editar
                     </button>
                   ) : (
                     <div className="flex gap-2">
                       <button onClick={handleCancelEdit} className="px-4 py-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition text-sm font-medium">Cancelar</button>
-                      <button onClick={handleSaveEdit} className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-sm font-medium shadow-sm">Guardar</button>
+                      <button onClick={handleSaveEdit} className="px-4 py-2 bg-[#2962FF] text-white rounded-xl hover:bg-[#1a4fd4] transition text-sm font-medium shadow-sm">Guardar</button>
                     </div>
                   )}
                 </div>
@@ -771,7 +771,7 @@ export default function DashboardPage() {
                           type={field.key === "email" ? "email" : "text"}
                           value={(editData as any)?.[field.key] || ""}
                           onChange={(e) => setEditData({ ...editData!, [field.key]: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition-all"
+                          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none text-sm transition-all"
                         />
                       ) : (
                         <p className="text-gray-900 text-sm font-medium py-2.5 px-4 bg-gray-50 rounded-xl border border-gray-100">
@@ -787,7 +787,7 @@ export default function DashboardPage() {
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 className="text-base font-bold text-gray-900 mb-0.5">Seguridad</h2>
                 <p className="text-gray-400 text-sm mb-4">Administra la seguridad de tu cuenta</p>
-                <button onClick={() => setIsChangingPassword(true)} className="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 text-sm">
+                <button onClick={() => setIsChangingPassword(true)} className="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:border-[#2962FF] hover:text-[#2962FF] hover:bg-[#2962FF]/5 transition-all duration-200 text-sm">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                   Cambiar Contraseña
                 </button>
@@ -832,7 +832,7 @@ export default function DashboardPage() {
                     type="password"
                     value={(passwordData as any)[field.key]}
                     onChange={(e) => setPasswordData({ ...passwordData, [field.key]: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm transition-all"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none text-sm transition-all"
                   />
                   {field.hint && <p className="mt-1 text-[10px] text-gray-400">{field.hint}</p>}
                 </div>
@@ -840,7 +840,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex gap-2.5">
               <button onClick={() => { setIsChangingPassword(false); setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" }); setPasswordError(""); }} className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition text-sm">Cancelar</button>
-              <button onClick={handlePasswordChange} className="flex-1 px-4 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition text-sm shadow-sm">Guardar</button>
+              <button onClick={handlePasswordChange} className="flex-1 px-4 py-2.5 bg-[#2962FF] text-white font-medium rounded-xl hover:bg-[#1a4fd4] transition text-sm shadow-sm">Guardar</button>
             </div>
           </div>
         </div>
@@ -918,7 +918,7 @@ export default function DashboardPage() {
                   {selectedResponse.answers.map((answer, index) => (
                     <div key={answer.id} className="p-4 border border-gray-100 rounded-xl">
                       <div className="flex items-start gap-3">
-                        <span className="flex-shrink-0 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">{index + 1}</span>
+                        <span className="flex-shrink-0 w-7 h-7 bg-[#2962FF] text-white rounded-full flex items-center justify-center text-xs font-bold">{index + 1}</span>
                         <div className="flex-1 min-w-0">
                           <h5 className="text-sm font-semibold text-gray-900 mb-2">{answer.question_text}</h5>
                           {renderAnswer(answer)}

@@ -149,9 +149,9 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-purple-600 border-r-transparent"></div>
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-[#2962FF] border-r-transparent"></div>
           <p className="mt-4 text-gray-600">Cargando...</p>
         </div>
       </div>
@@ -160,7 +160,7 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md">
           <p className="text-red-600">{error}</p>
         </div>
@@ -169,7 +169,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto p-6 max-w-7xl">
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -201,9 +201,9 @@ export default function AdminDashboard() {
                   {surveys.length}
                 </p>
               </div>
-              <div className="bg-purple-100 rounded-full p-3">
+              <div className="bg-[#2962FF]/10 rounded-full p-3">
                 <svg
-                  className="w-8 h-8 text-purple-600"
+                  className="w-8 h-8 text-[#2962FF]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -253,13 +253,13 @@ export default function AdminDashboard() {
                 <p className="text-sm font-medium text-gray-600">
                   Total Respuestas
                 </p>
-                <p className="text-3xl font-bold text-blue-600 mt-2">
+                <p className="text-3xl font-bold text-[#2962FF] mt-2">
                   {surveys.reduce((acc, s) => acc + (s.total_responses || 0), 0)}
                 </p>
               </div>
-              <div className="bg-blue-100 rounded-full p-3">
+              <div className="bg-[#2962FF]/10 rounded-full p-3">
                 <svg
-                  className="w-8 h-8 text-blue-600"
+                  className="w-8 h-8 text-[#2962FF]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -312,7 +312,7 @@ export default function AdminDashboard() {
                 onClick={() => setActiveTab("surveys")}
                 className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === "surveys"
-                    ? "border-purple-600 text-purple-600"
+                    ? "border-[#2962FF] text-[#2962FF]"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
@@ -322,7 +322,7 @@ export default function AdminDashboard() {
                 onClick={() => setActiveTab("clients")}
                 className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === "clients"
-                    ? "border-purple-600 text-purple-600"
+                    ? "border-[#2962FF] text-[#2962FF]"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
@@ -342,7 +342,7 @@ export default function AdminDashboard() {
                       Gestiona todas las consultas del sistema
                     </p>
                   </div>
-                  <button className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition shadow-lg">
+                  <button className="px-6 py-3 bg-gradient-to-r from-[#2962FF] to-[#1a4fd4] text-white font-semibold rounded-lg hover:from-[#1a4fd4] hover:to-[#0d3ab8] transition shadow-lg">
                     + Nueva Consulta
                   </button>
                 </div>
@@ -428,10 +428,10 @@ export default function AdminDashboard() {
                           >
                             {survey.is_active ? "Desactivar" : "Activar"}
                           </button>
-                          <button className="text-purple-600 hover:text-purple-900">
+                          <button className="text-[#2962FF] hover:text-[#1a4fd4]">
                             Editar
                           </button>
-                          <button className="text-blue-600 hover:text-blue-900">
+                          <button className="text-[#2962FF] hover:text-[#1a4fd4]">
                             Resultados
                           </button>
                         </td>
@@ -478,7 +478,7 @@ export default function AdminDashboard() {
                       Gestiona las organizaciones cliente
                     </p>
                   </div>
-                  <button className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition shadow-lg">
+                  <button className="px-6 py-3 bg-gradient-to-r from-[#2962FF] to-[#1a4fd4] text-white font-semibold rounded-lg hover:from-[#1a4fd4] hover:to-[#0d3ab8] transition shadow-lg">
                     + Nuevo Cliente
                   </button>
                 </div>
@@ -523,10 +523,10 @@ export default function AdminDashboard() {
                           {surveys.filter((s) => s.client_id === client.id).length}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                          <button className="text-purple-600 hover:text-purple-900">
+                          <button className="text-[#2962FF] hover:text-[#1a4fd4]">
                             Ver Detalle
                           </button>
-                          <button className="text-blue-600 hover:text-blue-900">
+                          <button className="text-[#2962FF] hover:text-[#1a4fd4]">
                             Editar
                           </button>
                         </td>

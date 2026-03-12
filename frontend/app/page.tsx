@@ -34,9 +34,9 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-[#2962FF] border-r-transparent"></div>
           <p className="mt-4 text-gray-600">Cargando...</p>
         </div>
       </div>
@@ -45,7 +45,7 @@ export default function Home() {
 
   if (error || !survey) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="max-w-md bg-white rounded-lg shadow-lg p-8 text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">
             Lo sentimos
@@ -59,7 +59,7 @@ export default function Home() {
   const surveyUrl = `${window.location.origin}/survey/${survey.id}`;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
       <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8 md:p-12">
         {/* Logout button - only show if logged in */}
         {isLoggedIn && (
@@ -74,8 +74,8 @@ export default function Home() {
         )}
 
         <div className="text-center mb-8">
-          <div className="inline-block bg-blue-100 rounded-full px-4 py-2 mb-4">
-            <span className="text-blue-800 font-semibold text-sm">
+          <div className="inline-block bg-[#2962FF]/10 rounded-full px-4 py-2 mb-4">
+            <span className="text-[#2962FF] font-semibold text-sm">
               Participación Activa Digital
             </span>
           </div>
@@ -87,10 +87,10 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 mb-8 text-white">
+        <div className="bg-gradient-to-r from-[#2962FF] to-[#1a4fd4] rounded-xl p-6 mb-8 text-white">
           <h2 className="text-2xl font-bold mb-2">{survey.title}</h2>
           {survey.description && (
-            <p className="text-blue-100">{survey.description}</p>
+            <p className="text-[#5E8AFF]">{survey.description}</p>
           )}
         </div>
 
@@ -116,7 +116,7 @@ export default function Home() {
         <div className="space-y-4">
           <button
             onClick={() => router.push(`/survey/${survey.id}`)}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+            className="w-full bg-gradient-to-r from-[#2962FF] to-[#1a4fd4] text-white font-semibold py-4 px-6 rounded-lg hover:from-[#1a4fd4] hover:to-[#0d3ab8] transition-all duration-200 shadow-lg hover:shadow-xl"
           >
             Comenzar Consulta
           </button>
@@ -153,7 +153,7 @@ export default function Home() {
                     navigator.clipboard.writeText(surveyUrl);
                     alert("Enlace copiado al portapapeles");
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition"
+                  className="px-4 py-2 bg-[#2962FF] text-white text-sm font-semibold rounded-lg hover:bg-[#1a4fd4] transition"
                 >
                   Copiar
                 </button>

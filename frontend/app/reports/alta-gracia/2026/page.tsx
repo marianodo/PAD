@@ -173,8 +173,8 @@ const reports: Report[] = [
     icon: "🛡️",
     pdfUrl:
       "https://blobs.vusercontent.net/blob/SEGURIDAD%202026%20ALTA%20GRACIA-auKWLNDq0kwLQi9GvW22iU8YngLN4t.pdf",
-    color: "bg-blue-600",
-    bgLight: "bg-blue-50",
+    color: "bg-[#2962FF]",
+    bgLight: "bg-[#2962FF]/5",
     highlights: [
       {
         title: "Nuevos Efectivos Policiales",
@@ -316,7 +316,7 @@ function ReportCard({ report, defaultExpanded = false }: { report: Report; defau
     <div
       id={report.id}
       className={`rounded-2xl border bg-white transition-all duration-300 hover:shadow-lg cursor-pointer ${
-        isExpanded ? "ring-2 ring-blue-500 shadow-lg" : "border-gray-200"
+        isExpanded ? "ring-2 ring-[#2962FF] shadow-lg" : "border-gray-200"
       }`}
       onClick={() => setIsExpanded(!isExpanded)}
     >
@@ -417,7 +417,7 @@ function ReportCard({ report, defaultExpanded = false }: { report: Report; defau
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#2962FF] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a4fd4] transition-colors"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -471,7 +471,7 @@ export default function AltaGracia2026() {
       <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-lg">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2962FF] text-white font-bold text-lg">
               AG
             </div>
             <div>
@@ -479,14 +479,14 @@ export default function AltaGracia2026() {
               <div className="text-xs text-gray-500">Alta Gracia</div>
             </div>
           </div>
-          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600">
+          <span className="rounded-full bg-[#2962FF]/5 px-3 py-1 text-xs font-medium text-[#2962FF]">
             Informes 2026
           </span>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-blue-600 px-4 py-16 text-white md:py-24">
+      <section className="relative overflow-hidden bg-[#2962FF] px-4 py-16 text-white md:py-24">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff12_1px,transparent_1px)] bg-[size:24px_24px]" />
         </div>
@@ -535,7 +535,7 @@ export default function AltaGracia2026() {
               onClick={() => setActiveSegment(null)}
               className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 activeSegment === null
-                  ? "bg-blue-600 text-white"
+                  ? "bg-[#2962FF] text-white"
                   : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
               }`}
             >
@@ -547,7 +547,7 @@ export default function AltaGracia2026() {
                 onClick={() => setActiveSegment(r.id === activeSegment ? null : r.id)}
                 className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                   activeSegment === r.id
-                    ? "bg-blue-600 text-white"
+                    ? "bg-[#2962FF] text-white"
                     : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                 }`}
               >
@@ -582,7 +582,7 @@ export default function AltaGracia2026() {
           <div className="grid gap-8 md:grid-cols-3">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#2962FF] text-white font-bold">
                   AG
                 </div>
                 <span className="text-sm font-semibold text-gray-900">

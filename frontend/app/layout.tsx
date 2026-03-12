@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { DM_Sans, Playfair_Display } from "next/font/google";
+import { Montserrat, Open_Sans } from "next/font/google";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 
-const dmSans = DM_Sans({
+const montserrat = Montserrat({
   subsets: ["latin"],
-  variable: "--font-dm-sans",
+  variable: "--font-montserrat",
   display: "swap",
 });
 
-const playfair = Playfair_Display({
+const openSans = Open_Sans({
   subsets: ["latin"],
-  variable: "--font-playfair",
+  variable: "--font-open-sans",
   display: "swap",
 });
 
@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${dmSans.variable} ${playfair.variable} font-sans antialiased`}>
+      <body className={`${montserrat.variable} ${openSans.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

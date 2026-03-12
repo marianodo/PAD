@@ -94,7 +94,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-12">
       <div className="max-w-2xl w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
@@ -131,7 +131,7 @@ export default function RegisterPage() {
                   placeholder="20123456789"
                   required
                   maxLength={11}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   11 dígitos sin guiones
@@ -153,7 +153,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="Juan Pérez"
                   required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
                 />
               </div>
             </div>
@@ -175,7 +175,7 @@ export default function RegisterPage() {
                   placeholder="••••••••"
                   required
                   minLength={6}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
                 />
               </div>
 
@@ -195,7 +195,7 @@ export default function RegisterPage() {
                   placeholder="••••••••"
                   required
                   minLength={6}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
                 />
               </div>
             </div>
@@ -217,7 +217,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="juan@ejemplo.com"
                   required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
                 />
               </div>
 
@@ -235,7 +235,7 @@ export default function RegisterPage() {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="11 1234 5678"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
                 />
               </div>
 
@@ -251,7 +251,7 @@ export default function RegisterPage() {
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition bg-white"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition bg-white"
                 >
                   <option value="">Sin especificar</option>
                   <option value="masculino">Masculino</option>
@@ -276,7 +276,7 @@ export default function RegisterPage() {
                 value={formData.address}
                 onChange={handleChange}
                 placeholder="Calle 123"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
               />
             </div>
 
@@ -296,7 +296,7 @@ export default function RegisterPage() {
                   value={formData.neighborhood}
                   onChange={handleChange}
                   placeholder="Centro"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
                 />
               </div>
 
@@ -314,7 +314,7 @@ export default function RegisterPage() {
                   value={formData.city}
                   onChange={handleChange}
                   placeholder="Buenos Aires"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
                 />
               </div>
 
@@ -332,7 +332,7 @@ export default function RegisterPage() {
                   value={formData.postal_code}
                   onChange={handleChange}
                   placeholder="1000"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
                 />
               </div>
             </div>
@@ -340,7 +340,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#2962FF] text-white py-3 rounded-lg font-semibold hover:bg-[#1a4fd4] transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "Registrando..." : "Crear Cuenta"}
             </button>
@@ -351,7 +351,7 @@ export default function RegisterPage() {
               ¿Ya tenés cuenta?{" "}
               <Link
                 href="/auth/login"
-                className="text-blue-600 hover:text-blue-700 font-semibold"
+                className="text-[#2962FF] hover:text-[#1a4fd4] font-semibold"
               >
                 Iniciá sesión
               </Link>
