@@ -193,7 +193,7 @@ function LoginForm() {
           </div>
 
           {/* Hero text */}
-          <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight mb-5">
+          <h1 className="text-2xl font-bold text-white leading-tight mb-5">
             Tu voz importa. Participá y transformá la democracia.
           </h1>
           <p className="text-white/60 text-base leading-relaxed max-w-md mb-10">
@@ -241,7 +241,7 @@ function LoginForm() {
         <div className="flex-1 flex items-center justify-center px-4 py-6 lg:px-6 lg:py-8">
           <div className="w-full max-w-md">
             <div className="mb-6">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Portal Ciudadano</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Portal Ciudadano</h2>
               <p className="text-gray-500 text-sm">
                 Ingresá con tu CUIL para participar en las consultas de tu municipio.
               </p>

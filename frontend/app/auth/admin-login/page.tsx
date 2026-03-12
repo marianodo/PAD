@@ -134,7 +134,7 @@ export default function AdminLoginPage() {
           </div>
 
           {/* Hero text */}
-          <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight mb-5">
+          <h1 className="text-2xl font-bold text-white leading-tight mb-5">
             Analizá las preferencias ciudadanas en tiempo real
           </h1>
           <p className="text-white/60 text-base leading-relaxed max-w-md mb-10">
@@ -182,7 +182,7 @@ export default function AdminLoginPage() {
         <div className="flex-1 flex items-center justify-center px-4 py-6 lg:px-6 lg:py-8">
           <div className="w-full max-w-md">
             <div className="mb-6">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Acceso Municipio</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Acceso Municipio</h2>
               <p className="text-gray-500 text-sm">
                 Ingresá con las credenciales de tu gobierno local para acceder al panel de análisis.
               </p>
