@@ -165,10 +165,10 @@ export default function AdminLoginPage() {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 lg:ml-[50%] flex flex-col min-h-screen bg-gray-50">
+      <div className="flex-1 lg:ml-[50%] flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Top bar with citizen link */}
         <div className="flex justify-end px-4 py-4 lg:p-6">
-          <Link href="/auth/login" className="text-sm text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap">
+          <Link href="/auth/login" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors whitespace-nowrap">
             ¿Sos ciudadano? <span className="font-semibold text-[#2962FF]">Ingresá acá</span>
           </Link>
         </div>
@@ -182,21 +182,21 @@ export default function AdminLoginPage() {
         <div className="flex-1 flex items-center justify-center px-4 py-6 lg:px-6 lg:py-8">
           <div className="w-full max-w-md">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Acceso Municipio</h2>
-              <p className="text-gray-500 text-sm">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Acceso Municipio</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
                 Ingresá con las credenciales de tu gobierno local para acceder al panel de análisis.
               </p>
             </div>
 
             {error && (
-              <div className="mb-5 p-3.5 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
-                <p className="text-red-700 text-sm">{error}</p>
+              <div className="mb-5 p-3.5 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 rounded-r-lg">
+                <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
                   Correo institucional
                 </label>
                 <input
@@ -208,13 +208,13 @@ export default function AdminLoginPage() {
                   }
                   placeholder="admin@municipio.gob.ar"
                   required
-                  className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
+                  className="w-full px-4 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white text-sm"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
                     Contraseña
                   </label>
                   <a href="#" className="text-sm text-[#2962FF] hover:text-[#1a4fd4] font-medium">
@@ -231,12 +231,12 @@ export default function AdminLoginPage() {
                     }
                     placeholder="Tu contraseña"
                     required
-                    className="w-full px-4 pr-12 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
+                    className="w-full px-4 pr-12 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                     tabIndex={-1}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -263,9 +263,9 @@ export default function AdminLoginPage() {
                 <input
                   id="remember"
                   type="checkbox"
-                  className="w-4 h-4 rounded border-gray-300 text-[#2962FF] focus:ring-[#2962FF]"
+                  className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-[#2962FF] focus:ring-[#2962FF]"
                 />
-                <label htmlFor="remember" className="text-sm text-gray-600">
+                <label htmlFor="remember" className="text-sm text-gray-600 dark:text-gray-400">
                   Mantener sesión iniciada
                 </label>
               </div>
@@ -296,16 +296,16 @@ export default function AdminLoginPage() {
             </form>
 
             {/* Security badge */}
-            <div className="mt-6 flex items-start gap-3 bg-gray-50 border border-gray-100 rounded-xl p-4">
-              <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center shrink-0 mt-0.5">
+            <div className="mt-6 flex items-start gap-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+              <div className="w-8 h-8 rounded-full bg-green-50 dark:bg-green-900/30 flex items-center justify-center shrink-0 mt-0.5">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                   <polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800">Acceso seguro</p>
-                <p className="text-xs text-gray-500 leading-relaxed">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Acceso seguro</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                   Conexión encriptada de extremo a extremo. Todos los accesos quedan registrados en la auditoría del sistema.
                 </p>
               </div>
@@ -315,7 +315,7 @@ export default function AdminLoginPage() {
 
         {/* Bottom footer */}
         <div className="px-6 py-5 text-center">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             ¿Problemas para acceder?{" "}
             <a href="#" className="text-[#2962FF] hover:text-[#1a4fd4] font-medium">
               Contactar soporte técnico

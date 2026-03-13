@@ -224,10 +224,10 @@ function LoginForm() {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 lg:ml-[50%] flex flex-col min-h-screen bg-gray-50">
+      <div className="flex-1 lg:ml-[50%] flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Top bar with admin link */}
         <div className="flex justify-end px-4 py-4 lg:p-6">
-          <Link href="/auth/admin-login" className="text-sm text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap">
+          <Link href="/auth/admin-login" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors whitespace-nowrap">
             ¿Sos administrador? <span className="font-semibold text-[#2962FF]">Ingresá acá</span>
           </Link>
         </div>
@@ -241,8 +241,8 @@ function LoginForm() {
         <div className="flex-1 flex items-center justify-center px-4 py-6 lg:px-6 lg:py-8">
           <div className="w-full max-w-md">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Portal Ciudadano</h2>
-              <p className="text-gray-500 text-sm">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Portal Ciudadano</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
                 Ingresá con tu CUIL para participar en las consultas de tu municipio.
               </p>
             </div>
@@ -256,8 +256,8 @@ function LoginForm() {
                 }}
                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   activeTab === "login"
-                    ? "bg-white border border-gray-300 text-gray-900 shadow-sm"
-                    : "bg-gray-100 text-gray-500 hover:bg-gray-200 border border-transparent"
+                    ? "bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white shadow-sm"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 border border-transparent"
                 }`}
               >
                 Iniciar Sesión
@@ -269,8 +269,8 @@ function LoginForm() {
                 }}
                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   activeTab === "register"
-                    ? "bg-white border border-gray-300 text-gray-900 shadow-sm"
-                    : "bg-gray-100 text-gray-500 hover:bg-gray-200 border border-transparent"
+                    ? "bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white shadow-sm"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 border border-transparent"
                 }`}
               >
                 Registrarse
@@ -278,8 +278,8 @@ function LoginForm() {
             </div>
 
             {error && (
-              <div className="mb-5 p-3.5 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
-                <p className="text-red-700 text-sm">{error}</p>
+              <div className="mb-5 p-3.5 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 rounded-r-lg">
+                <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
               </div>
             )}
 
@@ -287,7 +287,7 @@ function LoginForm() {
             {activeTab === "login" && (
               <form onSubmit={handleLoginSubmit} className="space-y-5">
                 <div>
-                  <label htmlFor="cuil" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  <label htmlFor="cuil" className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
                     CUIL
                   </label>
                   <input
@@ -303,16 +303,16 @@ function LoginForm() {
                     placeholder="20122456789"
                     required
                     maxLength={11}
-                    className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
+                    className="w-full px-4 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white text-sm"
                   />
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                     11 dígitos sin guiones
                   </p>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+                    <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
                       Contraseña
                     </label>
                     <a href="#" className="text-sm text-[#2962FF] hover:text-[#1a4fd4] font-medium">
@@ -330,12 +330,12 @@ function LoginForm() {
                       placeholder="Tu contraseña"
                       required
                       minLength={6}
-                      className="w-full px-4 pr-12 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
+                      className="w-full px-4 pr-12 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                       tabIndex={-1}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -388,7 +388,7 @@ function LoginForm() {
               <form onSubmit={handleRegisterSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="reg-cuil" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    <label htmlFor="reg-cuil" className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
                       CUIL <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -404,12 +404,12 @@ function LoginForm() {
                       placeholder="20123456789"
                       required
                       maxLength={11}
-                      className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
+                      className="w-full px-4 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white text-sm"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="reg-name" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    <label htmlFor="reg-name" className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
                       Nombre Completo <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -421,13 +421,13 @@ function LoginForm() {
                       }
                       placeholder="Juan Pérez"
                       required
-                      className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
+                      className="w-full px-4 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="reg-email" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  <label htmlFor="reg-email" className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
                     Correo electrónico <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -439,13 +439,13 @@ function LoginForm() {
                     }
                     placeholder="tu@email.com"
                     required
-                    className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
+                    className="w-full px-4 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white text-sm"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="reg-password" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    <label htmlFor="reg-password" className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
                       Contraseña <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -462,12 +462,12 @@ function LoginForm() {
                         placeholder="••••••••"
                         required
                         minLength={6}
-                        className="w-full px-4 pr-12 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
+                        className="w-full px-4 pr-12 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white text-sm"
                       />
                       <button
                         type="button"
                         onClick={() => setShowRegPassword(!showRegPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                         tabIndex={-1}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -490,7 +490,7 @@ function LoginForm() {
                   </div>
 
                   <div>
-                    <label htmlFor="reg-confirm-password" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    <label htmlFor="reg-confirm-password" className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
                       Confirmar <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -507,12 +507,12 @@ function LoginForm() {
                         placeholder="••••••••"
                         required
                         minLength={6}
-                        className="w-full px-4 pr-12 py-3.5 border border-gray-200 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white text-sm"
+                        className="w-full px-4 pr-12 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition-all bg-white dark:bg-gray-800 dark:text-white text-sm"
                       />
                       <button
                         type="button"
                         onClick={() => setShowRegConfirmPassword(!showRegConfirmPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                         tabIndex={-1}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -562,16 +562,16 @@ function LoginForm() {
             )}
 
             {/* Security badge */}
-            <div className="mt-6 flex items-start gap-3 bg-gray-50 border border-gray-100 rounded-xl p-4">
-              <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center shrink-0 mt-0.5">
+            <div className="mt-6 flex items-start gap-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+              <div className="w-8 h-8 rounded-full bg-green-50 dark:bg-green-900/30 flex items-center justify-center shrink-0 mt-0.5">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                   <polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800">Participación segura</p>
-                <p className="text-xs text-gray-500 leading-relaxed">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Participación segura</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                   Tu identidad y tus respuestas están protegidas con encriptación de extremo a extremo.
                 </p>
               </div>
@@ -581,7 +581,7 @@ function LoginForm() {
 
         {/* Bottom footer */}
         <div className="px-6 py-5 text-center">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             ¿Problemas para acceder?{" "}
             <a href="#" className="text-[#2962FF] hover:text-[#1a4fd4] font-medium">
               Contactar soporte técnico
@@ -595,7 +595,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="animate-spin h-8 w-8 border-4 border-[#2962FF] border-t-transparent rounded-full" />
     </div>}>
       <LoginForm />
