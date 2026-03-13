@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { segments, getTotals } from "../lib/data"
+import { segments, getTotals } from "@/app/reports/alta-gracia/2026/lib/data"
 import { SegmentView } from "./segment-view"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
