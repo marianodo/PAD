@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Segment, ProjectStatus } from "@/app/reports/alta-gracia/2026/lib/data"
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../../components/ui/card"
+import { Badge } from "../../../../../components/ui/badge"
+import { Segment, ProjectStatus } from "../lib/data"
 import {
   Trees, Wrench, Trophy, Heart, Building,
   Stethoscope, Shield, Briefcase,
