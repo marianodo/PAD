@@ -11,6 +11,15 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        card: { DEFAULT: "var(--card)", foreground: "var(--card-foreground)" },
+        muted: { DEFAULT: "var(--muted)", foreground: "var(--muted-foreground)" },
+        border: "var(--border)",
+        primary: { DEFAULT: "var(--primary)", foreground: "var(--primary-foreground)" },
+        secondary: { DEFAULT: "var(--secondary)", foreground: "var(--secondary-foreground)" },
+        destructive: "var(--destructive)",
+        ring: "var(--ring)",
+        input: "var(--input)",
+        accent: { DEFAULT: "var(--accent)", foreground: "var(--accent-foreground)" },
         pad: {
           black: "#000000",
           "black-soft": "#1a1a2e",
