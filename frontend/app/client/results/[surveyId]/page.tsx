@@ -126,6 +126,7 @@ export default function SurveyResultsPage() {
     monthlyResponsesChange: 0,
     uniqueNeighborhoods: 0,
   });
+  const [neighborhoodCoords, setNeighborhoodCoords] = useState<Record<string, { lat: number; lng: number }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [budgetAgeFilter, setBudgetAgeFilter] = useState("General");
@@ -245,6 +246,10 @@ export default function SurveyResultsPage() {
 
     fetchResults();
     loadCachedInsights();
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/neighborhoods/coordinates`)
+      .then(res => res.ok ? res.json() : {})
+      .then(data => setNeighborhoodCoords(data))
+      .catch(() => {});
   }, [surveyId, router]);
 
   const fetchParticipationTrend = async (gender: string, ageRange: string) => {
@@ -2089,6 +2094,7 @@ export default function SurveyResultsPage() {
       <GeographicHeatMap
         neighborhoodData={neighborhoodData}
         questions={results?.questions_summary || []}
+        neighborhoodCoords={neighborhoodCoords}
       />
     );
   };

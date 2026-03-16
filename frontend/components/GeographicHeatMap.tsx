@@ -14,84 +14,10 @@ interface QuestionSummary {
 interface GeographicHeatMapProps {
   neighborhoodData: Record<string, number>;
   questions: QuestionSummary[];
+  neighborhoodCoords: Record<string, { lat: number; lng: number }>;
 }
 
 type ViewMode = "participation" | "pie-charts" | "winner-color";
-
-const NEIGHBORHOOD_COORDS: Record<string, { lat: number; lng: number }> = {
-  // Coordenadas verificadas via Nominatim
-  "Centro": { lat: -31.6535023, lng: -64.4240528 },
-  "San Martín": { lat: -31.6637055, lng: -64.4227145 },
-  "Villa Parque": { lat: -31.604438, lng: -64.4056309 },
-  "La Perla": { lat: -31.678409, lng: -64.4376872 },
-  "Parque del Virrey": { lat: -31.6470185, lng: -64.4169166 },
-  "Barrio Córdoba": { lat: -31.6376201, lng: -64.4199281 },
-  "Barrio Norte": { lat: -31.7182402, lng: -64.4078367 },
-  "Pellegrini": { lat: -31.6516924, lng: -64.4413141 },
-  "El Golf": { lat: -31.6437905, lng: -64.4462955 },
-  "Sabattini": { lat: -31.6464183, lng: -64.4368431 },
-  "Paravachasca": { lat: -31.6403451, lng: -64.429973 },
-  "Los Nogales": { lat: -31.7170684, lng: -64.4058691 },
-  "Villa del Prado": { lat: -31.6192496, lng: -64.3878973 },
-  "General Bustos": { lat: -31.6673588, lng: -64.4368409 },
-  "Poluyan": { lat: -31.6588046, lng: -64.437253 },
-  "Altos de Alta Gracia": { lat: -31.7159482, lng: -64.3881824 },
-  "Camara": { lat: -31.6547968, lng: -64.4210163 },
-  "Los Molles": { lat: -31.6393099, lng: -64.4324517 },
-  "Santa María": { lat: -31.649147, lng: -64.4243328 },
-  "Don Bosco": { lat: -31.6679657, lng: -64.4259672 },
-  "Cafferata": { lat: -31.6593111, lng: -64.4172452 },
-  "Barrio Sur": { lat: -31.7210214, lng: -64.4054766 },
-  "Villa Oviedo": { lat: -31.6704985, lng: -64.4314348 },
-  "Reserva Tajamar": { lat: -31.6196917, lng: -64.432268 },
-  "Crucero Sur": { lat: -31.6900631, lng: -64.4377761 },
-  "Liniers II de Horizonte": { lat: -31.6430818, lng: -64.4260529 },
-  "Lalahenes": { lat: -31.6555093, lng: -64.4061555 },
-  "Serralta": { lat: -31.6462022, lng: -64.4031992 },
-  "Liniers": { lat: -31.6622926, lng: -64.4456266 },
-  "Alta Gracia Country Golf": { lat: -31.6375829, lng: -64.447375 },
-  "Prohas II": { lat: -31.6311183, lng: -64.4119995 },
-  "Touring Club": { lat: -31.6369412, lng: -64.4372824 },
-  // Coordenadas aproximadas
-  "Barrio Obrero": { lat: -31.6610, lng: -64.4320 },
-  "Residencial Alta Gracia": { lat: -31.6500, lng: -64.4100 },
-  "Lomas del Golf": { lat: -31.6450, lng: -64.4420 },
-  "Colinas del Sur": { lat: -31.6750, lng: -64.4180 },
-  "Villa Juana": { lat: -31.6220, lng: -64.4310 },
-  "Asociación la Esperanza": { lat: -31.6640, lng: -64.4150 },
-  "Bª Parque San Juan": { lat: -31.6480, lng: -64.4290 },
-  "Prohas I Jardín Estancia": { lat: -31.6320, lng: -64.4130 },
-  "Prohas III": { lat: -31.6300, lng: -64.4110 },
-  "Valerio": { lat: -31.6560, lng: -64.4380 },
-  "Portales del Tala": { lat: -31.6720, lng: -64.4200 },
-  "Plano Viejo": { lat: -31.6570, lng: -64.4250 },
-  "Santa Teresa de Jesús": { lat: -31.6490, lng: -64.4350 },
-  "Buena Esperanza": { lat: -31.6650, lng: -64.4100 },
-  "El Cañito": { lat: -31.6600, lng: -64.4050 },
-  "La Verde": { lat: -31.6680, lng: -64.4060 },
-  "Sur": { lat: -31.6750, lng: -64.4250 },
-  "Norte": { lat: -31.6400, lng: -64.4250 },
-  "Villa Camiares": { lat: -31.6730, lng: -64.4290 },
-  "1° de Mayo": { lat: -31.6620, lng: -64.4350 },
-  "Tiro Federal": { lat: -31.6440, lng: -64.4480 },
-  "Alta Gracia Norte": { lat: -31.6380, lng: -64.4220 },
-  "Liniers III de Horizonte": { lat: -31.6410, lng: -64.4270 },
-  "La Hornilla": { lat: -31.6760, lng: -64.4320 },
-  "25 de Mayo": { lat: -31.6630, lng: -64.4400 },
-  "Piedra del Sapo": { lat: -31.6350, lng: -64.4150 },
-  "Parque Casino": { lat: -31.6520, lng: -64.4350 },
-  "Crucero de Horizonte": { lat: -31.6860, lng: -64.4360 },
-  "Ala Industrial": { lat: -31.6480, lng: -64.4050 },
-  "Córdoba": { lat: -31.6550, lng: -64.4200 },
-  "B° El Mirador": { lat: -31.6580, lng: -64.4120 },
-  "El Crucero": { lat: -31.6880, lng: -64.4340 },
-  "Terrazas del Cielo": { lat: -31.6420, lng: -64.4440 },
-  "Tres Gracias": { lat: -31.6390, lng: -64.4210 },
-  "B° Lomas de la Estancia": { lat: -31.6700, lng: -64.4340 },
-  "Portales del Sol": { lat: -31.6710, lng: -64.4190 },
-  "La Rinconada": { lat: -31.6340, lng: -64.4300 },
-  "El Potrerillo": { lat: -31.6280, lng: -64.4200 },
-};
 
 const OPTION_COLORS = [
   "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444",
@@ -138,7 +64,7 @@ function createPieSvg(segments: { label: string; value: number; color: string }[
   </svg>`;
 }
 
-export default function GeographicHeatMap({ neighborhoodData, questions }: GeographicHeatMapProps) {
+export default function GeographicHeatMap({ neighborhoodData, questions, neighborhoodCoords }: GeographicHeatMapProps) {
   const [mounted, setMounted] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("participation");
@@ -217,11 +143,11 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
       });
     }
 
-    const missing = entries.filter(([name]) => !NEIGHBORHOOD_COORDS[name]).map(([name]) => name);
+    const missing = entries.filter(([name]) => !neighborhoodCoords[name]).map(([name]) => name);
     if (missing.length > 0) console.warn("Barrios sin coordenadas:", missing);
 
     entries.forEach(([name, participationCount]) => {
-      const coords = NEIGHBORHOOD_COORDS[name];
+      const coords = neighborhoodCoords[name];
       if (!coords) return;
 
       if (viewMode === "participation") {
