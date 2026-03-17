@@ -1182,7 +1182,7 @@ class SurveyService:
             texts_list = "\n".join(f"- {t}" for t in texts)
 
             response = client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=settings.CLAUDE_MODEL,
                 max_tokens=1000,
                 temperature=0.2,
                 messages=[{

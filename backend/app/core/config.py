@@ -26,6 +26,7 @@ class Settings(BaseSettings):
 
     # AI
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+    CLAUDE_MODEL: str = os.getenv("CLAUDE_MODEL", "claude-opus-4-6")
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = []
