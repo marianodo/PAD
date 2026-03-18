@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface ChartDataItem {
   label: string;
@@ -332,6 +333,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
               ) : (
                 <>
                   <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
                     components={{
                       h3: ({ children }) => <h3 className="font-bold text-sm mt-2 mb-1">{children}</h3>,
                       h4: ({ children }) => <h4 className="font-bold text-sm mt-1.5 mb-0.5">{children}</h4>,
@@ -341,6 +343,11 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
                       ol: ({ children }) => <ol className="list-decimal list-inside space-y-0.5 my-1">{children}</ol>,
                       li: ({ children }) => <li className="text-sm">{children}</li>,
                       p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+                      table: ({ children }) => <div className="overflow-x-auto my-2"><table className="text-xs border-collapse w-full">{children}</table></div>,
+                      thead: ({ children }) => <thead className="bg-gray-200">{children}</thead>,
+                      th: ({ children }) => <th className="border border-gray-300 px-2 py-1 text-left font-semibold">{children}</th>,
+                      td: ({ children }) => <td className="border border-gray-300 px-2 py-1">{children}</td>,
+                      tr: ({ children }) => <tr className="even:bg-gray-50">{children}</tr>,
                     }}
                   >
                     {msg.content}
