@@ -37,7 +37,7 @@ export default function QuestionsPage() {
         const userResponse = await authApi.me();
 
         // Solo usuarios ciudadanos pueden responder encuestas
-        if (userResponse.data.account_type !== "user") {
+        if ((userResponse.data as any).account_type !== "user") {
           localStorage.removeItem("access_token");
           router.push(`/auth/login?redirect=/survey/${surveyId}`);
           return;
