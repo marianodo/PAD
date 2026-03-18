@@ -35,6 +35,14 @@ export default function QuestionsPage() {
       try {
         // Load user info
         const userResponse = await authApi.me();
+
+        // Solo usuarios ciudadanos pueden responder encuestas
+        if (userResponse.data.account_type !== "user") {
+          localStorage.removeItem("access_token");
+          router.push(`/auth/login?redirect=/survey/${surveyId}`);
+          return;
+        }
+
         setCurrentUser(userResponse.data);
         setUser(userResponse.data);
 
@@ -250,12 +258,14 @@ export default function QuestionsPage() {
           </div>
 
           <div className="flex gap-4">
-            <button
-              onClick={handlePrevious}
-              className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition"
-            >
-              Anterior
-            </button>
+            {currentQuestionIndex > 0 && (
+              <button
+                onClick={handlePrevious}
+                className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition"
+              >
+                Anterior
+              </button>
+            )}
             <button
               onClick={handleNext}
               disabled={!canProceed() || submitting}

@@ -222,7 +222,12 @@ export default function DashboardPage() {
       try {
         const userResponse = await fetch(`${API_URL}/api/v1/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
         let ud: any = null;
-        if (userResponse.ok) { ud = await userResponse.json(); setUserName(ud.name || "Usuario"); setUserData(ud); }
+        if (userResponse.ok) {
+          ud = await userResponse.json();
+          if (ud.account_type === "client") { router.push("/client"); return; }
+          if (ud.account_type === "admin") { router.push("/admin"); return; }
+          setUserName(ud.name || "Usuario"); setUserData(ud);
+        }
         const responsesResponse = await fetch(`${API_URL}/api/v1/responses/my-responses`, { headers: { Authorization: `Bearer ${token}` } });
         if (!responsesResponse.ok) { if (responsesResponse.status === 401) { localStorage.removeItem("access_token"); router.push("/auth/login"); return; } throw new Error("Error al cargar las respuestas"); }
         const data = await responsesResponse.json();
