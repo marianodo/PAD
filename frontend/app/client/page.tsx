@@ -193,6 +193,8 @@ export default function ClientDashboard() {
     },
   ];
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const totalResponses = surveys.reduce((acc, s) => acc + (s.total_responses || 0), 0);
   const activeSurveys = surveys.filter((s) => s.is_active).length;
   const inactiveSurveys = surveys.length - activeSurveys;
@@ -260,8 +262,26 @@ export default function ClientDashboard() {
 
   return (
     <div className="min-h-screen flex bg-[#000000] font-sans">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Mobile hamburger */}
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className="fixed top-4 left-4 z-40 lg:hidden bg-[#1a1a2e] p-2 rounded-lg border border-white/10"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
       {/* Sidebar */}
-      <aside className="w-[280px] bg-[#000000] border-r border-white/5 flex flex-col fixed inset-y-0 left-0 z-30">
+      <aside className={`w-[280px] bg-[#000000] border-r border-white/5 flex flex-col fixed inset-y-0 left-0 z-30 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         {/* Logo */}
         <div className="px-6 pt-6 pb-4">
           <div className="flex items-center gap-3">
@@ -293,7 +313,7 @@ export default function ClientDashboard() {
             {menuItems.map((item) => (
               <button
                 key={item.key}
-                onClick={() => setActiveSection(item.key)}
+                onClick={() => { setActiveSection(item.key); setSidebarOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   activeSection === item.key
                     ? "bg-[#2962FF] text-white shadow-lg shadow-[#2962FF]/30"
@@ -362,7 +382,7 @@ export default function ClientDashboard() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 ml-[280px] p-8 bg-[#000000] min-h-screen">
+      <main className="flex-1 ml-0 lg:ml-[280px] p-4 pt-16 lg:pt-8 lg:p-8 bg-[#000000] min-h-screen">
         {/* Page header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-1">
