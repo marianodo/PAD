@@ -23,6 +23,10 @@ export default function QuestionsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentQuestionIndex]);
+
+  useEffect(() => {
     // Check if user is authenticated
     const token = localStorage.getItem("access_token");
     if (!token) {
