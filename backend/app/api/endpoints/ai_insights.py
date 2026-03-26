@@ -47,6 +47,7 @@ async def get_ai_insights(
 
     return {
         "insights": cached_insight.insights,
+        "predictions": cached_insight.predictions if hasattr(cached_insight, 'predictions') else None,
         "generated_at": cached_insight.generated_at.isoformat(),
         "model": cached_insight.model,
         "total_responses_analyzed": cached_insight.total_responses,

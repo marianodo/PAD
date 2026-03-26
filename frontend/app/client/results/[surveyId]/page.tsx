@@ -158,7 +158,6 @@ export default function SurveyResultsPage() {
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
   const [aiInsightsError, setAiInsightsError] = useState("");
   const [aiPredictions, setAiPredictions] = useState<any[] | null>(null);
-  const [loadingAiPredictions, setLoadingAiPredictions] = useState(false);
 
   // Reportes/Segments state
   const [segmentsData, setSegmentsData] = useState<any>(null);
@@ -231,6 +230,9 @@ export default function SurveyResultsPage() {
         const data = await response.json();
         if (data.insights) {
           setAiInsights(data.insights);
+        }
+        if (data.predictions) {
+          setAiPredictions(data.predictions);
         }
       }
     } catch (error) {
@@ -2194,8 +2196,8 @@ export default function SurveyResultsPage() {
                           style={{ width: `${prediction.confidence}%` }}
                         ></div>
                       </div>
-                      <span className="text-sm font-medium text-[#FFFFFF]/80 min-w-[3rem] text-right">
-                        {prediction.confidence}%
+                      <span className="text-sm font-medium text-[#FFFFFF]/80 min-w-[7rem] text-right">
+                        Confianza: {prediction.confidence}%
                       </span>
                     </div>
                   </div>
@@ -2208,24 +2210,6 @@ export default function SurveyResultsPage() {
             <span className="bg-[#2962FF]/20 text-[#5E8AFF] px-3 py-1 rounded-full font-medium">
               {aiPredictions ? "Generado con Claude AI" : "Análisis Predictivo"}
             </span>
-            {aiPredictions && (
-              <button
-                onClick={generateAIPredictions}
-                disabled={loadingAiPredictions}
-                className="text-[#2962FF] hover:text-[#5E8AFF] font-medium underline"
-              >
-                {loadingAiPredictions ? "Regenerando..." : "Regenerar"}
-              </button>
-            )}
-            {!aiPredictions && (
-              <button
-                onClick={generateAIPredictions}
-                disabled={loadingAiPredictions}
-                className="bg-[#2962FF] text-white px-3 py-1 rounded-full font-medium hover:bg-[#5E8AFF] transition-colors"
-              >
-                {loadingAiPredictions ? "Generando..." : "Generar con IA"}
-              </button>
-            )}
             <span>Basado en: {results.total_responses.toLocaleString()} respuestas</span>
           </div>
         </div>
@@ -2434,34 +2418,7 @@ export default function SurveyResultsPage() {
     return insights;
   };
 
-  // Función para generar predicciones con Claude AI
-  const generateAIPredictions = async () => {
-    setLoadingAiPredictions(true);
 
-    try {
-      const token = localStorage.getItem("access_token");
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/ai-predictions`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Error al generar predicciones con IA");
-      }
-
-      const data = await response.json();
-      setAiPredictions(data.predictions);
-    } catch (error: any) {
-      console.error("Error generating AI predictions:", error);
-    } finally {
-      setLoadingAiPredictions(false);
-    }
-  };
 
   // Función para generar insights con Claude AI
   const generateAIInsights = async () => {
@@ -2470,23 +2427,37 @@ export default function SurveyResultsPage() {
 
     try {
       const token = localStorage.getItem("access_token");
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/ai-insights`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      // Generar insights y predicciones en paralelo
+      const [insightsResponse, predictionsResponse] = await Promise.all([
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/ai-insights`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        ),
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${surveyId}/ai-predictions`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        ),
+      ]);
+
+      if (!insightsResponse.ok) {
+        const errorData = await insightsResponse.json();
         throw new Error(errorData.detail || "Error al generar insights con IA");
       }
 
-      const data = await response.json();
-      setAiInsights(data.insights);
+      const insightsData = await insightsResponse.json();
+      setAiInsights(insightsData.insights);
+
+      if (predictionsResponse.ok) {
+        const predictionsData = await predictionsResponse.json();
+        setAiPredictions(predictionsData.predictions);
+      }
     } catch (error: any) {
       console.error("Error generating AI insights:", error);
       setAiInsightsError(error.message || "Error al generar insights con IA");
