@@ -183,7 +183,7 @@ export default function AdminLoginPage() {
         <div className="flex-1 flex items-center justify-center px-4 py-6 lg:px-6 lg:py-8">
           <div className="w-full max-w-md">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Acceso Municipio</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Acceso Gobierno</h2>
               <p className="text-gray-500 dark:text-gray-400 text-sm">
                 Ingresá con las credenciales de tu gobierno local para acceder al panel de análisis.
               </p>
