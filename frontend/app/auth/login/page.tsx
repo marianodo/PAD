@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { API_URL } from "@/lib/config";
+import { fetchWithRetry } from "@/lib/utils";
 
 function LoginForm() {
   const router = useRouter();
@@ -40,7 +41,7 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `${API_URL}/api/v1/auth/login`,
         {
           method: "POST",
@@ -86,7 +87,7 @@ function LoginForm() {
         Object.entries(registerPayload).map(([k, v]) => [k, v === "" ? null : v])
       );
 
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `${API_URL}/api/v1/auth/register`,
         {
           method: "POST",
@@ -103,7 +104,7 @@ function LoginForm() {
       }
 
       // Auto-login after registration
-      const loginResponse = await fetch(
+      const loginResponse = await fetchWithRetry(
         `${API_URL}/api/v1/auth/login`,
         {
           method: "POST",

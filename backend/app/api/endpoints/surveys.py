@@ -379,56 +379,62 @@ def export_survey_segments(
     except ImportError:
         raise HTTPException(status_code=500, detail="openpyxl no está instalado")
 
-    wb = Workbook()
-    # Eliminar la hoja por defecto
-    wb.remove(wb.active)
+    try:
+        wb = Workbook()
+        # Eliminar la hoja por defecto
+        wb.remove(wb.active)
 
-    header_font = Font(bold=True, color="FFFFFF", size=11)
-    header_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        header_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
 
-    for segment in data["segments"]:
-        # Nombre de hoja (max 31 chars para Excel)
-        sheet_name = segment["area"][:31]
-        ws = wb.create_sheet(title=sheet_name)
+        for segment in data["segments"]:
+            # Nombre de hoja (max 31 chars para Excel)
+            sheet_name = segment["area"][:31]
+            ws = wb.create_sheet(title=sheet_name)
 
-        # Headers
-        headers = ["Nombre", "Email", "Barrio", "Ciudad", "% Asignado"]
-        for col, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = Alignment(horizontal="center")
+            # Headers
+            headers = ["Nombre", "Email", "Barrio", "Ciudad", "% Asignado"]
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
 
-        # Datos
-        for row_idx, user in enumerate(segment["users"], 2):
-            ws.cell(row=row_idx, column=1, value=user["name"])
-            ws.cell(row=row_idx, column=2, value=user["email"])
-            ws.cell(row=row_idx, column=3, value=user["neighborhood"])
-            ws.cell(row=row_idx, column=4, value=user["city"])
-            ws.cell(row=row_idx, column=5, value=f"{user['percentage']}%")
+            # Datos
+            for row_idx, user in enumerate(segment["users"], 2):
+                ws.cell(row=row_idx, column=1, value=user["name"])
+                ws.cell(row=row_idx, column=2, value=user["email"])
+                ws.cell(row=row_idx, column=3, value=user["neighborhood"])
+                ws.cell(row=row_idx, column=4, value=user["city"])
+                ws.cell(row=row_idx, column=5, value=f"{user['percentage']}%")
 
-        # Auto-ajustar ancho de columnas
-        for col in ws.columns:
-            max_length = 0
-            for cell in col:
-                if cell.value:
-                    max_length = max(max_length, len(str(cell.value)))
-            ws.column_dimensions[col[0].column_letter].width = min(max_length + 4, 40)
+            # Auto-ajustar ancho de columnas
+            for col in ws.columns:
+                max_length = 0
+                for cell in col:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                ws.column_dimensions[col[0].column_letter].width = min(max_length + 4, 40)
 
-    # Si no hay segmentos, crear hoja vacía
-    if not data["segments"]:
-        ws = wb.create_sheet(title="Sin segmentos")
-        ws.cell(row=1, column=1, value="No se encontraron segmentos con el umbral seleccionado")
+        # Si no hay segmentos, crear hoja vacía
+        if not data["segments"]:
+            ws = wb.create_sheet(title="Sin segmentos")
+            ws.cell(row=1, column=1, value="No se encontraron segmentos con el umbral seleccionado")
 
-    # Guardar en buffer
-    buffer = io.BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
+        # Guardar en buffer
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
 
-    filename = f"segmentos_{survey.title[:30].replace(' ', '_')}.xlsx"
+        import unicodedata
+        safe_title = unicodedata.normalize("NFKD", survey.title[:30]).encode("ascii", "ignore").decode("ascii")
+        safe_title = safe_title.replace(" ", "_").replace("/", "_").replace("\\", "_")
+        filename = f"segmentos_{safe_title}.xlsx"
 
-    return StreamingResponse(
-        buffer,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
-    )
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar XLSX: {str(e)}")

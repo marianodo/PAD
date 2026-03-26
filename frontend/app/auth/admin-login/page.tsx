@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { API_URL } from "@/lib/config";
+import { fetchWithRetry } from "@/lib/utils";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function AdminLoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(
+      const response = await fetchWithRetry(
         `${API_URL}/api/v1/auth/login`,
         {
           method: "POST",
@@ -47,7 +48,7 @@ export default function AdminLoginPage() {
       localStorage.setItem("access_token", data.access_token);
 
       // Verificar el rol del usuario
-      const userResponse = await fetch(
+      const userResponse = await fetchWithRetry(
         `${API_URL}/api/v1/auth/me`,
         {
           headers: {

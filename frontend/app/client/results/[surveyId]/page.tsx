@@ -163,6 +163,7 @@ export default function SurveyResultsPage() {
   // Reportes/Segments state
   const [segmentsData, setSegmentsData] = useState<any>(null);
   const [loadingSegments, setLoadingSegments] = useState(false);
+  const [exportingXLSX, setExportingXLSX] = useState(false);
   const [segmentThreshold, setSegmentThreshold] = useState(20);
   const [expandedSegments, setExpandedSegments] = useState<Record<string, boolean>>({});
 
@@ -327,6 +328,7 @@ export default function SurveyResultsPage() {
 
   const handleExportXLSX = async () => {
     try {
+      setExportingXLSX(true);
       const token = localStorage.getItem("access_token");
       if (!token) return;
 
@@ -348,6 +350,8 @@ export default function SurveyResultsPage() {
       }
     } catch (err) {
       console.error("Error exporting XLSX:", err);
+    } finally {
+      setExportingXLSX(false);
     }
   };
 
@@ -1807,7 +1811,6 @@ export default function SurveyResultsPage() {
     return (
       <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
         <div className="mb-6">
-          <h3 className="text-xl font-bold text-[#FFFFFF]">Desglose por Edad</h3>
           <p className="text-sm text-[#FFFFFF]/50">Participación por grupo etario</p>
         </div>
 
@@ -2881,8 +2884,8 @@ export default function SurveyResultsPage() {
                 <p className="text-4xl font-bold text-[#FFFFFF] mb-3">
                   {metrics.totalResponses.toLocaleString()}
                 </p>
-                <p className={`text-sm font-medium ${metrics.totalResponsesChange >= 0 ? 'text-[#00C853]' : 'text-red-500'}`}>
-                  {metrics.totalResponsesChange >= 0 ? '+' : ''}{metrics.totalResponsesChange}% vs. mes anterior
+                <p className="text-sm font-medium text-[#FFFFFF]/50">
+                  Desde el inicio de la encuesta
                 </p>
               </div>
               <div className="bg-[#2962FF]/20 rounded-full p-3">
@@ -3118,13 +3121,22 @@ export default function SurveyResultsPage() {
                 </div>
                 <button
                   onClick={handleExportXLSX}
-                  disabled={!segmentsData || segmentsData.segments.length === 0}
+                  disabled={!segmentsData || segmentsData.segments.length === 0 || exportingXLSX}
                   className="px-6 py-3 bg-[#00C853] text-white rounded-lg font-medium hover:bg-[#33D968] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Exportar XLSX
+                  {exportingXLSX ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-r-transparent rounded-full animate-spin" />
+                      Generando...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Exportar XLSX
+                    </>
+                  )}
                 </button>
               </div>
             </div>
