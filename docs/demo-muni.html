@@ -488,7 +488,7 @@
     <div class="pad-section" id="pad-section">
         <div class="pad-header">
             <span class="star-icon">&#9734;</span>
-            Programa de Encuestas y Recompensas
+            Programa de Consultas y Recompensas
         </div>
         <div class="pad-body" id="pad-body-main">
             <div class="pad-stat">
@@ -510,8 +510,8 @@
                     <div class="sublabel">100 pts = 1% de descuento</div>
                 </div>
             </div>
-            <a href="#" class="pad-cta-btn" id="btn-completar-encuesta" onclick="openApplyModal(); return false;">
-                <i class="fa fa-clipboard"></i> Completar Encuesta <span style="font-size: 20px;">›</span>
+            <a href="#" class="pad-cta-btn" id="btn-completar-consulta" onclick="openApplyModal(); return false;">
+                <i class="fa fa-clipboard"></i> Completar Consulta <span style="font-size: 20px;">›</span>
             </a>
         </div>
         <div class="pad-applied-message" id="pad-applied-msg">
@@ -554,7 +554,7 @@
             <h4><i class="fa fa-tag"></i> Aplicar Descuento PAD</h4>
         </div>
         <div class="pad-modal-body">
-            <p style="color: #666; margin-bottom: 16px;">Tenés un descuento disponible por participar en el Programa de Encuestas y Recompensas. ¿Querés aplicarlo a tus cuotas vencidas?</p>
+            <p style="color: #666; margin-bottom: 16px;">Tenés un descuento disponible por participar en el Programa de Consultas y Recompensas. ¿Querés aplicarlo a tus cuotas vencidas?</p>
             <div class="summary-row">
                 <span class="label">Descuento disponible</span>
                 <span class="value green" id="modal-discount">3%</span>
@@ -698,7 +698,7 @@
         section.classList.add('applied');
 
         // Change button
-        const btn = document.getElementById('btn-completar-encuesta');
+        const btn = document.getElementById('btn-completar-consulta');
         btn.innerHTML = '<i class="fa fa-check"></i> Descuento aplicado';
         btn.style.background = 'linear-gradient(135deg, #2e7d32, #43a047)';
         btn.style.cursor = 'default';
@@ -718,8 +718,8 @@
         const section = document.getElementById('pad-section');
         section.classList.remove('applied');
 
-        const btn = document.getElementById('btn-completar-encuesta');
-        btn.innerHTML = '<i class="fa fa-clipboard"></i> Completar Encuesta <span style="font-size: 20px;">›</span>';
+        const btn = document.getElementById('btn-completar-consulta');
+        btn.innerHTML = '<i class="fa fa-clipboard"></i> Completar Consulta <span style="font-size: 20px;">›</span>';
         btn.style.background = 'linear-gradient(135deg, #1565c0, #1976d2)';
         btn.style.cursor = 'pointer';
         btn.onclick = function(e) { e.preventDefault(); openApplyModal(); };

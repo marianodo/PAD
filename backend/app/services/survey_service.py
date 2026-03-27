@@ -297,6 +297,7 @@ class SurveyService:
                 "total_change": 0,
                 "demographics": {
                     "by_age_group": {},
+                    "by_age_group_by_gender": {},
                     "by_city": {},
                     "by_neighborhood": {},
                     "by_gender": {}
@@ -336,6 +337,7 @@ class SurveyService:
         user_age_groups: Dict[UUID, str] = {}
         user_genders: Dict[UUID, str] = {}
         user_neighborhoods: Dict[UUID, str] = {}
+        age_groups_by_gender: Dict[str, Dict[str, int]] = {}
 
         for response, user in responses:
             # Por grupo de edad
@@ -348,6 +350,11 @@ class SurveyService:
             gender = user.gender or "Sin especificar"
             genders[gender] = genders.get(gender, 0) + 1
             user_genders[user.id] = gender
+
+            # Cruce edad x género
+            if gender not in age_groups_by_gender:
+                age_groups_by_gender[gender] = {}
+            age_groups_by_gender[gender][age_group] = age_groups_by_gender[gender].get(age_group, 0) + 1
 
             # Por ciudad
             city = user.city or "Sin especificar"
@@ -710,6 +717,7 @@ class SurveyService:
             "total_change": total_change,
             "demographics": {
                 "by_age_group": age_groups,
+                "by_age_group_by_gender": age_groups_by_gender,
                 "by_city": cities,
                 "by_neighborhood": neighborhoods,
                 "by_gender": genders
@@ -1174,7 +1182,7 @@ class SurveyService:
             texts_list = "\n".join(f"- {t}" for t in texts)
 
             response = client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=settings.CLAUDE_MODEL,
                 max_tokens=1000,
                 temperature=0.2,
                 messages=[{

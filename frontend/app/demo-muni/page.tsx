@@ -393,7 +393,7 @@ export default function DemoMuniPage() {
             <div className="disc-hdr">
               <div className="disc-hdr-left">
                 <span className="icon">&#10003;</span>
-                Aplicar descuento por encuestas
+                Aplicar descuento por consultas
               </div>
               <div className="disc-hdr-right">
                 {points} puntos disponibles (max {maxDiscount}%)

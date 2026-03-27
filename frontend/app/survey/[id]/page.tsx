@@ -23,6 +23,10 @@ export default function QuestionsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentQuestionIndex]);
+
+  useEffect(() => {
     // Check if user is authenticated
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -35,6 +39,14 @@ export default function QuestionsPage() {
       try {
         // Load user info
         const userResponse = await authApi.me();
+
+        // Solo usuarios ciudadanos pueden responder encuestas
+        if ((userResponse.data as any).account_type !== "user") {
+          localStorage.removeItem("access_token");
+          router.push(`/auth/login?redirect=/survey/${surveyId}`);
+          return;
+        }
+
         setCurrentUser(userResponse.data);
         setUser(userResponse.data);
 
@@ -74,7 +86,7 @@ export default function QuestionsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md text-center">
           <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -87,7 +99,7 @@ export default function QuestionsPage() {
           <p className="text-gray-500 mb-6">{error}</p>
           <button
             onClick={() => router.push("/dashboard")}
-            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
+            className="px-6 py-2.5 bg-[#2962FF] text-white rounded-lg font-medium hover:bg-[#1a4fd4] transition-colors text-sm"
           >
             Volver al inicio
           </button>
@@ -98,9 +110,9 @@ export default function QuestionsPage() {
 
   if (loading || !survey) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-[#2962FF] border-r-transparent"></div>
           <p className="mt-4 text-gray-600">Cargando consulta...</p>
         </div>
       </div>
@@ -203,7 +215,7 @@ export default function QuestionsPage() {
   const progress = ((currentQuestionIndex + 1) / survey.questions.length) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Progress Bar */}
         <div className="mb-6">
@@ -213,7 +225,7 @@ export default function QuestionsPage() {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-[#2962FF] to-[#1a4fd4] h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -222,8 +234,8 @@ export default function QuestionsPage() {
         {/* Question Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
           <div className="mb-8">
-            <div className="inline-block bg-blue-100 rounded-full px-4 py-2 mb-4">
-              <span className="text-blue-800 font-semibold text-sm">
+            <div className="inline-block bg-[#2962FF]/10 rounded-full px-4 py-2 mb-4">
+              <span className="text-[#2962FF] font-semibold text-sm">
                 Paso {currentQuestionIndex + 2} de {survey.questions.length + 1}
               </span>
             </div>
@@ -250,16 +262,18 @@ export default function QuestionsPage() {
           </div>
 
           <div className="flex gap-4">
-            <button
-              onClick={handlePrevious}
-              className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition"
-            >
-              Anterior
-            </button>
+            {currentQuestionIndex > 0 && (
+              <button
+                onClick={handlePrevious}
+                className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition"
+              >
+                Anterior
+              </button>
+            )}
             <button
               onClick={handleNext}
               disabled={!canProceed() || submitting}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-gradient-to-r from-[#2962FF] to-[#1a4fd4] text-white font-semibold py-3 px-6 rounded-lg hover:from-[#1a4fd4] hover:to-[#0d3ab8] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting
                 ? "Enviando..."

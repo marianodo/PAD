@@ -47,6 +47,7 @@ async def get_ai_insights(
 
     return {
         "insights": cached_insight.insights,
+        "predictions": cached_insight.predictions if hasattr(cached_insight, 'predictions') else None,
         "generated_at": cached_insight.generated_at.isoformat(),
         "model": cached_insight.model,
         "total_responses_analyzed": cached_insight.total_responses,
@@ -171,7 +172,7 @@ Responde SOLO con el JSON, sin texto adicional:
         client = Anthropic(api_key=api_key)
 
         message = client.messages.create(
-            model="claude-sonnet-4-20250514",  # Usando Haiku porque es el único disponible con esta API key
+            model=settings.CLAUDE_MODEL,
             max_tokens=2500,
             temperature=0.3,  # Más determinístico para análisis
             messages=[{
@@ -215,33 +216,33 @@ Responde SOLO con el JSON, sin texto adicional:
         category_config = {
             "participation": {
                 "icon": "trending-up",
-                "color": "text-green-600",
-                "bgColor": "bg-green-50",
-                "borderColor": "border-green-100"
+                "color": "text-[#00CCBA]",
+                "bgColor": "bg-[#00CCBA]/10",
+                "borderColor": "border-[#00CCBA]/20"
             },
             "satisfaction": {
                 "icon": "thumbs-up",
-                "color": "text-emerald-600",
-                "bgColor": "bg-emerald-50",
-                "borderColor": "border-emerald-100"
+                "color": "text-emerald-400",
+                "bgColor": "bg-emerald-500/10",
+                "borderColor": "border-emerald-500/20"
             },
             "demographics": {
                 "icon": "users",
-                "color": "text-amber-600",
-                "bgColor": "bg-amber-50",
-                "borderColor": "border-amber-100"
+                "color": "text-amber-400",
+                "bgColor": "bg-amber-500/10",
+                "borderColor": "border-amber-500/20"
             },
             "infrastructure": {
                 "icon": "building",
-                "color": "text-indigo-600",
-                "bgColor": "bg-indigo-50",
-                "borderColor": "border-indigo-100"
+                "color": "text-[#7B6FD4]",
+                "bgColor": "bg-[#5941CE]/10",
+                "borderColor": "border-[#5941CE]/20"
             },
             "consensus": {
                 "icon": "target",
-                "color": "text-red-600",
-                "bgColor": "bg-red-50",
-                "borderColor": "border-red-100"
+                "color": "text-red-400",
+                "bgColor": "bg-red-500/10",
+                "borderColor": "border-red-500/20"
             }
         }
 
@@ -258,7 +259,7 @@ Responde SOLO con el JSON, sin texto adicional:
             })
 
         # 8. Guardar insights en cache (base de datos)
-        model_used = "claude-sonnet-4-20250514"
+        model_used = settings.CLAUDE_MODEL
         generated_at = datetime.utcnow()
 
         # Eliminar insights anteriores de esta encuesta
@@ -373,7 +374,7 @@ Responde SOLO con el JSON:
         client = Anthropic(api_key=api_key)
 
         message = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=settings.CLAUDE_MODEL,
             max_tokens=1500,
             temperature=0.3,
             messages=[{
@@ -427,7 +428,7 @@ Responde SOLO con el JSON:
                 total_responses=total_responses,
                 insights=[],  # Vacío por ahora
                 predictions=predictions,
-                model="claude-sonnet-4-20250514",
+                model=settings.CLAUDE_MODEL,
                 generated_at=datetime.utcnow()
             )
             db.add(new_insight)
@@ -436,7 +437,7 @@ Responde SOLO con el JSON:
         return {
             "predictions": predictions,
             "generated_at": datetime.utcnow().isoformat(),
-            "model": "claude-sonnet-4-20250514",
+            "model": settings.CLAUDE_MODEL,
             "total_responses_analyzed": total_responses
         }
 

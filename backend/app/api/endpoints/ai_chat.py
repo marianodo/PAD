@@ -108,7 +108,7 @@ REGLAS PARA GRAFICOS:
 
         client = Anthropic(api_key=api_key)
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=settings.CLAUDE_MODEL,
             max_tokens=1500,
             temperature=0.4,
             system=system_prompt,

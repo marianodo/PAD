@@ -39,16 +39,16 @@ export default function SuccessPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-[#2962FF] border-r-transparent"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center px-4 py-8">
       <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center">
         {/* Success Icon */}
         <div className="mb-6">
@@ -79,19 +79,19 @@ export default function SuccessPage() {
 
         {/* Points Card */}
         {points && (
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-8 mb-8 text-white">
+          <div className="bg-gradient-to-r from-[#2962FF] to-[#1a4fd4] rounded-xl p-8 mb-8 text-white">
             <p className="text-lg mb-2">Has ganado</p>
             <p className="text-6xl font-bold mb-2">{points.total_points}</p>
             <p className="text-lg">puntos</p>
 
-            <div className="mt-6 pt-6 border-t border-blue-400">
+            <div className="mt-6 pt-6 border-t border-[#5E8AFF]">
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <p className="text-blue-200 text-sm">Puntos Disponibles</p>
+                  <p className="text-[#5E8AFF] text-sm">Puntos Disponibles</p>
                   <p className="text-2xl font-bold">{points.available_points}</p>
                 </div>
                 <div>
-                  <p className="text-blue-200 text-sm">Puntos Canjeados</p>
+                  <p className="text-[#5E8AFF] text-sm">Puntos Canjeados</p>
                   <p className="text-2xl font-bold">{points.redeemed_points}</p>
                 </div>
               </div>
@@ -99,11 +99,11 @@ export default function SuccessPage() {
           </div>
         )}
 
-        <div className="bg-blue-50 border-l-4 border-blue-400 p-6 mb-8 text-left">
-          <h3 className="font-semibold text-blue-900 mb-2">
+        <div className="bg-[#2962FF]/5 border-l-4 border-[#5E8AFF] p-6 mb-8 text-left">
+          <h3 className="font-semibold text-[#1a4fd4] mb-2">
             ¿Qué pasa ahora?
           </h3>
-          <ul className="space-y-2 text-sm text-blue-800">
+          <ul className="space-y-2 text-sm text-[#2962FF]">
             <li className="flex items-start">
               <span className="mr-2">•</span>
               <span>
@@ -127,7 +127,7 @@ export default function SuccessPage() {
 
         <button
           onClick={handleFinish}
-          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+          className="w-full bg-gradient-to-r from-[#2962FF] to-[#1a4fd4] text-white font-semibold py-4 px-6 rounded-lg hover:from-[#1a4fd4] hover:to-[#0d3ab8] transition-all duration-200 shadow-lg hover:shadow-xl"
         >
           Finalizar
         </button>

@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func, extract
 from uuid import UUID
 from typing import Optional, List, Union
-from datetime import date
+from datetime import date, datetime
 import io
 
 from app.db.base import get_db
@@ -59,6 +60,111 @@ def get_active_survey(db: Session = Depends(get_db)):
             detail="No hay encuesta activa disponible"
         )
     return survey
+
+
+@router.get("/participation-trend")
+def get_participation_trend(
+    gender: Optional[str] = None,
+    survey_id: Optional[str] = None,
+    age_range: Optional[str] = None,
+    current_user: Union[User, Admin, Client] = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Devuelve la tendencia de participación mensual (respuestas por mes).
+    Si se pasa survey_id, filtra solo esa survey. Si no, muestra todas las del cliente.
+    Opcionalmente filtrar por género (masculino/femenino) y/o rango de edad (18-30, 31-45, 46-60, 60+).
+    """
+    from app.models.response import SurveyResponse as SurveyResponseModel
+    from app.models.survey import Survey
+
+    if survey_id:
+        target_survey_ids = [survey_id]
+    else:
+        if isinstance(current_user, Client):
+            target_survey_ids = [str(s.id) for s in db.query(Survey.id).filter(Survey.client_id == current_user.id).all()]
+        elif isinstance(current_user, Admin):
+            target_survey_ids = [str(s.id) for s in db.query(Survey.id).all()]
+        else:
+            raise HTTPException(status_code=403, detail="No tienes permisos")
+
+    if not target_survey_ids:
+        return {"months": []}
+
+    query = (
+        db.query(
+            extract("year", SurveyResponseModel.completed_at).label("year"),
+            extract("month", SurveyResponseModel.completed_at).label("month"),
+            func.count(SurveyResponseModel.id).label("count"),
+        )
+        .filter(
+            SurveyResponseModel.survey_id.in_(target_survey_ids),
+            SurveyResponseModel.completed == True,
+            SurveyResponseModel.completed_at.isnot(None),
+        )
+    )
+
+    needs_user_join = False
+
+    if gender and gender.lower() in ("masculino", "femenino"):
+        needs_user_join = True
+
+    if age_range and age_range in ("18-30", "31-45", "46-60", "60+"):
+        needs_user_join = True
+
+    if needs_user_join:
+        query = query.join(User, User.id == SurveyResponseModel.user_id)
+
+        if gender and gender.lower() in ("masculino", "femenino"):
+            query = query.filter(func.lower(User.gender) == gender.lower())
+
+        if age_range:
+            age_expr = extract("year", func.age(func.now(), User.birth_date))
+            if age_range == "18-30":
+                query = query.filter(User.birth_date.isnot(None), age_expr >= 18, age_expr <= 30)
+            elif age_range == "31-45":
+                query = query.filter(User.birth_date.isnot(None), age_expr >= 31, age_expr <= 45)
+            elif age_range == "46-60":
+                query = query.filter(User.birth_date.isnot(None), age_expr >= 46, age_expr <= 60)
+            elif age_range == "60+":
+                query = query.filter(User.birth_date.isnot(None), age_expr > 60)
+
+    results = query.group_by("year", "month").order_by("year", "month").all()
+
+    # Construir lista de los últimos 12 meses con datos
+    now = datetime.now()
+    month_names = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    result_map = {(int(r.year), int(r.month)): int(r.count) for r in results}
+
+    months = []
+    for i in range(11, -1, -1):
+        m = now.month - i
+        y = now.year
+        while m <= 0:
+            m += 12
+            y -= 1
+        count = result_map.get((y, m), 0)
+        months.append({
+            "label": month_names[m - 1],
+            "year": y,
+            "month": m,
+            "count": count,
+        })
+
+    # Calcular tendencia mensual (cambio % vs mes anterior)
+    current_month_count = months[-1]["count"] if months else 0
+    prev_month_count = months[-2]["count"] if len(months) >= 2 else 0
+    if prev_month_count > 0:
+        trend_pct = round(((current_month_count - prev_month_count) / prev_month_count) * 100)
+    else:
+        trend_pct = 100 if current_month_count > 0 else 0
+
+    return {
+        "months": months,
+        "current_month": current_month_count,
+        "previous_month": prev_month_count,
+        "trend_percentage": trend_pct,
+    }
 
 
 @router.get("/{survey_id}", response_model=SurveyResponse)
@@ -273,56 +379,62 @@ def export_survey_segments(
     except ImportError:
         raise HTTPException(status_code=500, detail="openpyxl no está instalado")
 
-    wb = Workbook()
-    # Eliminar la hoja por defecto
-    wb.remove(wb.active)
+    try:
+        wb = Workbook()
+        # Eliminar la hoja por defecto
+        wb.remove(wb.active)
 
-    header_font = Font(bold=True, color="FFFFFF", size=11)
-    header_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        header_fill = PatternFill(start_color="2563EB", end_color="2563EB", fill_type="solid")
 
-    for segment in data["segments"]:
-        # Nombre de hoja (max 31 chars para Excel)
-        sheet_name = segment["area"][:31]
-        ws = wb.create_sheet(title=sheet_name)
+        for segment in data["segments"]:
+            # Nombre de hoja (max 31 chars para Excel)
+            sheet_name = segment["area"][:31]
+            ws = wb.create_sheet(title=sheet_name)
 
-        # Headers
-        headers = ["Nombre", "Email", "Barrio", "Ciudad", "% Asignado"]
-        for col, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = Alignment(horizontal="center")
+            # Headers
+            headers = ["Nombre", "Email", "Barrio", "Ciudad", "% Asignado"]
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
 
-        # Datos
-        for row_idx, user in enumerate(segment["users"], 2):
-            ws.cell(row=row_idx, column=1, value=user["name"])
-            ws.cell(row=row_idx, column=2, value=user["email"])
-            ws.cell(row=row_idx, column=3, value=user["neighborhood"])
-            ws.cell(row=row_idx, column=4, value=user["city"])
-            ws.cell(row=row_idx, column=5, value=f"{user['percentage']}%")
+            # Datos
+            for row_idx, user in enumerate(segment["users"], 2):
+                ws.cell(row=row_idx, column=1, value=user["name"])
+                ws.cell(row=row_idx, column=2, value=user["email"])
+                ws.cell(row=row_idx, column=3, value=user["neighborhood"])
+                ws.cell(row=row_idx, column=4, value=user["city"])
+                ws.cell(row=row_idx, column=5, value=f"{user['percentage']}%")
 
-        # Auto-ajustar ancho de columnas
-        for col in ws.columns:
-            max_length = 0
-            for cell in col:
-                if cell.value:
-                    max_length = max(max_length, len(str(cell.value)))
-            ws.column_dimensions[col[0].column_letter].width = min(max_length + 4, 40)
+            # Auto-ajustar ancho de columnas
+            for col in ws.columns:
+                max_length = 0
+                for cell in col:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                ws.column_dimensions[col[0].column_letter].width = min(max_length + 4, 40)
 
-    # Si no hay segmentos, crear hoja vacía
-    if not data["segments"]:
-        ws = wb.create_sheet(title="Sin segmentos")
-        ws.cell(row=1, column=1, value="No se encontraron segmentos con el umbral seleccionado")
+        # Si no hay segmentos, crear hoja vacía
+        if not data["segments"]:
+            ws = wb.create_sheet(title="Sin segmentos")
+            ws.cell(row=1, column=1, value="No se encontraron segmentos con el umbral seleccionado")
 
-    # Guardar en buffer
-    buffer = io.BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
+        # Guardar en buffer
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
 
-    filename = f"segmentos_{survey.title[:30].replace(' ', '_')}.xlsx"
+        import unicodedata
+        safe_title = unicodedata.normalize("NFKD", survey.title[:30]).encode("ascii", "ignore").decode("ascii")
+        safe_title = safe_title.replace(" ", "_").replace("/", "_").replace("\\", "_")
+        filename = f"segmentos_{safe_title}.xlsx"
 
-    return StreamingResponse(
-        buffer,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
-    )
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar XLSX: {str(e)}")

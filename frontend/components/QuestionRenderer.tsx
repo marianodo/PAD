@@ -53,8 +53,8 @@ export function QuestionRenderer({
                 onClick={() => handleChange({ option_id: option.id })}
                 className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all border-3 ${
                   answer.option_id === option.id
-                    ? "border-blue-500 shadow-lg shadow-blue-100 ring-2 ring-blue-200"
-                    : "border-gray-200 hover:border-blue-300 hover:shadow-md"
+                    ? "border-[#2962FF] shadow-lg shadow-[#2962FF]/10 ring-2 ring-[#2962FF]/20"
+                    : "border-gray-200 hover:border-[#2962FF] hover:shadow-md"
                 }`}
               >
                 {option.image_url && (
@@ -74,7 +74,7 @@ export function QuestionRenderer({
                       value={option.id}
                       checked={answer.option_id === option.id}
                       onChange={() => handleChange({ option_id: option.id })}
-                      className="w-4 h-4 text-blue-600 mt-1 shrink-0"
+                      className="w-4 h-4 text-[#2962FF] mt-1 shrink-0"
                     />
                     <div>
                       <span className="font-semibold text-gray-900">{option.option_text}</span>
@@ -85,7 +85,7 @@ export function QuestionRenderer({
                   </div>
                 </div>
                 {answer.option_id === option.id && (
-                  <div className="absolute top-3 right-3 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                  <div className="absolute top-3 right-3 bg-[#2962FF] text-white rounded-full w-6 h-6 flex items-center justify-center">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -102,7 +102,7 @@ export function QuestionRenderer({
           {question.options.map((option) => (
             <label
               key={option.id}
-              className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition"
+              className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-[#2962FF] transition"
             >
               <input
                 type="radio"
@@ -110,7 +110,7 @@ export function QuestionRenderer({
                 value={option.id}
                 checked={answer.option_id === option.id}
                 onChange={() => handleChange({ option_id: option.id })}
-                className="w-5 h-5 text-blue-600"
+                className="w-5 h-5 text-[#2962FF]"
               />
               <div className="ml-3">
                 <span className="text-gray-800">{option.option_text}</span>
@@ -130,12 +130,12 @@ export function QuestionRenderer({
           {question.options.map((option) => (
             <label
               key={option.id}
-              className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition"
+              className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-[#2962FF] transition"
             >
               <input
                 type="checkbox"
                 value={option.id}
-                className="w-5 h-5 text-blue-600 rounded"
+                className="w-5 h-5 text-[#2962FF] rounded"
               />
               <div className="ml-3">
                 <span className="text-gray-800">{option.option_text}</span>
@@ -181,7 +181,7 @@ export function QuestionRenderer({
         <textarea
           value={answer.answer_text || ""}
           onChange={(e) => handleChange({ answer_text: e.target.value })}
-          className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition min-h-[120px]"
+          className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition min-h-[120px]"
           placeholder="Escribe tu respuesta aquí..."
         />
       );
@@ -259,7 +259,7 @@ function PercentageDistribution({
                 <p className="text-xs text-gray-400 mt-0.5">{option.description}</p>
               )}
             </div>
-            <span className="text-lg font-semibold text-blue-600 shrink-0 ml-4">
+            <span className="text-lg font-semibold text-[#2962FF] shrink-0 ml-4">
               {percentages[option.id] || 0}%
             </span>
           </div>
@@ -274,7 +274,7 @@ function PercentageDistribution({
             }
             className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
             style={{
-              background: `linear-gradient(to right, #2563eb 0%, #2563eb ${
+              background: `linear-gradient(to right, #2962FF 0%, #2962FF ${
                 percentages[option.id] || 0
               }%, #e5e7eb ${percentages[option.id] || 0}%, #e5e7eb 100%)`,
             }}
@@ -289,7 +289,7 @@ function PercentageDistribution({
             <label className="text-sm font-medium text-gray-700">OTROS</label>
             <p className="text-xs text-gray-400 mt-0.5">Especificá otra área de tu interés</p>
           </div>
-          <span className="text-lg font-semibold text-blue-600 shrink-0 ml-4">
+          <span className="text-lg font-semibold text-[#2962FF] shrink-0 ml-4">
             {percentages["otros"] || 0}%
           </span>
         </div>
@@ -302,7 +302,7 @@ function PercentageDistribution({
           onChange={(e) => handlePercentageChange("otros", e.target.value)}
           className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
           style={{
-            background: `linear-gradient(to right, #2563eb 0%, #2563eb ${
+            background: `linear-gradient(to right, #2962FF 0%, #2962FF ${
               percentages["otros"] || 0
             }%, #e5e7eb ${percentages["otros"] || 0}%, #e5e7eb 100%)`,
           }}
@@ -313,7 +313,7 @@ function PercentageDistribution({
             value={otherText}
             onChange={(e) => setOtherText(e.target.value)}
             placeholder="¿En qué área te gustaría invertir?"
-            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
           />
         )}
       </div>

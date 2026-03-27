@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface ChartDataItem {
   label: string;
@@ -195,7 +196,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center transition-all hover:scale-105 print-hide"
+        className="fixed bottom-6 right-6 z-50 bg-[#2962FF] hover:bg-[#1a4fd4] text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center transition-all hover:scale-105 print-hide"
       >
         <svg
           className="w-6 h-6"
@@ -221,7 +222,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
         : "w-[calc(100vw-2rem)] sm:w-96 h-[500px]"
     }`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 flex items-center justify-between flex-shrink-0">
+      <div className="bg-gradient-to-r from-[#2962FF] to-[#1a4fd4] px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
             <svg
@@ -240,9 +241,9 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
           </div>
           <div>
             <h3 className="text-white font-semibold text-sm">
-              Asistente de Encuesta
+              Asistente de Consulta
             </h3>
-            <p className="text-blue-100 text-xs">Powered by Claude AI</p>
+            <p className="text-white/70 text-xs">Powered by Claude AI</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -274,9 +275,9 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 && (
           <div className="text-center py-8">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 bg-[#2962FF]/10 rounded-full flex items-center justify-center mx-auto mb-3">
               <svg
-                className="w-6 h-6 text-blue-600"
+                className="w-6 h-6 text-[#2962FF]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -290,7 +291,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
               </svg>
             </div>
             <p className="text-gray-600 text-sm mb-3">
-              Preguntame sobre los resultados de esta encuesta
+              Preguntame sobre los resultados de esta consulta
             </p>
             <div className="space-y-2">
               {[
@@ -304,7 +305,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
                     setInput(q);
                     setTimeout(() => inputRef.current?.focus(), 0);
                   }}
-                  className="block w-full text-left text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg px-3 py-2 transition"
+                  className="block w-full text-left text-xs text-[#2962FF] bg-[#2962FF]/5 hover:bg-[#2962FF]/10 rounded-lg px-3 py-2 transition"
                 >
                   {q}
                 </button>
@@ -323,7 +324,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
                 isExpanded && msg.charts?.length ? "max-w-[95%]" : "max-w-[80%]"
               } rounded-2xl px-4 py-2.5 text-sm ${
                 msg.role === "user"
-                  ? "bg-blue-600 text-white rounded-br-md whitespace-pre-wrap"
+                  ? "bg-[#2962FF] text-white rounded-br-md whitespace-pre-wrap"
                   : "bg-gray-100 text-gray-800 rounded-bl-md"
               }`}
             >
@@ -332,6 +333,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
               ) : (
                 <>
                   <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
                     components={{
                       h3: ({ children }) => <h3 className="font-bold text-sm mt-2 mb-1">{children}</h3>,
                       h4: ({ children }) => <h4 className="font-bold text-sm mt-1.5 mb-0.5">{children}</h4>,
@@ -341,6 +343,11 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
                       ol: ({ children }) => <ol className="list-decimal list-inside space-y-0.5 my-1">{children}</ol>,
                       li: ({ children }) => <li className="text-sm">{children}</li>,
                       p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+                      table: ({ children }) => <div className="overflow-x-auto my-2"><table className="text-xs border-collapse w-full">{children}</table></div>,
+                      thead: ({ children }) => <thead className="bg-gray-200">{children}</thead>,
+                      th: ({ children }) => <th className="border border-gray-300 px-2 py-1 text-left font-semibold">{children}</th>,
+                      td: ({ children }) => <td className="border border-gray-300 px-2 py-1">{children}</td>,
+                      tr: ({ children }) => <tr className="even:bg-gray-50">{children}</tr>,
                     }}
                   >
                     {msg.content}
@@ -380,12 +387,12 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
             onKeyDown={handleKeyDown}
             placeholder="Escribe tu pregunta..."
             disabled={isLoading}
-            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2962FF] focus:border-transparent disabled:opacity-50"
           />
           <button
             onClick={sendMessage}
             disabled={!input.trim() || isLoading}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 text-white rounded-xl px-4 py-2.5 transition flex-shrink-0"
+            className="bg-[#2962FF] hover:bg-[#1a4fd4] disabled:opacity-50 disabled:hover:bg-[#2962FF] text-white rounded-xl px-4 py-2.5 transition flex-shrink-0"
           >
             <svg
               className="w-4 h-4"

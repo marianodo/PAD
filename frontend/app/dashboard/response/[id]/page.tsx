@@ -135,7 +135,7 @@ export default function ResponseDetailPage() {
               Object.entries(answer.percentage_data).map(([key, value]) => (
                 <div key={key} className="flex justify-between items-center">
                   <span className="text-gray-700">{key}:</span>
-                  <span className="font-semibold text-blue-600">{value}%</span>
+                  <span className="font-semibold text-[#2962FF]">{value}%</span>
                 </div>
               ))}
           </div>
@@ -148,9 +148,9 @@ export default function ResponseDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
-          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-[#2962FF] border-r-transparent"></div>
           <p className="mt-4 text-gray-600">Cargando detalle...</p>
         </div>
       </div>
@@ -159,13 +159,13 @@ export default function ResponseDetailPage() {
 
   if (error || !response) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="max-w-md bg-white rounded-lg shadow-lg p-8 text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Error</h1>
           <p className="text-gray-600 mb-6">{error || "Respuesta no encontrada"}</p>
           <Link
             href="/dashboard"
-            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="inline-block px-6 py-3 bg-[#2962FF] text-white rounded-lg hover:bg-[#1a4fd4] transition"
           >
             Volver al Dashboard
           </Link>
@@ -175,13 +175,13 @@ export default function ResponseDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
           <Link
             href="/dashboard"
-            className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4"
+            className="inline-flex items-center text-[#2962FF] hover:text-[#1a4fd4] mb-4"
           >
             <svg
               className="w-5 h-5 mr-2"
@@ -217,7 +217,7 @@ export default function ResponseDetailPage() {
             >
               {response.completed ? "Completada" : "En progreso"}
             </span>
-            <span className="text-blue-600 font-semibold text-lg">
+            <span className="text-[#2962FF] font-semibold text-lg">
               {response.points_earned} puntos ganados
             </span>
             <span className="text-gray-600 text-sm">
@@ -246,7 +246,7 @@ export default function ResponseDetailPage() {
                   className="p-6 border-2 border-gray-200 rounded-lg"
                 >
                   <div className="flex items-start gap-4">
-                    <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
+                    <span className="flex-shrink-0 w-8 h-8 bg-[#2962FF] text-white rounded-full flex items-center justify-center font-semibold">
                       {index + 1}
                     </span>
                     <div className="flex-1">

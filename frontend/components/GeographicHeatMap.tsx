@@ -14,40 +14,10 @@ interface QuestionSummary {
 interface GeographicHeatMapProps {
   neighborhoodData: Record<string, number>;
   questions: QuestionSummary[];
+  neighborhoodCoords: Record<string, { lat: number; lng: number }>;
 }
 
 type ViewMode = "participation" | "pie-charts" | "winner-color";
-
-const NEIGHBORHOOD_COORDS: Record<string, { lat: number; lng: number }> = {
-  "Centro": { lat: -31.6535023, lng: -64.4240528 },
-  "San Martín": { lat: -31.6637055, lng: -64.4227145 },
-  "Villa Parque": { lat: -31.604438, lng: -64.4056309 },
-  "La Perla": { lat: -31.678409, lng: -64.4376872 },
-  "Parque del Virrey": { lat: -31.6470185, lng: -64.4169166 },
-  "Barrio Córdoba": { lat: -31.6213318, lng: -64.4282419 },
-  "Barrio Norte": { lat: -31.7182402, lng: -64.4078367 },
-  "Pellegrini": { lat: -31.6516924, lng: -64.4413141 },
-  "El Golf": { lat: -31.6437905, lng: -64.4462955 },
-  "Sabattini": { lat: -31.6464183, lng: -64.4368431 },
-  "Paravachasca": { lat: -31.6403451, lng: -64.429973 },
-  "Los Nogales": { lat: -31.7170684, lng: -64.4058691 },
-  "Villa del Prado": { lat: -31.6192496, lng: -64.3878973 },
-  "General Bustos": { lat: -31.6673588, lng: -64.4368409 },
-  "Poluyan": { lat: -31.6588046, lng: -64.437253 },
-  "Altos de Alta Gracia": { lat: -31.7159482, lng: -64.3881824 },
-  "Camara": { lat: -31.6547968, lng: -64.4210163 },
-  "Los Molles": { lat: -31.6393099, lng: -64.4324517 },
-  "Santa María": { lat: -31.649147, lng: -64.4243328 },
-  "Don Bosco": { lat: -31.6679657, lng: -64.4259672 },
-  "Cafferata": { lat: -31.6593111, lng: -64.4172452 },
-  "Barrio Sur": { lat: -31.7210214, lng: -64.4054766 },
-  "Villa Oviedo": { lat: -31.6704985, lng: -64.4314348 },
-  "Barrio Obrero": { lat: -31.6580, lng: -64.4300 },
-  "Residencial Alta Gracia": { lat: -31.6500, lng: -64.4100 },
-  "Reserva Tajamar": { lat: -31.6520, lng: -64.4050 },
-  "Lomas del Golf": { lat: -31.6450, lng: -64.4420 },
-  "Colinas del Sur": { lat: -31.6750, lng: -64.4150 },
-};
 
 const OPTION_COLORS = [
   "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444",
@@ -94,7 +64,7 @@ function createPieSvg(segments: { label: string; value: number; color: string }[
   </svg>`;
 }
 
-export default function GeographicHeatMap({ neighborhoodData, questions }: GeographicHeatMapProps) {
+export default function GeographicHeatMap({ neighborhoodData, questions, neighborhoodCoords }: GeographicHeatMapProps) {
   const [mounted, setMounted] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("participation");
@@ -173,8 +143,11 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
       });
     }
 
+    const missing = entries.filter(([name]) => !neighborhoodCoords[name]).map(([name]) => name);
+    if (missing.length > 0) console.warn("Barrios sin coordenadas:", missing);
+
     entries.forEach(([name, participationCount]) => {
-      const coords = NEIGHBORHOOD_COORDS[name];
+      const coords = neighborhoodCoords[name];
       if (!coords) return;
 
       if (viewMode === "participation") {
@@ -279,10 +252,10 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
 
   if (!mounted) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Desglose por Zona Geográfica</h3>
-        <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-          <p className="text-gray-500">Cargando mapa...</p>
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
+        <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">Desglose por Zona Geográfica</h3>
+        <div className="h-96 bg-[#000000] rounded-lg flex items-center justify-center">
+          <p className="text-[#FFFFFF]/50">Cargando mapa...</p>
         </div>
       </div>
     );
@@ -290,9 +263,9 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
 
   if (entries.length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Desglose por Zona Geográfica</h3>
-        <p className="text-gray-500 text-sm">No hay datos geográficos disponibles.</p>
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
+        <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">Desglose por Zona Geográfica</h3>
+        <p className="text-[#FFFFFF]/50 text-sm">No hay datos geográficos disponibles.</p>
       </div>
     );
   }
@@ -318,17 +291,17 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
       <div className="mb-4">
-        <h3 className="text-xl font-bold text-gray-900">Desglose por Zona Geográfica</h3>
-        <p className="text-sm text-gray-500">Participación y votación por ubicación</p>
+        <h3 className="text-xl font-bold text-[#FFFFFF]">Desglose por Zona Geográfica</h3>
+        <p className="text-sm text-[#FFFFFF]/50">Participación y votación por ubicación</p>
       </div>
 
       {/* View Mode Toggle */}
-      <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 mb-4 bg-[#000000] rounded-lg p-1 w-fit">
         {(["participation", "pie-charts", "winner-color"] as ViewMode[]).map((mode) => (
           <button key={mode} onClick={() => setViewMode(mode)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${viewMode === mode ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${viewMode === mode ? "bg-[#2962FF] text-white shadow-sm" : "text-[#FFFFFF]/60 hover:text-[#FFFFFF]"}`}>
             {mode === "participation" ? "Participación" : mode === "pie-charts" ? "Pie Charts" : "Color Ganador"}
           </button>
         ))}
@@ -338,7 +311,7 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
       {viewMode !== "participation" && mappableQuestions.length > 0 && (
         <div className="mb-4">
           <select value={effectiveQuestionId} onChange={(e) => setSelectedQuestionId(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            className="w-full px-3 py-2 text-sm border border-white/10 rounded-lg bg-[#000000] text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#2962FF]">
             {mappableQuestions.map((q) => (
               <option key={q.question_id} value={q.question_id}>{q.question_text}</option>
             ))}
@@ -347,31 +320,31 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
       )}
 
       {/* Map */}
-      <div ref={mapContainerRef} className="h-[500px] rounded-lg overflow-hidden border border-gray-200 mb-4" />
+      <div ref={mapContainerRef} className="h-[500px] rounded-lg overflow-hidden border border-white/10 mb-4" />
 
       {/* Legend */}
       {viewMode === "participation" ? (
         <div className="mb-4">
-          <p className="text-xs font-medium text-gray-600 mb-2">Intensidad de participación:</p>
+          <p className="text-xs font-medium text-[#FFFFFF]/60 mb-2">Intensidad de participación:</p>
           <div className="flex flex-wrap gap-3">
             {[{ color: "#EF4444", label: "Muy Alta" }, { color: "#F97316", label: "Alta" }, { color: "#EAB308", label: "Media" }, { color: "#22C55E", label: "Baja-Media" }, { color: "#3B82F6", label: "Baja" }].map(({ color, label }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-xs text-gray-600">{label}</span>
+                <span className="text-xs text-[#FFFFFF]/60">{label}</span>
               </div>
             ))}
           </div>
         </div>
       ) : optionLegend.length > 0 && (
         <div className="mb-4">
-          <p className="text-xs font-medium text-gray-600 mb-2">
+          <p className="text-xs font-medium text-[#FFFFFF]/60 mb-2">
             {isRatingSelected ? "Escala de calificación:" : viewMode === "winner-color" ? "Color por opción ganadora:" : "Opciones:"}
           </p>
           <div className="flex flex-wrap gap-3">
             {optionLegend.map(({ label, color }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-xs text-gray-600">{label}</span>
+                <span className="text-xs text-[#FFFFFF]/60">{label}</span>
               </div>
             ))}
           </div>
@@ -379,10 +352,10 @@ export default function GeographicHeatMap({ neighborhoodData, questions }: Geogr
       )}
 
       {/* Insight */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <p className="text-sm text-gray-600">
+      <div className="bg-[#000000] border border-white/10 rounded-lg p-4">
+        <p className="text-sm text-[#FFFFFF]/70">
           {viewMode === "participation" ? (
-            <>La zona <span className="font-semibold text-gray-900">{topZone[0]}</span> lidera con <span className="font-semibold text-gray-900">{topZone[1].toLocaleString()}</span> respuestas.</>
+            <>La zona <span className="font-semibold text-[#FFFFFF]">{topZone[0]}</span> lidera con <span className="font-semibold text-[#FFFFFF]">{topZone[1].toLocaleString()}</span> respuestas.</>
           ) : viewMode === "pie-charts" ? (
             isRatingSelected ? "Cada barrio muestra un círculo con color según la calificación promedio. Pase el cursor para ver el detalle." : "Cada barrio muestra un mini gráfico circular con la distribución de respuestas."
           ) : (

@@ -61,12 +61,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
           <div className="text-center mb-8">
-            <div className="inline-block bg-blue-100 rounded-full px-4 py-2 mb-4">
-              <span className="text-blue-800 font-semibold text-sm">
+            <div className="inline-block bg-[#2962FF]/10 rounded-full px-4 py-2 mb-4">
+              <span className="text-[#2962FF] font-semibold text-sm">
                 Paso 1 de 4
               </span>
             </div>
@@ -99,7 +99,7 @@ export default function RegisterPage() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#2962FF] focus:border-transparent outline-none transition"
                 placeholder="tu@email.com"
               />
             </div>
@@ -117,7 +117,7 @@ export default function RegisterPage() {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#2962FF] focus:border-transparent outline-none transition"
                 placeholder="Juan Pérez"
               />
             </div>
@@ -136,7 +136,7 @@ export default function RegisterPage() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#2962FF] focus:border-transparent outline-none transition"
                   placeholder="+54 9 11 1234-5678"
                 />
               </div>
@@ -154,7 +154,7 @@ export default function RegisterPage() {
                   name="birth_date"
                   value={formData.birth_date}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#2962FF] focus:border-transparent outline-none transition"
                 />
               </div>
             </div>
@@ -172,7 +172,7 @@ export default function RegisterPage() {
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#2962FF] focus:border-transparent outline-none transition"
                 placeholder="Av. Ejemplo 123"
               />
             </div>
@@ -191,7 +191,7 @@ export default function RegisterPage() {
                   name="neighborhood"
                   value={formData.neighborhood}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#2962FF] focus:border-transparent outline-none transition"
                   placeholder="Centro"
                 />
               </div>
@@ -209,7 +209,7 @@ export default function RegisterPage() {
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#2962FF] focus:border-transparent outline-none transition"
                   placeholder="Buenos Aires"
                 />
               </div>
@@ -226,7 +226,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-gradient-to-r from-[#2962FF] to-[#1a4fd4] text-white font-semibold py-3 px-6 rounded-lg hover:from-[#1a4fd4] hover:to-[#0d3ab8] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Cargando..." : "Siguiente"}
               </button>
