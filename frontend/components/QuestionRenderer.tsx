@@ -124,29 +124,54 @@ export function QuestionRenderer({
       );
     }
 
-    case QuestionType.MULTIPLE_CHOICE:
+    case QuestionType.MULTIPLE_CHOICE: {
+      const selectedIds: string[] = answer.option_ids || [];
+      const otroOptionId = question.options.find((o) => o.option_value === "otro")?.id || "";
+
+      const toggleOption = (optionId: string) => {
+        const newSelected = selectedIds.includes(optionId)
+          ? selectedIds.filter((id) => id !== optionId)
+          : [...selectedIds, optionId];
+        handleChange({ option_ids: newSelected });
+      };
+
       return (
-        <div className="space-y-3">
-          {question.options.map((option) => (
-            <label
-              key={option.id}
-              className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-[#2962FF] transition"
-            >
-              <input
-                type="checkbox"
-                value={option.id}
-                className="w-5 h-5 text-[#2962FF] rounded"
-              />
-              <div className="ml-3">
-                <span className="text-gray-800">{option.option_text}</span>
-                {option.description && (
-                  <p className="text-xs text-gray-400 mt-0.5">{option.description}</p>
+        <div className="space-y-1.5">
+          {question.options.map((option) => {
+            const checked = selectedIds.includes(option.id);
+            return (
+              <div key={option.id}>
+                <label className={`flex items-center px-3 py-2.5 border-2 rounded-lg cursor-pointer transition ${checked ? "border-[#2962FF] bg-blue-50" : "border-gray-200 hover:border-[#2962FF]"}`}>
+                  <input
+                    type="checkbox"
+                    value={option.id}
+                    checked={checked}
+                    onChange={() => toggleOption(option.id)}
+                    className="w-4 h-4 text-[#2962FF] rounded shrink-0"
+                  />
+                  <div className="ml-2.5">
+                    <span className="text-gray-800 text-sm">{option.option_text}</span>
+                    {option.description && (
+                      <p className="text-xs text-gray-400 leading-tight">{option.description}</p>
+                    )}
+                  </div>
+                </label>
+                {option.id === otroOptionId && checked && (
+                  <input
+                    type="text"
+                    value={answer.answer_text || ""}
+                    onChange={(e) => handleChange({ answer_text: e.target.value })}
+                    placeholder="Especificá tu respuesta..."
+                    className="mt-2 w-full px-3 py-2 border-2 border-[#2962FF] rounded-lg text-sm focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
+                    autoFocus
+                  />
                 )}
               </div>
-            </label>
-          ))}
+            );
+          })}
         </div>
       );
+    }
 
     case QuestionType.PERCENTAGE_DISTRIBUTION:
       return (

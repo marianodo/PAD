@@ -33,7 +33,7 @@ class Survey(Base):
 
     # Relationships
     client = relationship("Client", back_populates="surveys")
-    questions = relationship("Question", back_populates="survey", cascade="all, delete-orphan")
+    questions = relationship("Question", back_populates="survey", cascade="all, delete-orphan", order_by="Question.order_index")
     responses = relationship("SurveyResponse", back_populates="survey")
     ai_insights = relationship("AIInsight", back_populates="survey", cascade="all, delete-orphan")
 
@@ -55,7 +55,7 @@ class Question(Base):
 
     # Relationships
     survey = relationship("Survey", back_populates="questions")
-    options = relationship("QuestionOption", back_populates="question", cascade="all, delete-orphan")
+    options = relationship("QuestionOption", back_populates="question", cascade="all, delete-orphan", order_by="QuestionOption.order_index")
     answers = relationship("Answer", back_populates="question")
 
 

@@ -137,9 +137,9 @@ export default function QuestionsPage() {
 
     switch (currentQuestion.question_type) {
       case "single_choice":
-      case "multiple_choice":
-        console.log("Checking option_id:", currentAnswer.option_id);
         return !!currentAnswer.option_id;
+      case "multiple_choice":
+        return (currentAnswer.option_ids?.length ?? 0) > 0;
       case "rating":
         return !!currentAnswer.rating;
       case "open_text":
