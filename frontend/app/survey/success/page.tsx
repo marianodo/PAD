@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSurveyStore } from "@/lib/store";
 import { usersApi } from "@/lib/api";
 import type { UserPoints } from "@/types";
 
 export default function SuccessPage() {
   const router = useRouter();
-  const { user, survey, reset } = useSurveyStore();
+  const searchParams = useSearchParams();
+  const { user, reset } = useSurveyStore();
   const [points, setPoints] = useState<UserPoints | null>(null);
   const [loading, setLoading] = useState(true);
+  const earnedPoints = parseInt(searchParams.get("earned") || "0", 10);
 
   useEffect(() => {
     if (!user) {
@@ -74,24 +76,28 @@ export default function SuccessPage() {
         </h1>
 
         <p className="text-lg text-gray-600 mb-8">
-          Tu opinión es muy importante para mejorar la gestión municipal
+          Tu opinión es muy importante para mejorar la gestión pública
         </p>
 
         {/* Points Card */}
         {points && (
           <div className="bg-gradient-to-r from-[#2962FF] to-[#1a4fd4] rounded-xl p-8 mb-8 text-white">
             <p className="text-lg mb-2">Has ganado</p>
-            <p className="text-6xl font-bold mb-2">{points.total_points}</p>
-            <p className="text-lg">puntos</p>
+            <p className="text-6xl font-bold mb-2">{earnedPoints}</p>
+            <p className="text-lg">puntos en esta consulta</p>
 
             <div className="mt-6 pt-6 border-t border-[#5E8AFF]">
-              <div className="grid grid-cols-2 gap-4 text-center">
+              <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <p className="text-[#5E8AFF] text-sm">Puntos Disponibles</p>
+                  <p className="text-[#5E8AFF] text-sm">Total Puntos</p>
+                  <p className="text-2xl font-bold">{points.total_points}</p>
+                </div>
+                <div>
+                  <p className="text-[#5E8AFF] text-sm">Disponibles</p>
                   <p className="text-2xl font-bold">{points.available_points}</p>
                 </div>
                 <div>
-                  <p className="text-[#5E8AFF] text-sm">Puntos Canjeados</p>
+                  <p className="text-[#5E8AFF] text-sm">Canjeados</p>
                   <p className="text-2xl font-bold">{points.redeemed_points}</p>
                 </div>
               </div>
@@ -113,7 +119,7 @@ export default function SuccessPage() {
             <li className="flex items-start">
               <span className="mr-2">•</span>
               <span>
-                Podrás canjear tus puntos por beneficios municipales
+                Podrás canjear tus puntos por beneficios exclusivos
               </span>
             </li>
             <li className="flex items-start">

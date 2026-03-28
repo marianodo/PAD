@@ -144,17 +144,26 @@ export default function QuestionsPage() {
         return !!currentAnswer.rating;
       case "open_text":
         return !!currentAnswer.answer_text?.trim();
-      case "percentage_distribution":
-        if (!currentAnswer.percentage_data) {
-          console.log("No percentage_data");
-          return false;
-        }
+      case "percentage_distribution": {
+        if (!currentAnswer.percentage_data) return false;
         const total = Object.values(currentAnswer.percentage_data).reduce(
           (sum, val) => sum + val,
           0
         );
-        console.log("Percentage total:", total, "Valid:", Math.abs(total - 100) < 0.01);
-        return Math.abs(total - 100) < 0.01;
+        if (Math.abs(total - 100) >= 0.01) return false;
+        // Si hay una opción "otro" con % > 0, el texto es obligatorio
+        const otroOption = currentQuestion.options?.find(
+          (o) => o.option_value === "otro" || o.option_text?.toLowerCase() === "otro"
+        );
+        if (otroOption && (currentAnswer.percentage_data[otroOption.id] || 0) > 0) {
+          return !!currentAnswer.answer_text?.trim();
+        }
+        // Si el bloque hardcodeado "otros" tiene % > 0, también requiere texto
+        if ((currentAnswer.percentage_data["otros"] || 0) > 0) {
+          return !!currentAnswer.answer_text?.trim();
+        }
+        return true;
+      }
       default:
         return false;
     }
@@ -195,14 +204,15 @@ export default function QuestionsPage() {
       }
 
       // Enviar respuestas
-      await surveysApi.submitResponse({
+      const submitRes = await surveysApi.submitResponse({
         survey_id: survey.id,
         user_id: currentUser.id,
         answers: answers,
         completed: true,
       });
 
-      router.push("/survey/success");
+      const earned = submitRes.data?.points_earned ?? 0;
+      router.push(`/survey/success?earned=${earned}`);
     } catch (err: any) {
       setError(
         err.response?.data?.detail || "Error al enviar la consulta"
@@ -244,6 +254,19 @@ export default function QuestionsPage() {
             </h2>
             {currentQuestion.is_required && (
               <p className="text-sm text-gray-500">* Campo obligatorio</p>
+            )}
+            {currentQuestion.config?.info_url && (
+              <a
+                href={currentQuestion.config.info_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 mt-3 text-sm text-[#2962FF] hover:text-[#1a4fd4] underline underline-offset-2"
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {currentQuestion.config.info_label || "Ver más información"}
+              </a>
             )}
           </div>
 

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import ChatBot from "@/components/ChatBot";
 
 const SURVEY_ID = "ccc73cdb-c0e2-4d99-9a88-e383c5505ceb";
 
@@ -173,7 +174,7 @@ export default function CordobaDashboard() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
             <h3 className="text-lg font-bold text-[#FFFFFF]">{q.question_text}</h3>
-            <p className="text-sm text-[#FFFFFF]/50 mt-1">{q.total_answers} respuestas · selección múltiple</p>
+            <p className="text-sm text-[#FFFFFF]/50 mt-1">{q.total_answers} respuestas · distribución de presupuesto</p>
           </div>
           {/* Filtros */}
           <div className="flex flex-wrap gap-2">
@@ -241,7 +242,7 @@ export default function CordobaDashboard() {
         <p className="text-sm text-[#FFFFFF]/50 mb-6">{total} respuestas</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {entries.map(([key, val], i) => {
+          {entries.map(([key, val]) => {
             const isYes = val.label?.toLowerCase() === "sí" || val.label?.toLowerCase() === "si";
             const color = isYes ? "#00C853" : "#D50000";
             return (
@@ -530,7 +531,7 @@ export default function CordobaDashboard() {
 
   if (!results) return null;
 
-  const multipleQ = results.questions_summary.find(q => q.question_type === "multiple_choice");
+  const multipleQ = results.questions_summary.find(q => q.question_type === "percentage_distribution");
   const singleQ = results.questions_summary.find(q => q.question_type === "single_choice");
   const ratingQ = results.questions_summary.find(q => q.question_type === "rating");
 
@@ -721,6 +722,7 @@ export default function CordobaDashboard() {
         )}
       </div>
       </div>
+      <ChatBot surveyId={SURVEY_ID} />
     </div>
   );
 }

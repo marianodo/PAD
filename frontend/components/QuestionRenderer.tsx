@@ -304,44 +304,56 @@ function PercentageDistribution({
               }%, #e5e7eb ${percentages[option.id] || 0}%, #e5e7eb 100%)`,
             }}
           />
+          {(option.option_value === "otro" || option.option_text?.toLowerCase() === "otro") &&
+            (percentages[option.id] || 0) > 0 && (
+              <input
+                type="text"
+                value={otherText}
+                onChange={(e) => setOtherText(e.target.value)}
+                placeholder="¿En qué área te gustaría invertir?"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
+              />
+            )}
         </div>
       ))}
 
-      {/* Otros */}
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          <div>
-            <label className="text-sm font-medium text-gray-700">OTROS</label>
-            <p className="text-xs text-gray-400 mt-0.5">Especificá otra área de tu interés</p>
+      {/* Otros — solo mostrar si la pregunta NO tiene una opción "otro" en sus opciones */}
+      {!question.options.some(o => o.option_value === "otro" || o.option_text?.toLowerCase() === "otro") && (
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <div>
+              <label className="text-sm font-medium text-gray-700">OTROS</label>
+              <p className="text-xs text-gray-400 mt-0.5">Especificá otra área de tu interés</p>
+            </div>
+            <span className="text-lg font-semibold text-[#2962FF] shrink-0 ml-4">
+              {percentages["otros"] || 0}%
+            </span>
           </div>
-          <span className="text-lg font-semibold text-[#2962FF] shrink-0 ml-4">
-            {percentages["otros"] || 0}%
-          </span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          value={percentages["otros"] || 0}
-          onChange={(e) => handlePercentageChange("otros", e.target.value)}
-          className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-          style={{
-            background: `linear-gradient(to right, #2962FF 0%, #2962FF ${
-              percentages["otros"] || 0
-            }%, #e5e7eb ${percentages["otros"] || 0}%, #e5e7eb 100%)`,
-          }}
-        />
-        {(percentages["otros"] || 0) > 0 && (
           <input
-            type="text"
-            value={otherText}
-            onChange={(e) => setOtherText(e.target.value)}
-            placeholder="¿En qué área te gustaría invertir?"
-            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={percentages["otros"] || 0}
+            onChange={(e) => handlePercentageChange("otros", e.target.value)}
+            className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+            style={{
+              background: `linear-gradient(to right, #2962FF 0%, #2962FF ${
+                percentages["otros"] || 0
+              }%, #e5e7eb ${percentages["otros"] || 0}%, #e5e7eb 100%)`,
+            }}
           />
-        )}
-      </div>
+          {(percentages["otros"] || 0) > 0 && (
+            <input
+              type="text"
+              value={otherText}
+              onChange={(e) => setOtherText(e.target.value)}
+              placeholder="¿En qué área te gustaría invertir?"
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
+            />
+          )}
+        </div>
+      )}
 
       <div
         className={`mt-6 p-4 rounded-lg ${
