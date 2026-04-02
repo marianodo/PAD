@@ -285,7 +285,7 @@ export default function ClientDashboard() {
         {/* Logo */}
         <div className="px-6 pt-6 pb-4">
           <div className="flex items-center gap-3">
-            <Image src="/logo.jpeg" alt="Data Insights" width={40} height={40} className="rounded-xl" />
+            <Image src="/logo_di_white.png" alt="Data Insights" width={100} height={40} />
             <div>
               <p className="text-[#FFFFFF]/40 text-[10px] font-medium tracking-widest uppercase">Panel de Gobierno</p>
               <p className="text-[#FFFFFF] text-base font-bold">PAD</p>

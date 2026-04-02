@@ -337,6 +337,7 @@ class SurveyService:
         user_age_groups: Dict[UUID, str] = {}
         user_genders: Dict[UUID, str] = {}
         user_neighborhoods: Dict[UUID, str] = {}
+        user_cities: Dict[UUID, str] = {}
         age_groups_by_gender: Dict[str, Dict[str, int]] = {}
 
         for response, user in responses:
@@ -359,6 +360,7 @@ class SurveyService:
             # Por ciudad
             city = user.city or "Sin especificar"
             cities[city] = cities.get(city, 0) + 1
+            user_cities[user.id] = city
 
             # Por barrio
             neighborhood = user.neighborhood or "Sin especificar"
@@ -398,7 +400,8 @@ class SurveyService:
                 "results_by_age": {},
                 "results_by_gender": {},
                 "results_by_age_and_gender": {},
-                "results_by_neighborhood": {}
+                "results_by_neighborhood": {},
+                "results_by_city": {}
             }
 
             if question.question_type == QuestionType.PERCENTAGE_DISTRIBUTION:
@@ -415,11 +418,12 @@ class SurveyService:
                 percentage_counts: Dict[str, int] = {}
                 total_respondents = sum(1 for a in question_answers if a.percentage_data)
 
-                # También por grupo de edad, género, cruce edad+género y barrio
+                # También por grupo de edad, género, cruce edad+género, barrio y ciudad
                 percentage_by_age: Dict[str, Dict[str, List[float]]] = {}
                 percentage_by_gender: Dict[str, Dict[str, List[float]]] = {}
                 percentage_by_age_and_gender: Dict[str, Dict[str, List[float]]] = {}
                 percentage_by_neighborhood: Dict[str, Dict[str, List[float]]] = {}
+                percentage_by_city: Dict[str, Dict[str, List[float]]] = {}
 
                 for answer in question_answers:
                     if answer.percentage_data:
@@ -427,6 +431,7 @@ class SurveyService:
                         user_age = user_age_groups.get(user_id, "Sin especificar")
                         user_gender = user_genders.get(user_id, "Sin especificar")
                         user_neighborhood = user_neighborhoods.get(user_id, "Sin especificar")
+                        user_city = user_cities.get(user_id, "Sin especificar")
 
                         for key, value in answer.percentage_data.items():
                             # Convertir UUID key a option_value
@@ -469,6 +474,13 @@ class SurveyService:
                                 percentage_by_neighborhood[user_neighborhood][option_key] = []
                             percentage_by_neighborhood[user_neighborhood][option_key].append(value)
 
+                            # Por ciudad
+                            if user_city not in percentage_by_city:
+                                percentage_by_city[user_city] = {}
+                            if option_key not in percentage_by_city[user_city]:
+                                percentage_by_city[user_city][option_key] = []
+                            percentage_by_city[user_city][option_key].append(value)
+
                 def _get_option_label(k):
                     if k == "otros":
                         return "OTROS"
@@ -496,16 +508,19 @@ class SurveyService:
                 respondents_by_gender: Dict[str, int] = {}
                 respondents_by_age_and_gender: Dict[str, int] = {}
                 respondents_by_neighborhood: Dict[str, int] = {}
+                respondents_by_city: Dict[str, int] = {}
                 for a in question_answers:
                     if a.percentage_data:
                         uid = response_user_map.get(a.response_id)
                         ag = user_age_groups.get(uid, "Sin especificar")
                         gn = user_genders.get(uid, "Sin especificar")
                         nb = user_neighborhoods.get(uid, "Sin especificar")
+                        ct = user_cities.get(uid, "Sin especificar")
                         respondents_by_age[ag] = respondents_by_age.get(ag, 0) + 1
                         respondents_by_gender[gn] = respondents_by_gender.get(gn, 0) + 1
                         respondents_by_age_and_gender[f"{ag}|{gn}"] = respondents_by_age_and_gender.get(f"{ag}|{gn}", 0) + 1
                         respondents_by_neighborhood[nb] = respondents_by_neighborhood.get(nb, 0) + 1
+                        respondents_by_city[ct] = respondents_by_city.get(ct, 0) + 1
 
                 # Helper para calcular promedios por grupo demográfico
                 def _calc_percentage_by_group(group_data, group_totals):
@@ -528,6 +543,7 @@ class SurveyService:
                 question_data["results_by_gender"] = _calc_percentage_by_group(percentage_by_gender, respondents_by_gender)
                 question_data["results_by_age_and_gender"] = _calc_percentage_by_group(percentage_by_age_and_gender, respondents_by_age_and_gender)
                 question_data["results_by_neighborhood"] = _calc_percentage_by_group(percentage_by_neighborhood, respondents_by_neighborhood)
+                question_data["results_by_city"] = _calc_percentage_by_group(percentage_by_city, respondents_by_city)
 
                 # Recopilar textos de "otros" para el resumen
                 otros_raw_texts = []
@@ -549,6 +565,7 @@ class SurveyService:
                 votes_by_gender: Dict[str, Dict[str, int]] = {}
                 votes_by_age_and_gender: Dict[str, Dict[str, int]] = {}
                 votes_by_neighborhood: Dict[str, Dict[str, int]] = {}
+                votes_by_city: Dict[str, Dict[str, int]] = {}
 
                 for answer in question_answers:
                     if answer.option_id:
@@ -559,6 +576,7 @@ class SurveyService:
                         user_age = user_age_groups.get(user_id, "Sin especificar")
                         user_gender = user_genders.get(user_id, "Sin especificar")
                         user_neighborhood = user_neighborhoods.get(user_id, "Sin especificar")
+                        user_city = user_cities.get(user_id, "Sin especificar")
 
                         # Por grupo de edad
                         if user_age not in votes_by_age:
@@ -580,6 +598,11 @@ class SurveyService:
                         if user_neighborhood not in votes_by_neighborhood:
                             votes_by_neighborhood[user_neighborhood] = {}
                         votes_by_neighborhood[user_neighborhood][opt_id] = votes_by_neighborhood[user_neighborhood].get(opt_id, 0) + 1
+
+                        # Por ciudad
+                        if user_city not in votes_by_city:
+                            votes_by_city[user_city] = {}
+                        votes_by_city[user_city][opt_id] = votes_by_city[user_city].get(opt_id, 0) + 1
 
                 total_votes = sum(vote_counts.values())
 
@@ -637,6 +660,7 @@ class SurveyService:
                 question_data["results_by_gender"] = _calc_votes_by_group(votes_by_gender, options)
                 question_data["results_by_age_and_gender"] = _calc_votes_by_group(votes_by_age_and_gender, options)
                 question_data["results_by_neighborhood"] = _calc_votes_by_group(votes_by_neighborhood, options)
+                question_data["results_by_city"] = _calc_votes_by_group(votes_by_city, options)
 
             elif question.question_type == QuestionType.RATING:
                 # Calcular promedio de calificaciones
@@ -659,12 +683,14 @@ class SurveyService:
                 ratings_by_gender: Dict[str, List[int]] = {}
                 ratings_by_age_and_gender: Dict[str, List[int]] = {}
                 ratings_by_neighborhood: Dict[str, List[int]] = {}
+                ratings_by_city: Dict[str, List[int]] = {}
                 for answer in question_answers:
                     if answer.rating is not None:
                         user_id = response_user_map.get(answer.response_id)
                         user_age = user_age_groups.get(user_id, "Sin especificar")
                         user_gender = user_genders.get(user_id, "Sin especificar")
                         user_neighborhood = user_neighborhoods.get(user_id, "Sin especificar")
+                        user_city = user_cities.get(user_id, "Sin especificar")
 
                         if user_age not in ratings_by_age:
                             ratings_by_age[user_age] = []
@@ -682,6 +708,10 @@ class SurveyService:
                         if user_neighborhood not in ratings_by_neighborhood:
                             ratings_by_neighborhood[user_neighborhood] = []
                         ratings_by_neighborhood[user_neighborhood].append(answer.rating)
+
+                        if user_city not in ratings_by_city:
+                            ratings_by_city[user_city] = []
+                        ratings_by_city[user_city].append(answer.rating)
 
                 def _calc_rating_by_group(ratings_by_group):
                     result = {}
@@ -701,6 +731,7 @@ class SurveyService:
                 question_data["results_by_gender"] = _calc_rating_by_group(ratings_by_gender)
                 question_data["results_by_age_and_gender"] = _calc_rating_by_group(ratings_by_age_and_gender)
                 question_data["results_by_neighborhood"] = _calc_rating_by_group(ratings_by_neighborhood)
+                question_data["results_by_city"] = _calc_rating_by_group(ratings_by_city)
 
             questions_summary.append(question_data)
 

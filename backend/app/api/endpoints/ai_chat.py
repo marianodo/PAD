@@ -1,5 +1,5 @@
 """
-AI Chat endpoint - Chat conversacional sobre datos de encuestas usando Claude AI
+AI Chat endpoint - Chat conversacional sobre datos de consultas usando Claude AI
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -48,8 +48,8 @@ async def chat_with_survey(
 
         results = SurveyService.get_survey_results(db, UUID(survey_id))
 
-        system_prompt = f"""Eres un asistente de IA especializado en analizar datos de encuestas ciudadanas.
-Tu UNICA funcion es responder preguntas sobre los datos de esta encuesta especifica.
+        system_prompt = f"""Eres un asistente de IA especializado en analizar datos de consultas ciudadanas.
+Tu UNICA funcion es responder preguntas sobre los datos de esta consulta especifica.
 
 DATOS DE LA ENCUESTA:
 
@@ -69,8 +69,8 @@ EVOLUCION TEMPORAL:
 {json.dumps(results.get('evolution_data', {}), indent=2, ensure_ascii=False)}
 
 REGLAS ESTRICTAS:
-1. SOLO responde preguntas relacionadas con estos datos de la encuesta.
-2. Si te preguntan algo no relacionado con la encuesta, responde: "Solo puedo responder preguntas relacionadas con los datos de esta encuesta. ¿Qué te gustaría saber sobre los resultados?"
+1. SOLO responde preguntas relacionadas con estos datos de la consulta.
+2. Si te preguntan algo no relacionado con la consulta, responde: "Solo puedo responder preguntas relacionadas con los datos de esta consulta. ¿Qué te gustaría saber sobre los resultados?"
 3. Siempre responde en español.
 4. Usa datos concretos (números, porcentajes, nombres de barrios) en tus respuestas.
 5. Sé conciso pero informativo.

@@ -218,7 +218,7 @@ function LoginForm() {
           <span>PAD &copy; 2026 &mdash; Participación Activa Digital</span>
           <div className="flex items-center gap-2">
             <span>Powered by</span>
-            <Image src="/logo.jpeg" alt="Data Insights" width={20} height={20} className="rounded-md opacity-60" />
+            <Image src="/logo_di_white.png" alt="Data Insights" width={80} height={20} className="opacity-70" />
             <span className="text-white/60 font-medium">Data Insights S.A.S</span>
           </div>
         </div>
@@ -244,7 +244,7 @@ function LoginForm() {
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Portal Ciudadano</h2>
               <p className="text-gray-500 dark:text-gray-400 text-sm">
-                Ingresá con tu CUIL para participar en las consultas de tu municipio.
+                Ingresá con tu CUIL para participar en las consultas de tu gobierno.
               </p>
             </div>
 

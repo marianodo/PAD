@@ -15,6 +15,13 @@ interface GeographicHeatMapProps {
   neighborhoodData: Record<string, number>;
   questions: QuestionSummary[];
   neighborhoodCoords: Record<string, { lat: number; lng: number }>;
+  mapCenter?: [number, number];
+  mapZoom?: number;
+  circleRadius?: number;
+  title?: string;
+  subtitle?: string;
+  participationOnly?: boolean;
+  groupBy?: "neighborhood" | "city";
 }
 
 type ViewMode = "participation" | "pie-charts" | "winner-color";
@@ -64,7 +71,13 @@ function createPieSvg(segments: { label: string; value: number; color: string }[
   </svg>`;
 }
 
-export default function GeographicHeatMap({ neighborhoodData, questions, neighborhoodCoords }: GeographicHeatMapProps) {
+export default function GeographicHeatMap({
+  neighborhoodData, questions, neighborhoodCoords,
+  mapCenter = [-31.6553, -64.4330], mapZoom = 14, circleRadius,
+  title = "Desglose por Zona Geográfica", subtitle = "Participación y votación por ubicación",
+  participationOnly = false,
+  groupBy = "neighborhood",
+}: GeographicHeatMapProps) {
   const [mounted, setMounted] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("participation");
@@ -77,8 +90,10 @@ export default function GeographicHeatMap({ neighborhoodData, questions, neighbo
 
   const entries = Object.entries(neighborhoodData).filter(([key]) => key !== "Sin especificar");
 
+  const resultsKey = groupBy === "city" ? "results_by_city" : "results_by_neighborhood";
+
   const mappableQuestions = questions.filter(
-    (q) => q.results_by_neighborhood && Object.keys(q.results_by_neighborhood).length > 0
+    (q) => (q as any)[resultsKey] && Object.keys((q as any)[resultsKey]).length > 0
       && q.question_type !== "open_text"
   );
 
@@ -97,7 +112,7 @@ export default function GeographicHeatMap({ neighborhoodData, questions, neighbo
     import("leaflet").then((L) => {
       if (mapRef.current || !mapContainerRef.current) return;
       LRef.current = L;
-      const mapInstance = L.map(mapContainerRef.current).setView([-31.6553, -64.4330], 14);
+      const mapInstance = L.map(mapContainerRef.current).setView(mapCenter, mapZoom);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(mapInstance);
@@ -152,12 +167,13 @@ export default function GeographicHeatMap({ neighborhoodData, questions, neighbo
 
       if (viewMode === "participation") {
         const normalized = maxValue > minValue ? (participationCount - minValue) / (maxValue - minValue) : 0.5;
+        const baseRadius = circleRadius ?? 200;
         let color: string, radius: number;
-        if (normalized >= 0.75) { color = "#EF4444"; radius = 250; }
-        else if (normalized >= 0.5) { color = "#F97316"; radius = 220; }
-        else if (normalized >= 0.25) { color = "#EAB308"; radius = 180; }
-        else if (normalized >= 0.1) { color = "#22C55E"; radius = 140; }
-        else { color = "#3B82F6"; radius = 100; }
+        if (normalized >= 0.75) { color = "#EF4444"; radius = baseRadius * 1.25; }
+        else if (normalized >= 0.5) { color = "#F97316"; radius = baseRadius * 1.1; }
+        else if (normalized >= 0.25) { color = "#EAB308"; radius = baseRadius * 0.9; }
+        else if (normalized >= 0.1) { color = "#22C55E"; radius = baseRadius * 0.7; }
+        else { color = "#3B82F6"; radius = baseRadius * 0.5; }
 
         const m = L.circle([coords.lat, coords.lng], { color, fillColor: color, fillOpacity: 0.6, radius, weight: 3 })
           .bindTooltip(
@@ -170,7 +186,7 @@ export default function GeographicHeatMap({ neighborhoodData, questions, neighbo
 
       if (!selectedQuestion) return;
 
-      const nbResults = selectedQuestion.results_by_neighborhood?.[name];
+      const nbResults = (selectedQuestion as any)[resultsKey]?.[name];
       if (!nbResults) {
         const m = L.circleMarker([coords.lat, coords.lng], { color: "#9CA3AF", fillColor: "#9CA3AF", fillOpacity: 0.4, radius: 8, weight: 2 })
           .bindTooltip(
@@ -195,7 +211,7 @@ export default function GeographicHeatMap({ neighborhoodData, questions, neighbo
           <div style="font-size:13px;font-weight:600;color:${color};">${avg.toFixed(2)} / 5</div>
           <div style="font-size:11px;color:#6B7280;">${totalR} calificaciones</div>
         </div>`;
-        const m = L.circle([coords.lat, coords.lng], { color, fillColor: color, fillOpacity: 0.65, radius: 200, weight: 3 })
+        const m = L.circle([coords.lat, coords.lng], { color, fillColor: color, fillOpacity: 0.65, radius: circleRadius ?? 200, weight: 3 })
           .bindTooltip(tooltip, { direction: "top", offset: [0, -10], opacity: 0.95 })
           .addTo(mapInstance);
         markersRef.current.push(m);
@@ -227,7 +243,7 @@ export default function GeographicHeatMap({ neighborhoodData, questions, neighbo
       if (viewMode === "winner-color") {
         const winnerKey = resultEntries[0]?.[0] ?? "";
         const winnerColor = optionColorMap[winnerKey] || "#9CA3AF";
-        const m = L.circle([coords.lat, coords.lng], { color: winnerColor, fillColor: winnerColor, fillOpacity: 0.65, radius: 200, weight: 3 })
+        const m = L.circle([coords.lat, coords.lng], { color: winnerColor, fillColor: winnerColor, fillOpacity: 0.65, radius: circleRadius ?? 200, weight: 3 })
           .bindTooltip(tooltip, { direction: "top", offset: [0, -10], opacity: 0.95 })
           .addTo(mapInstance);
         markersRef.current.push(m);
@@ -253,7 +269,7 @@ export default function GeographicHeatMap({ neighborhoodData, questions, neighbo
   if (!mounted) {
     return (
       <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
-        <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">Desglose por Zona Geográfica</h3>
+        <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">{title}</h3>
         <div className="h-96 bg-[#000000] rounded-lg flex items-center justify-center">
           <p className="text-[#FFFFFF]/50">Cargando mapa...</p>
         </div>
@@ -264,7 +280,7 @@ export default function GeographicHeatMap({ neighborhoodData, questions, neighbo
   if (entries.length === 0) {
     return (
       <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
-        <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">Desglose por Zona Geográfica</h3>
+        <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">{title}</h3>
         <p className="text-[#FFFFFF]/50 text-sm">No hay datos geográficos disponibles.</p>
       </div>
     );
@@ -294,21 +310,23 @@ export default function GeographicHeatMap({ neighborhoodData, questions, neighbo
     <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
       <div className="mb-4">
         <h3 className="text-xl font-bold text-[#FFFFFF]">Desglose por Zona Geográfica</h3>
-        <p className="text-sm text-[#FFFFFF]/50">Participación y votación por ubicación</p>
+        <p className="text-sm text-[#FFFFFF]/50">{subtitle}</p>
       </div>
 
       {/* View Mode Toggle */}
-      <div className="flex gap-1 mb-4 bg-[#000000] rounded-lg p-1 w-fit">
-        {(["participation", "pie-charts", "winner-color"] as ViewMode[]).map((mode) => (
-          <button key={mode} onClick={() => setViewMode(mode)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${viewMode === mode ? "bg-[#2962FF] text-white shadow-sm" : "text-[#FFFFFF]/60 hover:text-[#FFFFFF]"}`}>
-            {mode === "participation" ? "Participación" : mode === "pie-charts" ? "Pie Charts" : "Color Ganador"}
-          </button>
-        ))}
-      </div>
+      {!participationOnly && (
+        <div className="flex gap-1 mb-4 bg-[#000000] rounded-lg p-1 w-fit">
+          {(["participation", "pie-charts", "winner-color"] as ViewMode[]).map((mode) => (
+            <button key={mode} onClick={() => setViewMode(mode)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${viewMode === mode ? "bg-[#2962FF] text-white shadow-sm" : "text-[#FFFFFF]/60 hover:text-[#FFFFFF]"}`}>
+              {mode === "participation" ? "Participación" : mode === "pie-charts" ? "Pie Charts" : "Color Ganador"}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Question Selector */}
-      {viewMode !== "participation" && mappableQuestions.length > 0 && (
+      {!participationOnly && viewMode !== "participation" && mappableQuestions.length > 0 && (
         <div className="mb-4">
           <select value={effectiveQuestionId} onChange={(e) => setSelectedQuestionId(e.target.value)}
             className="w-full px-3 py-2 text-sm border border-white/10 rounded-lg bg-[#000000] text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#2962FF]">

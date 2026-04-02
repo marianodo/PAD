@@ -31,7 +31,7 @@ async def get_ai_insights(
     current_user: Union[User, Admin, Client] = Depends(get_current_user)
 ):
     """
-    Obtiene los insights de IA cacheados para una encuesta.
+    Obtiene los insights de IA cacheados para una consulta.
     Retorna None si no hay insights generados aún.
     """
     cached_insight = db.query(AIInsight).filter(
@@ -42,7 +42,7 @@ async def get_ai_insights(
         return {
             "insights": None,
             "from_cache": False,
-            "message": "No hay insights generados para esta encuesta"
+            "message": "No hay insights generados para esta consulta"
         }
 
     return {
@@ -63,7 +63,7 @@ async def generate_ai_insights(
     current_user: Union[User, Admin, Client] = Depends(get_current_user)
 ):
     """
-    Genera insights inteligentes usando Claude AI basándose en los datos de la encuesta.
+    Genera insights inteligentes usando Claude AI basándose en los datos de la consulta.
     Usa cache de la base de datos para evitar regenerar si los datos no cambiaron.
 
     - force_regenerate: Si es True, regenera los insights aunque exista cache
@@ -78,13 +78,13 @@ async def generate_ai_insights(
         )
 
     try:
-        # 2. Obtener datos de la encuesta
+        # 2. Obtener datos de la consulta
         results = SurveyService.get_survey_results(db, UUID(survey_id))
 
         if not results:
             raise HTTPException(
                 status_code=404,
-                detail="No se encontraron resultados para esta encuesta"
+                detail="No se encontraron resultados para esta consulta"
             )
 
         # 3. Calcular hash de las respuestas para detectar cambios
@@ -114,11 +114,11 @@ async def generate_ai_insights(
         if not results:
             raise HTTPException(
                 status_code=404,
-                detail="No se encontraron resultados para esta encuesta"
+                detail="No se encontraron resultados para esta consulta"
             )
 
         # 3. Preparar el prompt para Claude
-        prompt = f"""Analiza estos datos de una encuesta ciudadana de Alta Gracia, Córdoba, Argentina:
+        prompt = f"""Analiza estos datos de una consulta ciudadana de Alta Gracia, Córdoba, Argentina:
 
 📊 DATOS GENERALES:
 - Total de respuestas: {results.get('total_responses', 0)}
@@ -147,7 +147,7 @@ Cada insight debe tener:
 5. **category**: Una de estas categorías exactas: "participation", "satisfaction", "demographics", "infrastructure", "consensus"
 
 REQUISITOS IMPORTANTES:
-- Usa datos REALES y específicos de la encuesta
+- Usa datos REALES y específicos de la consulta
 - Incluye números, porcentajes y nombres concretos
 - NO inventes datos que no estén en el contexto
 - Detecta patrones, tendencias, brechas, oportunidades
@@ -262,7 +262,7 @@ Responde SOLO con el JSON, sin texto adicional:
         model_used = settings.CLAUDE_MODEL
         generated_at = datetime.utcnow()
 
-        # Eliminar insights anteriores de esta encuesta
+        # Eliminar insights anteriores de esta consulta
         db.query(AIInsight).filter(AIInsight.survey_id == UUID(survey_id)).delete()
 
         # Crear nuevo registro
@@ -302,7 +302,7 @@ async def generate_ai_predictions(
     current_user: Union[User, Admin, Client] = Depends(get_current_user)
 ):
     """
-    Genera predicciones y proyecciones usando Claude AI basándose en los datos de la encuesta.
+    Genera predicciones y proyecciones usando Claude AI basándose en los datos de la consulta.
     """
 
     # 1. Verificar que existe la API key
@@ -314,13 +314,13 @@ async def generate_ai_predictions(
         )
 
     try:
-        # 2. Obtener datos de la encuesta
+        # 2. Obtener datos de la consulta
         results = SurveyService.get_survey_results(db, UUID(survey_id))
 
         if not results:
             raise HTTPException(
                 status_code=404,
-                detail="No se encontraron resultados para esta encuesta"
+                detail="No se encontraron resultados para esta consulta"
             )
 
         # 3. Preparar el prompt para predicciones
@@ -328,7 +328,7 @@ async def generate_ai_predictions(
 
         prompt = f"""Eres un analista de datos experto en proyecciones estadísticas para gobiernos municipales.
 
-Analiza estos datos de una encuesta ciudadana de Alta Gracia, Córdoba, Argentina:
+Analiza estos datos de una consulta ciudadana de Alta Gracia, Córdoba, Argentina:
 
 📊 DATOS GENERALES:
 - Total de respuestas: {total_responses}
@@ -353,7 +353,7 @@ Cada predicción debe tener:
 4. **confidence**: Número entre 70-95 representando % de confianza
 
 REQUISITOS:
-- Usa SOLO datos reales de la encuesta para calcular proyecciones
+- Usa SOLO datos reales de la consulta para calcular proyecciones
 - Incluye números específicos en las proyecciones (ej: "alcanzar X respuestas")
 - Proyecciones deben ser realizables en 3-6 meses
 - Confidence basado en cantidad de datos disponibles

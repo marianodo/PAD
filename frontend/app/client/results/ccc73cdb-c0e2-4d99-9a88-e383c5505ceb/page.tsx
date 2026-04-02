@@ -3,7 +3,33 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import ChatBot from "@/components/ChatBot";
+
+const GeographicHeatMap = dynamic(() => import("@/components/GeographicHeatMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6 h-96 flex items-center justify-center">
+      <p className="text-[#FFFFFF]/50">Cargando mapa...</p>
+    </div>
+  ),
+});
+
+// Coordenadas de localidades de Córdoba
+const LOCALIDAD_COORDS: Record<string, { lat: number; lng: number }> = {
+  "Córdoba Capital": { lat: -31.4201, lng: -64.1888 },
+  "Río Cuarto":      { lat: -33.1307, lng: -64.3499 },
+  "Villa María":     { lat: -32.4074, lng: -63.2428 },
+  "San Francisco":   { lat: -31.4281, lng: -62.0827 },
+  "Alta Gracia":     { lat: -31.6553, lng: -64.4330 },
+  "Villa Carlos Paz":{ lat: -31.4240, lng: -64.4980 },
+  "Jesús María":     { lat: -30.9817, lng: -64.0944 },
+  "Laboulaye":       { lat: -34.1270, lng: -63.3910 },
+  "Bell Ville":      { lat: -32.6263, lng: -62.6895 },
+  "Cosquín":         { lat: -31.2440, lng: -64.4660 },
+  "La Calera":       { lat: -31.3450, lng: -64.3360 },
+  "Cruz del Eje":    { lat: -30.7260, lng: -64.8070 },
+};
 
 const SURVEY_ID = "ccc73cdb-c0e2-4d99-9a88-e383c5505ceb";
 
@@ -16,12 +42,6 @@ interface Demographics {
 }
 
 interface SingleChoiceResult {
-  label: string;
-  votes: number;
-  percentage: number;
-}
-
-interface MultipleChoiceResult {
   label: string;
   votes: number;
   percentage: number;
@@ -41,6 +61,9 @@ interface QuestionSummary {
   results: Record<string, any>;
   results_by_age: Record<string, Record<string, any>>;
   results_by_gender: Record<string, Record<string, any>>;
+  results_by_age_and_gender: Record<string, Record<string, any>>;
+  results_by_neighborhood: Record<string, Record<string, any>>;
+  results_by_city: Record<string, Record<string, any>>;
 }
 
 interface SurveyResults {
@@ -54,10 +77,9 @@ interface SurveyResults {
   evolution_data: any;
 }
 
-const COLORS = [
-  "#2962FF", "#00C853", "#FF6D00", "#AA00FF", "#D50000",
-  "#0091EA", "#64DD17", "#FFD600", "#C51162", "#00BFA5",
-  "#6200EA", "#33691E",
+const PIE_COLORS = [
+  "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6",
+  "#EC4899", "#06B6D4", "#84CC16",
 ];
 
 export default function CordobaDashboard() {
@@ -74,6 +96,10 @@ export default function CordobaDashboard() {
   const [ageDistGenderFilter, setAgeDistGenderFilter] = useState("Todos");
   const [multipleChoiceFilter, setMultipleChoiceFilter] = useState("General");
   const [multipleChoiceGenderFilter, setMultipleChoiceGenderFilter] = useState("Todos");
+  const [singleChoiceAgeFilter, setSingleChoiceAgeFilter] = useState("General");
+  const [singleChoiceGenderFilter, setSingleChoiceGenderFilter] = useState("Todos");
+  const [ratingAgeFilter, setRatingAgeFilter] = useState("General");
+  const [ratingGenderFilter, setRatingGenderFilter] = useState("Todos");
 
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
 
@@ -149,81 +175,124 @@ export default function CordobaDashboard() {
   };
 
   // ── Helpers ────────────────────────────────────────────────────────────────
-  const getMultipleChoiceData = (q: QuestionSummary): Record<string, MultipleChoiceResult> => {
-    if (multipleChoiceFilter !== "General") {
-      const byAge = q.results_by_age?.[multipleChoiceFilter];
-      if (byAge) return byAge as Record<string, MultipleChoiceResult>;
+  const getFilteredData = (q: QuestionSummary, ageFilter: string, genderFilter: string) => {
+    if (ageFilter !== "General" && genderFilter !== "Todos") {
+      const key = `${ageFilter}|${genderFilter.toLowerCase()}`;
+      return q.results_by_age_and_gender?.[key] || {};
     }
-    if (multipleChoiceGenderFilter !== "Todos") {
-      const byGender = q.results_by_gender?.[multipleChoiceGenderFilter];
-      if (byGender) return byGender as Record<string, MultipleChoiceResult>;
+    if (genderFilter !== "Todos") {
+      return q.results_by_gender?.[genderFilter.toLowerCase()] || {};
     }
-    return q.results as Record<string, MultipleChoiceResult>;
+    if (ageFilter !== "General") {
+      return q.results_by_age?.[ageFilter] || {};
+    }
+    return q.results;
   };
 
   // ── Renders ────────────────────────────────────────────────────────────────
 
-  const renderMultipleChoice = (q: QuestionSummary) => {
-    const data = getMultipleChoiceData(q);
+  const renderBudgetPieChart = (q: QuestionSummary) => {
+    const data = getFilteredData(q, multipleChoiceFilter, multipleChoiceGenderFilter) as Record<string, { label: string; percentage: number }>;
     const entries = Object.entries(data).sort((a, b) => b[1].percentage - a[1].percentage);
     if (!entries.length) return <p className="text-[#FFFFFF]/50 text-sm">Sin datos aún.</p>;
-    const max = entries[0][1].percentage;
+
+    const total = entries.reduce((sum, [, val]) => sum + val.percentage, 0);
+    let cumulative = 0;
+    const segments = entries.map(([key, val], index) => {
+      const pct = val.percentage;
+      const startAngle = (cumulative / total) * 360;
+      cumulative += pct;
+      const endAngle = (cumulative / total) * 360;
+      return { key, label: val.label, percentage: pct, color: PIE_COLORS[index % PIE_COLORS.length], startAngle, endAngle };
+    });
+
+    const size = 240;
+    const center = size / 2;
+    const radius = 100;
+    const labelRadius = radius * 0.68;
+    const polarToCartesian = (angle: number, r: number = radius) => {
+      const rad = ((angle - 90) * Math.PI) / 180;
+      return { x: center + r * Math.cos(rad), y: center + r * Math.sin(rad) };
+    };
 
     return (
-      <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6 mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h3 className="text-lg font-bold text-[#FFFFFF]">{q.question_text}</h3>
-            <p className="text-sm text-[#FFFFFF]/50 mt-1">{q.total_answers} respuestas · distribución de presupuesto</p>
+      <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6">
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-[#FFFFFF]">{q.question_text}</h3>
+          <p className="text-sm text-[#FFFFFF]/50 mt-1">{q.total_answers} respuestas · distribución de presupuesto</p>
+        </div>
+
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex gap-0 bg-[#000000] rounded-lg p-1">
+            {ageFilterOptions.map(opt => (
+              <button key={opt} onClick={() => setMultipleChoiceFilter(opt)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${multipleChoiceFilter === opt ? "bg-[#2962FF] text-white" : "text-[#FFFFFF]/60 hover:text-white"}`}>
+                {opt}
+              </button>
+            ))}
           </div>
-          {/* Filtros */}
-          <div className="flex flex-wrap gap-2">
-            <div className="flex gap-0 bg-[#000000] rounded-lg p-1">
-              {ageFilterOptions.map(opt => (
-                <button key={opt} onClick={() => setMultipleChoiceFilter(opt)}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${multipleChoiceFilter === opt ? "bg-[#2962FF] text-white" : "text-[#FFFFFF]/60 hover:text-white"}`}>
-                  {opt}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-0 bg-[#000000] rounded-lg p-1">
-              {["Todos", "Masculino", "Femenino"].map(opt => (
-                <button key={opt} onClick={() => setMultipleChoiceGenderFilter(opt)}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${multipleChoiceGenderFilter === opt ? "bg-[#2962FF] text-white" : "text-[#FFFFFF]/60 hover:text-white"}`}>
-                  {opt}
-                </button>
-              ))}
-            </div>
+          <div className="flex gap-0 bg-[#000000] rounded-lg p-1">
+            {["Todos", "Masculino", "Femenino"].map(opt => (
+              <button key={opt} onClick={() => setMultipleChoiceGenderFilter(opt)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${multipleChoiceGenderFilter === opt ? "bg-[#2962FF] text-white" : "text-[#FFFFFF]/60 hover:text-white"}`}>
+                {opt}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="space-y-3">
-          {entries.map(([key, val], i) => (
-            <div key={key}>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-sm text-[#FFFFFF]/80 truncate pr-4">{val.label}</span>
-                <span className="text-sm font-semibold text-[#FFFFFF] shrink-0">{val.percentage.toFixed(1)}%</span>
+        {/* Pie + Legend */}
+        <div className="flex flex-col items-center gap-4">
+          {/* SVG Pie with labels inside */}
+          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+            {segments.map((seg, i) => {
+              if (seg.endAngle - seg.startAngle >= 360) {
+                return <circle key={`c-${i}`} cx={center} cy={center} r={radius} fill={seg.color} />;
+              }
+              const start = polarToCartesian(seg.startAngle);
+              const end = polarToCartesian(seg.endAngle);
+              const largeArc = seg.endAngle - seg.startAngle > 180 ? 1 : 0;
+              const d = `M ${center} ${center} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
+              const midAngle = (seg.startAngle + seg.endAngle) / 2;
+              const lp = polarToCartesian(midAngle, labelRadius);
+              return (
+                <g key={i}>
+                  <path d={d} fill={seg.color} />
+                  {seg.percentage >= 5 && (
+                    <text
+                      x={lp.x}
+                      y={lp.y}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="white"
+                      fontSize="10"
+                      fontWeight="bold"
+                    >
+                      {seg.percentage.toFixed(1)}%
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Legend — no percentage, just color + label */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 w-full">
+            {segments.map((seg, i) => (
+              <div key={i} className="flex items-center gap-2 min-w-0">
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+                <span className="text-xs text-[#FFFFFF]/70 truncate">{seg.label}</span>
               </div>
-              <div className="w-full bg-white/10 rounded-full h-3">
-                <div
-                  className="h-3 rounded-full transition-all duration-500"
-                  style={{
-                    width: `${max > 0 ? (val.percentage / max) * 100 : 0}%`,
-                    backgroundColor: COLORS[i % COLORS.length],
-                  }}
-                />
-              </div>
-              <p className="text-xs text-[#FFFFFF]/40 mt-0.5">{val.votes} respuestas</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Insight */}
-        {entries.length > 0 && (
-          <div className="mt-6 p-4 bg-[#2962FF]/10 border border-[#2962FF]/20 rounded-xl">
-            <p className="text-sm text-[#FFFFFF]/80">
-              La opción más elegida es <span className="font-bold text-white">{entries[0][1].label}</span> con{" "}
-              <span className="text-[#2962FF] font-bold">{entries[0][1].percentage.toFixed(1)}%</span> de las respuestas.
+        {segments.length > 0 && (
+          <div className="mt-4 p-3 bg-[#2962FF]/10 border border-[#2962FF]/20 rounded-xl">
+            <p className="text-xs text-[#FFFFFF]/80">
+              Prioridad #1: <span className="font-bold text-white">{segments[0].label}</span>{" "}
+              con <span className="text-[#2962FF] font-bold">{segments[0].percentage.toFixed(1)}%</span>
             </p>
           </div>
         )}
@@ -232,48 +301,82 @@ export default function CordobaDashboard() {
   };
 
   const renderSingleChoice = (q: QuestionSummary) => {
-    const entries = Object.entries(q.results as Record<string, SingleChoiceResult>);
+    const data = getFilteredData(q, singleChoiceAgeFilter, singleChoiceGenderFilter) as Record<string, SingleChoiceResult>;
+    const entries = Object.entries(data);
     if (!entries.length) return <p className="text-[#FFFFFF]/50 text-sm">Sin datos aún.</p>;
     const total = entries.reduce((sum, [, v]) => sum + v.votes, 0);
 
     return (
-      <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6 mb-6">
+      <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6">
         <h3 className="text-lg font-bold text-[#FFFFFF] mb-1">{q.question_text}</h3>
-        <p className="text-sm text-[#FFFFFF]/50 mb-6">{total} respuestas</p>
+        <p className="text-sm text-[#FFFFFF]/50 mb-4">{total} respuestas</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {entries.map(([key, val]) => {
-            const isYes = val.label?.toLowerCase() === "sí" || val.label?.toLowerCase() === "si";
-            const color = isYes ? "#00C853" : "#D50000";
-            return (
-              <div key={key} className="flex flex-col items-center justify-center p-8 rounded-2xl border-2"
-                style={{ borderColor: color, backgroundColor: `${color}15` }}>
-                <span className="text-5xl font-bold mb-2" style={{ color }}>{val.percentage.toFixed(1)}%</span>
-                <span className="text-xl font-semibold text-[#FFFFFF]">{val.label}</span>
-                <span className="text-sm text-[#FFFFFF]/50 mt-1">{val.votes} votos</span>
-              </div>
-            );
-          })}
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex gap-0 bg-[#000000] rounded-lg p-1">
+            {ageFilterOptions.map(opt => (
+              <button key={opt} onClick={() => setSingleChoiceAgeFilter(opt)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${singleChoiceAgeFilter === opt ? "bg-[#2962FF] text-white" : "text-[#FFFFFF]/60 hover:text-white"}`}>
+                {opt}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-0 bg-[#000000] rounded-lg p-1">
+            {["Todos", "Masculino", "Femenino"].map(opt => (
+              <button key={opt} onClick={() => setSingleChoiceGenderFilter(opt)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${singleChoiceGenderFilter === opt ? "bg-[#2962FF] text-white" : "text-[#FFFFFF]/60 hover:text-white"}`}>
+                {opt}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {entries.length === 2 && (
-          <div className="mt-6 p-4 bg-[#1a1a2e] border border-white/10 rounded-xl">
-            <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden">
-              <div className="h-4 rounded-full transition-all duration-700"
-                style={{ width: `${entries[0][1].percentage}%`, backgroundColor: "#00C853" }} />
-            </div>
-            <div className="flex justify-between text-xs text-[#FFFFFF]/50 mt-1">
-              <span>{entries[0][1].label} {entries[0][1].percentage.toFixed(1)}%</span>
-              <span>{entries[1]?.[1].label} {entries[1]?.[1].percentage.toFixed(1)}%</span>
-            </div>
-          </div>
-        )}
+        {(() => {
+          const sorted = [...entries].sort((a, b) => {
+            const aYes = a[1].label?.toLowerCase() === "sí" || a[1].label?.toLowerCase() === "si";
+            const bYes = b[1].label?.toLowerCase() === "sí" || b[1].label?.toLowerCase() === "si";
+            return aYes === bYes ? 0 : aYes ? -1 : 1;
+          });
+          const yesEntry = sorted[0]?.[1];
+          const noEntry = sorted[1]?.[1];
+          return (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {sorted.map(([key, val]) => {
+                  const isYes = val.label?.toLowerCase() === "sí" || val.label?.toLowerCase() === "si";
+                  const color = isYes ? "#00C853" : "#D50000";
+                  return (
+                    <div key={key} className="flex flex-col items-center justify-center p-6 rounded-2xl border-2"
+                      style={{ borderColor: color, backgroundColor: `${color}15` }}>
+                      <span className="text-4xl font-bold mb-2" style={{ color }}>{val.percentage.toFixed(1)}%</span>
+                      <span className="text-lg font-semibold text-[#FFFFFF]">{val.label}</span>
+                      <span className="text-sm text-[#FFFFFF]/50 mt-1">{val.votes} votos</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {yesEntry && noEntry && (
+                <div className="mt-4 p-3 bg-[#1a1a2e] border border-white/10 rounded-xl">
+                  <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+                    <div className="h-3 rounded-full transition-all duration-700"
+                      style={{ width: `${yesEntry.percentage}%`, backgroundColor: "#00C853" }} />
+                  </div>
+                  <div className="flex justify-between text-xs text-[#FFFFFF]/50 mt-1">
+                    <span>{yesEntry.label} {yesEntry.percentage.toFixed(1)}%</span>
+                    <span>{noEntry.label} {noEntry.percentage.toFixed(1)}%</span>
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
     );
   };
 
   const renderRating = (q: QuestionSummary) => {
-    const r = q.results as unknown as RatingResult;
+    const r = getFilteredData(q, ratingAgeFilter, ratingGenderFilter) as unknown as RatingResult;
     if (!r?.average) return <p className="text-[#FFFFFF]/50 text-sm">Sin datos aún.</p>;
     const dist = r.distribution || {};
     const maxDist = Math.max(...Object.values(dist));
@@ -283,7 +386,27 @@ export default function CordobaDashboard() {
     return (
       <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6 mb-6">
         <h3 className="text-lg font-bold text-[#FFFFFF] mb-1">{q.question_text}</h3>
-        <p className="text-sm text-[#FFFFFF]/50 mb-6">{r.total_ratings} calificaciones</p>
+        <p className="text-sm text-[#FFFFFF]/50 mb-4">{r.total_ratings} calificaciones</p>
+
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex gap-0 bg-[#000000] rounded-lg p-1">
+            {ageFilterOptions.map(opt => (
+              <button key={opt} onClick={() => setRatingAgeFilter(opt)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${ratingAgeFilter === opt ? "bg-[#2962FF] text-white" : "text-[#FFFFFF]/60 hover:text-white"}`}>
+                {opt}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-0 bg-[#000000] rounded-lg p-1">
+            {["Todos", "Masculino", "Femenino"].map(opt => (
+              <button key={opt} onClick={() => setRatingGenderFilter(opt)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${ratingGenderFilter === opt ? "bg-[#2962FF] text-white" : "text-[#FFFFFF]/60 hover:text-white"}`}>
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="flex flex-col md:flex-row gap-8">
           {/* Promedio */}
@@ -327,11 +450,14 @@ export default function CordobaDashboard() {
     if (!results) return null;
     const ageData = results.demographics.by_age_group_by_gender;
     const genderData = results.demographics.by_age_group;
-    const data = ageDistGenderFilter === "Todos"
-      ? genderData
-      : Object.fromEntries(
-        Object.entries(ageData).map(([age, genders]) => [age, (genders as any)[ageDistGenderFilter] || 0])
-      );
+    let data: Record<string, number>;
+    if (ageDistGenderFilter === "Todos") {
+      data = genderData;
+    } else {
+      // ageData structure: { "masculino": {"18-30": 100, ...}, "femenino": {...} }
+      const key = ageDistGenderFilter.toLowerCase();
+      data = (ageData[key] || ageData[ageDistGenderFilter] || {}) as Record<string, number>;
+    }
 
     const entries = Object.entries(data).filter(([k]) => k !== "Sin especificar");
     if (!entries.length) return null;
@@ -422,33 +548,53 @@ export default function CordobaDashboard() {
   const renderInsightsSection = () => {
     if (!aiInsights?.length) return null;
 
-    const iconMap: Record<string, JSX.Element> = {
-      "trending-up": <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>,
-      "alert": <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>,
-      "target": <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-      "users": <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
-    };
-
-    const priorityColors: Record<string, string> = {
-      high: "border-red-500/30 bg-red-500/5",
-      medium: "border-yellow-500/30 bg-yellow-500/5",
-      low: "border-green-500/30 bg-green-500/5",
+    const categoryIcons: Record<string, JSX.Element> = {
+      participation: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+      satisfaction: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+      demographics: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>,
+      infrastructure: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>,
+      consensus: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
     };
 
     return (
       <div className="space-y-4">
         {aiInsights.map((insight: any, i: number) => (
-          <div key={i} className={`p-5 rounded-xl border ${priorityColors[insight.priority] || "border-white/10 bg-white/5"}`}>
-            <div className="flex items-start gap-3">
-              <div className="text-[#2962FF] mt-0.5">{iconMap[insight.icon] || iconMap["target"]}</div>
-              <div>
-                <h4 className="font-semibold text-[#FFFFFF] mb-1">{insight.title}</h4>
-                <p className="text-sm text-[#FFFFFF]/70">{insight.description}</p>
-                {insight.action && (
-                  <p className="text-xs text-[#2962FF] mt-2 font-medium">→ {insight.action}</p>
-                )}
+          <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="text-[#2962FF]">
+                  {categoryIcons[insight.category] || categoryIcons["consensus"]}
+                </div>
+                <h4 className="font-semibold text-[#FFFFFF]">{insight.title}</h4>
               </div>
+              {insight.impact && (
+                <span className={`text-xs font-medium px-2 py-1 rounded-full shrink-0 ${
+                  insight.impact === "Alta"
+                    ? "bg-red-500/20 text-red-400"
+                    : insight.impact === "Media"
+                    ? "bg-amber-500/20 text-amber-400"
+                    : "bg-[#000000] text-[#FFFFFF]/80"
+                }`}>
+                  Impacto: {insight.impact}
+                </span>
+              )}
             </div>
+
+            <p className="text-sm text-[#FFFFFF]/80 mb-3 ml-8">{insight.description}</p>
+
+            {insight.recommendation && (
+              <div className="ml-8 bg-white/5 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <svg className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <div>
+                    <p className="text-xs font-medium text-amber-400">Recomendación</p>
+                    <p className="text-sm text-[#FFFFFF]/80">{insight.recommendation}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -554,16 +700,17 @@ export default function CordobaDashboard() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Image src="/logo.jpeg" alt="Data Insights" width={48} height={48} className="rounded-xl" />
+              <Image src="/logo_di_white.png" alt="Data Insights" width={120} height={48} />
               <div>
                 <h1 className="text-4xl font-bold text-[#FFFFFF]">Panel de Consultas Ciudadanas</h1>
-                <p className="text-[#FFFFFF]/50 mt-2">Democratizando la Voluntad Popular</p>
+                <p className="text-[#2962FF] font-semibold text-sm mt-1">Gobierno de la Provincia de Córdoba</p>
+                <p className="text-[#FFFFFF]/50 mt-1">Democratizando la Voluntad Popular</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1.5 text-xs bg-[#00C853]/20 text-[#00C853] px-3 py-1.5 rounded-full font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00C853] animate-pulse" />
-                Encuesta activa
+                Consulta activa
               </span>
             </div>
           </div>
@@ -594,7 +741,7 @@ export default function CordobaDashboard() {
               <div>
                 <p className="text-sm text-[#FFFFFF]/70 mb-2">Respuestas Totales</p>
                 <p className="text-4xl font-bold text-[#FFFFFF] mb-3">{results.total_responses.toLocaleString()}</p>
-                <p className="text-sm font-medium text-[#FFFFFF]/50">Desde el inicio de la encuesta</p>
+                <p className="text-sm font-medium text-[#FFFFFF]/50">Desde el inicio de la consulta</p>
               </div>
               <div className="bg-[#2962FF]/20 rounded-full p-3">
                 <svg className="w-6 h-6 text-[#2962FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -646,9 +793,28 @@ export default function CordobaDashboard() {
         {/* Tab: Datos */}
         {activeTab === "datos" && (
           <div>
-            {multipleQ && renderMultipleChoice(multipleQ)}
-            {singleQ && renderSingleChoice(singleQ)}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {multipleQ && renderBudgetPieChart(multipleQ)}
+              {singleQ && renderSingleChoice(singleQ)}
+            </div>
             {ratingQ && renderRating(ratingQ)}
+
+            {/* Mapa por Localidad */}
+            {results.demographics.by_city && (
+              <div className="mb-6">
+                <GeographicHeatMap
+                  neighborhoodData={results.demographics.by_city}
+                  questions={results.questions_summary}
+                  neighborhoodCoords={LOCALIDAD_COORDS}
+                  mapCenter={[-31.8, -64.0]}
+                  mapZoom={7}
+                  circleRadius={8000}
+                  groupBy="city"
+                  title="Desglose por Localidad"
+                  subtitle="Participación por ciudad de la provincia"
+                />
+              </div>
+            )}
 
             {/* Demografía */}
             <h2 className="text-2xl font-bold text-[#FFFFFF] mb-4 mt-4">Desglose Demográfico</h2>
