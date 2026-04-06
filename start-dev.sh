@@ -174,3 +174,4 @@ echo "$FRONTEND_PID" > /tmp/pad-frontend.pid
 echo "📊 Mostrando logs en tiempo real (Ctrl+C para salir)..."
 echo ""
 tail -f /tmp/pad-backend.log /tmp/pad-frontend.log
+
