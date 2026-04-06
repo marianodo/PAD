@@ -29,6 +29,13 @@ const LOCALIDAD_COORDS: Record<string, { lat: number; lng: number }> = {
   "Cosquín":         { lat: -31.2440, lng: -64.4660 },
   "La Calera":       { lat: -31.3450, lng: -64.3360 },
   "Cruz del Eje":    { lat: -30.7260, lng: -64.8070 },
+  "Villa Dolores":   { lat: -31.9427, lng: -65.1869 },
+  "Deán Funes":      { lat: -30.4237, lng: -64.3503 },
+  "Oliva":           { lat: -32.0465, lng: -63.5673 },
+  "Leones":          { lat: -32.6568, lng: -62.2969 },
+  "Morteros":        { lat: -30.7108, lng: -62.0044 },
+  "Marcos Juárez":   { lat: -32.6963, lng: -62.1058 },
+  "Río Tercero":     { lat: -32.1726, lng: -64.1086 },
 };
 
 const SURVEY_ID = "ccc73cdb-c0e2-4d99-9a88-e383c5505ceb";

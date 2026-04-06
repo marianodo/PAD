@@ -56,22 +56,15 @@ wait_for_service() {
     return 1
 }
 
-# 1. Verificar PostgreSQL
-echo "1️⃣  Verificando PostgreSQL..."
-if ! command -v psql &> /dev/null; then
-    echo -e "${RED}❌ PostgreSQL no está instalado${NC}"
-    echo "   Instalá con: brew install postgresql@14"
-    exit 1
+# 1. Verificar base de datos
+echo "1️⃣  Verificando base de datos..."
+# La BD es Railway (remota) — no se necesita PostgreSQL local
+DB_URL=$(cd "$BACKEND_DIR" && grep -E "^DATABASE_URL" .env 2>/dev/null | head -1 || true)
+if echo "$DB_URL" | grep -q "railway\|postgresql://"; then
+    echo -e "${GREEN}✅ Base de datos remota (Railway) configurada${NC}"
+else
+    echo -e "${YELLOW}⚠️  Verificá que .env tenga DATABASE_URL apuntando a Railway${NC}"
 fi
-
-# Verificar si PostgreSQL está corriendo
-if ! pg_isready -h localhost -p 5432 > /dev/null 2>&1; then
-    echo "   📦 Iniciando PostgreSQL..."
-    brew services start postgresql@14
-    sleep 3
-fi
-
-echo -e "${GREEN}✅ PostgreSQL está corriendo${NC}"
 
 # 2. Verificar Redis (opcional, si lo usás)
 echo ""
