@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Date, DateTime, ForeignKey, func
+from sqlalchemy import Column, String, Date, DateTime, Boolean, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -29,6 +29,9 @@ class User(Base):
     neighborhood = Column(String(255))
     city = Column(String(255))
     postal_code = Column(String(20))
+
+    # Estado de la cuenta — si es False, no puede loguearse ni responder consultas
+    is_active = Column(Boolean, nullable=False, server_default="true", default=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())

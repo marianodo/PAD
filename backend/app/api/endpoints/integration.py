@@ -41,6 +41,12 @@ def _get_user_by_cuil_authorized(
             detail="Contribuyente no encontrado"
         )
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Usuario deshabilitado"
+        )
+
     if user.client_id is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

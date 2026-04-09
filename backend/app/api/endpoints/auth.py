@@ -146,6 +146,14 @@ def login_v2(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Check is_active for users (only users tienen este flag)
+    if account_type == "user" and not getattr(account, "is_active", True):
+        logger.warning(f"❌ DISABLED USER attempted login: {credentials.cuil}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Usuario deshabilitado. Contactá al administrador.",
+        )
+
     # Create access token with account type
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
