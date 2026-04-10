@@ -114,7 +114,7 @@ async def generate_ai_insights(
                     "from_cache": True
                 }
 
-        # 5. Preparar resumen compacto para el prompt (sin desglose por ciudad/barrio)
+        # 5. Preparar prompt — incluir todos los datos demográficos y por ciudad
         def summarize_questions(questions_summary):
             summary = []
             for q in questions_summary:
@@ -124,19 +124,11 @@ async def generate_ai_insights(
                     "results": q.get("results"),
                     "results_by_age": q.get("results_by_age"),
                     "results_by_gender": q.get("results_by_gender"),
+                    "results_by_city": q.get("results_by_city"),
                 })
             return summary
 
         demographics = results.get('demographics', {})
-        compact_demographics = {
-            "by_age_group": demographics.get("by_age_group", {}),
-            "by_gender": demographics.get("by_gender", {}),
-            # Top 10 ciudades por participación
-            "top_cities": dict(sorted(
-                demographics.get("by_city", {}).items(),
-                key=lambda x: x[1], reverse=True
-            )[:10]),
-        }
 
         # 3. Preparar el prompt para Claude
         prompt = f"""Analiza estos datos de una consulta ciudadana de la Provincia de Córdoba, Argentina:
@@ -145,11 +137,11 @@ async def generate_ai_insights(
 - Total de respuestas: {total_responses}
 
 👥 DEMOGRAFÍA:
-- Por edad: {json.dumps(compact_demographics['by_age_group'], ensure_ascii=False)}
-- Por género: {json.dumps(compact_demographics['by_gender'], ensure_ascii=False)}
-- Top 10 ciudades con más participación: {json.dumps(compact_demographics['top_cities'], ensure_ascii=False)}
+- Por edad: {json.dumps(demographics.get('by_age_group', {}), ensure_ascii=False)}
+- Por género: {json.dumps(demographics.get('by_gender', {}), ensure_ascii=False)}
+- Por ciudad: {json.dumps(demographics.get('by_city', {}), ensure_ascii=False)}
 
-📈 PREGUNTAS Y RESPUESTAS:
+📈 PREGUNTAS Y RESPUESTAS (con desglose por edad, género y ciudad):
 {json.dumps(summarize_questions(results.get('questions_summary', [])), indent=2, ensure_ascii=False)}
 
 ⏰ EVOLUCIÓN TEMPORAL (últimos meses):
@@ -343,19 +335,16 @@ async def generate_ai_predictions(
                 detail="No se encontraron resultados para esta consulta"
             )
 
-        # 3. Preparar el prompt para predicciones (resumen compacto)
+        # 3. Preparar el prompt para predicciones
         total_responses = results.get('total_responses', 0)
         demographics = results.get('demographics', {})
-        compact_demo = {
-            "by_age_group": demographics.get("by_age_group", {}),
-            "by_gender": demographics.get("by_gender", {}),
-            "top_cities": dict(sorted(
-                demographics.get("by_city", {}).items(),
-                key=lambda x: x[1], reverse=True
-            )[:10]),
-        }
-        compact_questions = [
-            {"title": q.get("title"), "type": q.get("question_type"), "results": q.get("results")}
+        questions_pred = [
+            {
+                "title": q.get("title"),
+                "type": q.get("question_type"),
+                "results": q.get("results"),
+                "results_by_city": q.get("results_by_city"),
+            }
             for q in results.get("questions_summary", [])
         ]
 
@@ -370,10 +359,12 @@ Analiza estos datos de una consulta ciudadana de la Provincia de Córdoba, Argen
 {json.dumps(results.get('evolution_data', {}), indent=2, ensure_ascii=False)}
 
 👥 DEMOGRAFÍA:
-{json.dumps(compact_demo, indent=2, ensure_ascii=False)}
+- Por edad: {json.dumps(demographics.get('by_age_group', {}), ensure_ascii=False)}
+- Por género: {json.dumps(demographics.get('by_gender', {}), ensure_ascii=False)}
+- Por ciudad: {json.dumps(demographics.get('by_city', {}), ensure_ascii=False)}
 
 📊 RESPUESTAS:
-{json.dumps(compact_questions, indent=2, ensure_ascii=False)}
+{json.dumps(questions_pred, indent=2, ensure_ascii=False)}
 
 ---
 
