@@ -87,10 +87,16 @@ async def generate_ai_insights(
                 detail="No se encontraron resultados para esta consulta"
             )
 
-        # 3. Calcular hash de las respuestas para detectar cambios
+        # 3. Calcular hash liviano (solo total + resultados top-level, no desglose por ciudad)
         total_responses = results.get('total_responses', 0)
-        responses_data = json.dumps(results, sort_keys=True)
-        responses_hash = hashlib.md5(responses_data.encode()).hexdigest()
+        hash_data = {
+            "total": total_responses,
+            "questions": [
+                {"id": q.get("question_id"), "results": q.get("results")}
+                for q in results.get("questions_summary", [])
+            ]
+        }
+        responses_hash = hashlib.md5(json.dumps(hash_data, sort_keys=True).encode()).hexdigest()
 
         # 4. Buscar insights en cache
         if not force_regenerate:
@@ -108,31 +114,45 @@ async def generate_ai_insights(
                     "from_cache": True
                 }
 
-        # 5. Si no hay cache o se forzó regeneración, generar nuevos insights
-        results = SurveyService.get_survey_results(db, UUID(survey_id))
+        # 5. Preparar resumen compacto para el prompt (sin desglose por ciudad/barrio)
+        def summarize_questions(questions_summary):
+            summary = []
+            for q in questions_summary:
+                summary.append({
+                    "title": q.get("title"),
+                    "type": q.get("question_type"),
+                    "results": q.get("results"),
+                    "results_by_age": q.get("results_by_age"),
+                    "results_by_gender": q.get("results_by_gender"),
+                })
+            return summary
 
-        if not results:
-            raise HTTPException(
-                status_code=404,
-                detail="No se encontraron resultados para esta consulta"
-            )
+        demographics = results.get('demographics', {})
+        compact_demographics = {
+            "by_age_group": demographics.get("by_age_group", {}),
+            "by_gender": demographics.get("by_gender", {}),
+            # Top 10 ciudades por participación
+            "top_cities": dict(sorted(
+                demographics.get("by_city", {}).items(),
+                key=lambda x: x[1], reverse=True
+            )[:10]),
+        }
 
         # 3. Preparar el prompt para Claude
-        prompt = f"""Analiza estos datos de una consulta ciudadana de Alta Gracia, Córdoba, Argentina:
+        prompt = f"""Analiza estos datos de una consulta ciudadana de la Provincia de Córdoba, Argentina:
 
 📊 DATOS GENERALES:
-- Total de respuestas: {results.get('total_responses', 0)}
-- Respuestas este mes: {results.get('total_responses', 0)}
+- Total de respuestas: {total_responses}
 
 👥 DEMOGRAFÍA:
-- Por edad: {json.dumps(results.get('demographics', {}).get('by_age_group', {}), ensure_ascii=False)}
-- Por barrio: {json.dumps(results.get('demographics', {}).get('by_neighborhood', {}), ensure_ascii=False)}
-- Por ciudad: {json.dumps(results.get('demographics', {}).get('by_city', {}), ensure_ascii=False)}
+- Por edad: {json.dumps(compact_demographics['by_age_group'], ensure_ascii=False)}
+- Por género: {json.dumps(compact_demographics['by_gender'], ensure_ascii=False)}
+- Top 10 ciudades con más participación: {json.dumps(compact_demographics['top_cities'], ensure_ascii=False)}
 
 📈 PREGUNTAS Y RESPUESTAS:
-{json.dumps(results.get('questions_summary', []), indent=2, ensure_ascii=False)}
+{json.dumps(summarize_questions(results.get('questions_summary', [])), indent=2, ensure_ascii=False)}
 
-⏰ EVOLUCIÓN TEMPORAL:
+⏰ EVOLUCIÓN TEMPORAL (últimos meses):
 {json.dumps(results.get('evolution_data', {}), indent=2, ensure_ascii=False)}
 
 ---
@@ -323,12 +343,25 @@ async def generate_ai_predictions(
                 detail="No se encontraron resultados para esta consulta"
             )
 
-        # 3. Preparar el prompt para predicciones
+        # 3. Preparar el prompt para predicciones (resumen compacto)
         total_responses = results.get('total_responses', 0)
+        demographics = results.get('demographics', {})
+        compact_demo = {
+            "by_age_group": demographics.get("by_age_group", {}),
+            "by_gender": demographics.get("by_gender", {}),
+            "top_cities": dict(sorted(
+                demographics.get("by_city", {}).items(),
+                key=lambda x: x[1], reverse=True
+            )[:10]),
+        }
+        compact_questions = [
+            {"title": q.get("title"), "type": q.get("question_type"), "results": q.get("results")}
+            for q in results.get("questions_summary", [])
+        ]
 
-        prompt = f"""Eres un analista de datos experto en proyecciones estadísticas para gobiernos municipales.
+        prompt = f"""Eres un analista de datos experto en proyecciones estadísticas para gobiernos provinciales.
 
-Analiza estos datos de una consulta ciudadana de Alta Gracia, Córdoba, Argentina:
+Analiza estos datos de una consulta ciudadana de la Provincia de Córdoba, Argentina:
 
 📊 DATOS GENERALES:
 - Total de respuestas: {total_responses}
@@ -337,10 +370,10 @@ Analiza estos datos de una consulta ciudadana de Alta Gracia, Córdoba, Argentin
 {json.dumps(results.get('evolution_data', {}), indent=2, ensure_ascii=False)}
 
 👥 DEMOGRAFÍA:
-{json.dumps(results.get('demographics', {}), indent=2, ensure_ascii=False)}
+{json.dumps(compact_demo, indent=2, ensure_ascii=False)}
 
 📊 RESPUESTAS:
-{json.dumps(results.get('questions_summary', []), indent=2, ensure_ascii=False)}
+{json.dumps(compact_questions, indent=2, ensure_ascii=False)}
 
 ---
 

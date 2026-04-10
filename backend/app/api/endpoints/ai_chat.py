@@ -48,22 +48,37 @@ async def chat_with_survey(
 
         results = SurveyService.get_survey_results(db, UUID(survey_id))
 
+        # Resumen compacto: excluir desglose por ciudad/barrio/edad_y_genero para no saturar el contexto
+        demographics = results.get('demographics', {})
+        top_cities = dict(sorted(
+            demographics.get("by_city", {}).items(),
+            key=lambda x: x[1], reverse=True
+        )[:15])
+        compact_questions = [
+            {
+                "title": q.get("title"),
+                "type": q.get("question_type"),
+                "results": q.get("results"),
+                "results_by_age": q.get("results_by_age"),
+                "results_by_gender": q.get("results_by_gender"),
+            }
+            for q in results.get("questions_summary", [])
+        ]
+
         system_prompt = f"""Eres un asistente de IA especializado en analizar datos de consultas ciudadanas.
 Tu UNICA funcion es responder preguntas sobre los datos de esta consulta especifica.
 
-DATOS DE LA ENCUESTA:
+DATOS DE LA CONSULTA:
 
 Total de respuestas: {results.get('total_responses', 0)}
-Respuestas mensuales: {results.get('monthly_responses', 0)}
 
 DEMOGRAFIA:
-- Por edad: {json.dumps(results.get('demographics', {}).get('by_age_group', {}), ensure_ascii=False)}
-- Por barrio: {json.dumps(results.get('demographics', {}).get('by_neighborhood', {}), ensure_ascii=False)}
-- Por ciudad: {json.dumps(results.get('demographics', {}).get('by_city', {}), ensure_ascii=False)}
-- Por genero: {json.dumps(results.get('demographics', {}).get('by_gender', {}), ensure_ascii=False)}
+- Por edad: {json.dumps(demographics.get('by_age_group', {}), ensure_ascii=False)}
+- Por genero: {json.dumps(demographics.get('by_gender', {}), ensure_ascii=False)}
+- Top 15 ciudades: {json.dumps(top_cities, ensure_ascii=False)}
 
-PREGUNTAS Y RESPUESTAS (con desglose por edad, genero y barrio):
-{json.dumps(results.get('questions_summary', []), indent=2, ensure_ascii=False)}
+PREGUNTAS Y RESPUESTAS (con desglose por edad y genero):
+{json.dumps(compact_questions, indent=2, ensure_ascii=False)}
 
 EVOLUCION TEMPORAL:
 {json.dumps(results.get('evolution_data', {}), indent=2, ensure_ascii=False)}
