@@ -7,6 +7,7 @@ from anthropic import Anthropic
 from pydantic import BaseModel
 import json
 import re
+from decimal import Decimal
 from typing import List, Union
 from uuid import UUID
 
@@ -17,6 +18,7 @@ from app.core.config import settings
 from app.models.admin import Admin
 from app.models.client import Client
 from app.models.user import User
+from app.api.endpoints.ai_insights import _json_dumps, _get_client_context
 
 router = APIRouter()
 
@@ -47,16 +49,17 @@ async def chat_with_survey(
             )
 
         results = SurveyService.get_survey_results(db, UUID(survey_id))
+        ctx = _get_client_context(db, survey_id)
 
         demographics = results.get('demographics', {})
         questions_for_prompt = [
             {
-                "title": q.get("title"),
-                "type": q.get("question_type"),
-                "results": q.get("results"),
-                "results_by_age": q.get("results_by_age"),
-                "results_by_gender": q.get("results_by_gender"),
-                "results_by_city": q.get("results_by_city"),
+                "pregunta": q.get("question_text"),
+                "tipo": q.get("question_type"),
+                "resultados_generales": q.get("results"),
+                f"resultados_por_{ctx['geo_unit']}": q.get("results_by_city"),
+                "resultados_por_edad": q.get("results_by_age"),
+                "resultados_por_genero": q.get("results_by_gender"),
             }
             for q in results.get("questions_summary", [])
         ]
@@ -64,30 +67,35 @@ async def chat_with_survey(
         system_prompt = f"""Eres un asistente de IA especializado en analizar datos de consultas ciudadanas.
 Tu UNICA funcion es responder preguntas sobre los datos de esta consulta especifica.
 
+CONTEXTO DEL CLIENTE:
+{ctx['context_line']}
+Tipo de organismo: {ctx['org_type']}
+Unidad geografica: {ctx['geo_unit_plural']} (usa siempre este termino)
+
 DATOS DE LA CONSULTA:
 
 Total de respuestas: {results.get('total_responses', 0)}
 
 DEMOGRAFIA:
-- Por edad: {json.dumps(demographics.get('by_age_group', {}), ensure_ascii=False)}
-- Por genero: {json.dumps(demographics.get('by_gender', {}), ensure_ascii=False)}
-- Por ciudad: {json.dumps(demographics.get('by_city', {}), ensure_ascii=False)}
+- Por edad: {_json_dumps(demographics.get('by_age_group', {}))}
+- Por genero: {_json_dumps(demographics.get('by_gender', {}))}
+- Por {ctx['geo_unit']}: {_json_dumps(demographics.get('by_city', {}))}
 
-PREGUNTAS Y RESPUESTAS (con desglose por edad, genero y ciudad):
-{json.dumps(questions_for_prompt, indent=2, ensure_ascii=False)}
+PREGUNTAS Y RESPUESTAS (con desglose por edad, genero y {ctx['geo_unit']}):
+{_json_dumps(questions_for_prompt)}
 
 EVOLUCION TEMPORAL:
-{json.dumps(results.get('evolution_data', {}), indent=2, ensure_ascii=False)}
+{_json_dumps(results.get('evolution_data', {}))}
 
 REGLAS ESTRICTAS:
 1. SOLO responde preguntas relacionadas con estos datos de la consulta.
 2. Si te preguntan algo no relacionado con la consulta, responde: "Solo puedo responder preguntas relacionadas con los datos de esta consulta. ¿Qué te gustaría saber sobre los resultados?"
 3. Siempre responde en español.
-4. Usa datos concretos (números, porcentajes, nombres de barrios) en tus respuestas.
+4. Usa datos concretos (números, porcentajes, nombres de {ctx['geo_unit_plural']}) en tus respuestas.
 5. Sé conciso pero informativo.
 6. NO inventes datos que no estén en el contexto proporcionado.
 7. Cuando hables de porcentajes o votos, cita los números exactos del contexto.
-8. INSIGHTS: Al final de tu respuesta (despues del grafico si lo hay), agrega un breve insight analitico marcado con "💡 **Insight:**". Puede ser una tendencia, un dato destacado, una comparacion interesante, o una conclusion accionable derivada de los datos. Debe ser util para la toma de decisiones. Ejemplo: "💡 **Insight:** El barrio Centro concentra el 35% de la participacion, lo que sugiere mayor engagement civico en zonas centricas."
+8. INSIGHTS: Al final de tu respuesta (despues del grafico si lo hay), agrega un breve insight analitico marcado con "💡 **Insight:**". Puede ser una tendencia, un dato destacado, una comparacion interesante, o una conclusion accionable derivada de los datos. Debe ser util para la toma de decisiones. Ejemplo: "💡 **Insight:** La {ctx['geo_unit']} Centro concentra el 35% de la participacion, lo que sugiere mayor engagement civico en zonas centricas."
 9. GRAFICOS: Cuando una pregunta se beneficie de una representacion visual (comparaciones, distribuciones, rankings), incluye UN bloque de grafico en tu respuesta usando este formato exacto:
 
 ~~~chart
@@ -102,7 +110,7 @@ o para pie charts:
 
 REGLAS PARA GRAFICOS:
 - Solo usa "bar" o "pie" como type.
-- Usa "bar" para comparaciones y rankings (ej: votos por proyecto, participacion por barrio).
+- Usa "bar" para comparaciones y rankings (ej: votos por proyecto, participacion por {ctx['geo_unit']}).
 - Usa "pie" para distribuciones porcentuales (ej: distribucion de presupuesto, genero).
 - Los valores deben ser numeros exactos del contexto, NO inventados.
 - Maximo 8 categorias. Si hay mas, agrupa las menores en "Otros".
