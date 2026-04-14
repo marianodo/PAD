@@ -214,8 +214,9 @@ Unidad geográfica relevante: {ctx['geo_unit_plural']} (usar este término, no "
 - Por edad: {_json_dumps(demographics.get('by_age_group', {}))}
 - Por género: {_json_dumps(demographics.get('by_gender', {}))}
 - Por {ctx['geo_unit']}: {_json_dumps(demographics.get('by_city', {}))}
+- Por barrio: {_json_dumps(demographics.get('by_neighborhood', {}))}
 
-📈 PREGUNTAS Y RESPUESTAS (con desglose por edad, género y {ctx['geo_unit']}):
+📈 PREGUNTAS Y RESPUESTAS (con desglose por edad, género, {ctx['geo_unit']} y barrio):
 {_json_dumps(summarize_questions(results.get('questions_summary', [])))}
 
 ⏰ EVOLUCIÓN TEMPORAL (últimos meses):
@@ -419,6 +420,7 @@ async def generate_ai_predictions(
                 "tipo": q.get("question_type"),
                 "resultados_generales": q.get("results"),
                 f"resultados_por_{ctx['geo_unit']}": q.get("results_by_city"),
+                "resultados_por_barrio": q.get("results_by_neighborhood"),
             }
             for q in results.get("questions_summary", [])
         ]
