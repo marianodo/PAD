@@ -257,6 +257,13 @@ export default function CordobaDashboard() {
   const [singleChoiceGenderFilter, setSingleChoiceGenderFilter] = useState("Todos");
   const [ratingAgeFilter, setRatingAgeFilter] = useState("General");
   const [ratingGenderFilter, setRatingGenderFilter] = useState("Todos");
+  // Evolution charts state
+  const [budgetEvolutionAgeFilter, setBudgetEvolutionAgeFilter] = useState("General");
+  const [budgetEvolutionGenderFilter, setBudgetEvolutionGenderFilter] = useState("Todos");
+  const [ratingEvolutionAgeFilter, setRatingEvolutionAgeFilter] = useState("General");
+  const [ratingEvolutionGenderFilter, setRatingEvolutionGenderFilter] = useState("Todos");
+  const [hiddenBudgetCategories, setHiddenBudgetCategories] = useState<Set<string>>(new Set());
+  const [hoveredRatingPoint, setHoveredRatingPoint] = useState<{ index: number; value: number; month: string } | null>(null);
 
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
 
@@ -834,6 +841,258 @@ export default function CordobaDashboard() {
 
   if (!results) return null;
 
+  // ── Shared filter renderer ─────────────────────────────────────────────────
+  const renderCombinedFilters = (
+    ageFilter: string, setAgeFilter: (v: string) => void,
+    genderFilter: string, setGenderFilter: (v: string) => void
+  ) => (
+    <div className="flex flex-nowrap gap-2 mb-4 overflow-x-auto">
+      <div className="flex gap-1 bg-[#000000]/40 rounded-lg p-1 shrink-0">
+        {["General", "18-30", "31-45", "46-60", "60+"].map(opt => (
+          <button key={opt} onClick={() => setAgeFilter(opt)}
+            className={`px-2 py-1 text-xs rounded-md transition-colors whitespace-nowrap ${ageFilter === opt ? "bg-[#2962FF] text-white" : "text-[#FFFFFF]/50 hover:text-white"}`}>
+            {opt}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-1 bg-[#000000]/40 rounded-lg p-1 shrink-0">
+        {["Todos", "Masculino", "Femenino"].map(opt => (
+          <button key={opt} onClick={() => setGenderFilter(opt)}
+            className={`px-2 py-1 text-xs rounded-md transition-colors whitespace-nowrap ${genderFilter === opt ? "bg-[#2962FF] text-white" : "text-[#FFFFFF]/50 hover:text-white"}`}>
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  // ── Evolución de Preferencias (percentage_distribution) ────────────────────
+  const renderBudgetEvolutionChart = () => {
+    const evolutionData = results?.evolution_data;
+    if (!evolutionData || !evolutionData.percentage_distribution?.categories) {
+      return (
+        <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6">
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Evolución de Preferencias</h3>
+          <p className="text-sm text-[#FFFFFF]/50">Tendencias mensuales de asignación ciudadana</p>
+          <div className="text-center text-[#FFFFFF]/50 py-12">No hay datos históricos disponibles</div>
+        </div>
+      );
+    }
+
+    const months = evolutionData.months;
+    let rawCategories;
+    if (budgetEvolutionAgeFilter !== "General" && budgetEvolutionGenderFilter !== "Todos") {
+      const key = `${budgetEvolutionAgeFilter}|${budgetEvolutionGenderFilter.toLowerCase()}`;
+      rawCategories = evolutionData.by_age_and_gender?.[key]?.percentage_distribution?.categories || [];
+    } else if (budgetEvolutionGenderFilter !== "Todos") {
+      rawCategories = evolutionData.by_gender?.[budgetEvolutionGenderFilter.toLowerCase()]?.percentage_distribution?.categories || [];
+    } else if (budgetEvolutionAgeFilter !== "General") {
+      rawCategories = evolutionData.by_age?.[budgetEvolutionAgeFilter]?.percentage_distribution?.categories || [];
+    } else {
+      rawCategories = evolutionData.percentage_distribution.categories;
+    }
+
+    const categoryColors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#EC4899", "#06B6D4"];
+    const categories = rawCategories.map((cat: any, index: number) => ({ ...cat, color: categoryColors[index % categoryColors.length] }));
+    const hasData = months.length > 0 && categories.length > 0;
+
+    const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+    const chartWidth = Math.max(300, Math.min(500, padding.left + padding.right + (months.length - 1) * 80 + 20));
+    const chartHeight = 300;
+    const graphWidth = chartWidth - padding.left - padding.right;
+    const graphHeight = chartHeight - padding.top - padding.bottom;
+    const allValues = categories.flatMap((c: any) => c.data as number[]);
+    const maxValue = Math.max(50, Math.ceil(Math.max(...allValues, 1) / 10) * 10);
+    const xStep = months.length > 1 ? graphWidth / (months.length - 1) : graphWidth;
+    const yScale = (v: number) => graphHeight - ((v / maxValue) * graphHeight);
+    const generatePath = (data: number[]) =>
+      data.map((v, i) => `${i === 0 ? "M" : "L"} ${padding.left + i * xStep} ${padding.top + yScale(v)}`).join(" ");
+
+    const firstCat = categories.find((c: any) => c.data.some((v: number) => v > 0));
+    const trendData: number[] = firstCat?.data || [];
+    const startVal = trendData[0] || 0;
+    const endVal = trendData[trendData.length - 1] || 0;
+    const trendDir = endVal > startVal ? "aumentó" : endVal < startVal ? "disminuyó" : "se mantuvo";
+
+    return (
+      <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Evolución de Preferencias</h3>
+          <p className="text-sm text-[#FFFFFF]/50">Tendencias mensuales de asignación ciudadana</p>
+        </div>
+        {renderCombinedFilters(budgetEvolutionAgeFilter, setBudgetEvolutionAgeFilter, budgetEvolutionGenderFilter, setBudgetEvolutionGenderFilter)}
+        {!hasData ? (
+          <div className="text-center text-[#FFFFFF]/50 py-12">No hay datos para este filtro</div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <svg width={chartWidth} height={chartHeight} className="mx-auto">
+                {Array.from({ length: 5 }, (_, i) => Math.round((maxValue / 4) * i)).map(v => (
+                  <g key={v}>
+                    <line x1={padding.left} y1={padding.top + yScale(v)} x2={chartWidth - padding.right} y2={padding.top + yScale(v)} stroke="#E5E7EB" strokeDasharray="4,4" />
+                    <text x={padding.left - 10} y={padding.top + yScale(v) + 4} textAnchor="end" className="text-xs fill-gray-500">{v}%</text>
+                  </g>
+                ))}
+                {months.map((month: string, i: number) => (
+                  <text key={month} x={padding.left + i * xStep} y={chartHeight - 10} textAnchor="middle" className="text-xs fill-gray-500">{month}</text>
+                ))}
+                {categories.filter((c: any) => !hiddenBudgetCategories.has(c.name)).map((cat: any) => (
+                  <g key={cat.name}>
+                    <path d={generatePath(cat.data)} fill="none" stroke={cat.color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+                    {cat.data.map((v: number, i: number) => (
+                      <circle key={i} cx={padding.left + i * xStep} cy={padding.top + yScale(v)} r={4} fill={cat.color} stroke="white" strokeWidth={2} />
+                    ))}
+                  </g>
+                ))}
+              </svg>
+            </div>
+            <div className="flex flex-wrap justify-center gap-4 mt-4">
+              {categories.map((cat: any) => {
+                const isHidden = hiddenBudgetCategories.has(cat.name);
+                return (
+                  <button key={cat.name} onClick={() => setHiddenBudgetCategories(prev => { const n = new Set(prev); n.has(cat.name) ? n.delete(cat.name) : n.add(cat.name); return n; })}
+                    className="flex items-center gap-2 transition-opacity" style={{ opacity: isHidden ? 0.3 : 1 }}>
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                    <span className={`text-sm ${isHidden ? "line-through text-[#FFFFFF]/30" : "text-[#FFFFFF]/70"}`}>{cat.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {firstCat && (
+              <div className="mt-6 bg-[#2962FF]/10 border border-[#2962FF]/20 rounded-lg p-4">
+                <p className="text-sm font-semibold text-[#5E8AFF]">Tendencia Principal</p>
+                <p className="text-sm text-[#5E8AFF]">La preferencia por {firstCat.name} {trendDir} de {startVal}% a {endVal}% en el período analizado</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // ── Evolución de Satisfacción Ciudadana (rating) ───────────────────────────
+  const renderRatingEvolutionChart = () => {
+    const evolutionData = results?.evolution_data;
+    if (!evolutionData || !evolutionData.rating?.data) {
+      return (
+        <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6">
+          <div className="flex items-center gap-2 mb-1">
+            <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            <h3 className="text-xl font-bold text-[#FFFFFF]">Evolución de Satisfacción Ciudadana</h3>
+          </div>
+          <p className="text-sm text-[#FFFFFF]/50 mb-4">Calificación promedio mensual</p>
+          <div className="text-center text-[#FFFFFF]/50 py-12">No hay datos históricos disponibles</div>
+        </div>
+      );
+    }
+
+    const months = evolutionData.months;
+    let ratingData: number[];
+    if (ratingEvolutionAgeFilter !== "General" && ratingEvolutionGenderFilter !== "Todos") {
+      const key = `${ratingEvolutionAgeFilter}|${ratingEvolutionGenderFilter.toLowerCase()}`;
+      ratingData = evolutionData.by_age_and_gender?.[key]?.rating?.data || [];
+    } else if (ratingEvolutionGenderFilter !== "Todos") {
+      ratingData = evolutionData.by_gender?.[ratingEvolutionGenderFilter.toLowerCase()]?.rating?.data || [];
+    } else if (ratingEvolutionAgeFilter !== "General") {
+      ratingData = evolutionData.by_age?.[ratingEvolutionAgeFilter]?.rating?.data || [];
+    } else {
+      ratingData = evolutionData.rating.data;
+    }
+
+    const hasData = months.length > 0 && ratingData.length > 0 && ratingData.some((v: number) => v > 0);
+    const padding = { top: 30, right: 30, bottom: 50, left: 50 };
+    const chartWidth = Math.max(300, Math.min(500, padding.left + padding.right + (months.length - 1) * 80 + 30));
+    const chartHeight = 300;
+    const graphWidth = chartWidth - padding.left - padding.right;
+    const graphHeight = chartHeight - padding.top - padding.bottom;
+    const xStep = months.length > 1 ? graphWidth / (months.length - 1) : graphWidth;
+    const yScale = (v: number) => graphHeight - (v / 5) * graphHeight;
+    const generatePath = (data: number[]) =>
+      data.map((v, i) => `${i === 0 ? "M" : "L"} ${padding.left + i * xStep} ${padding.top + yScale(v)}`).join(" ");
+    const generateAreaPath = (data: number[]) => {
+      const line = data.map((v, i) => `${i === 0 ? "M" : "L"} ${padding.left + i * xStep} ${padding.top + yScale(v)}`).join(" ");
+      return `${line} L ${padding.left + (data.length - 1) * xStep} ${padding.top + graphHeight} L ${padding.left} ${padding.top + graphHeight} Z`;
+    };
+
+    const startVal = ratingData[0] || 0;
+    const endVal = ratingData[ratingData.length - 1] || 0;
+    const improvement = startVal > 0 ? ((endVal - startVal) / startVal) * 100 : 0;
+    const isPositive = improvement >= 0;
+    const last3 = ratingData.slice(-3);
+    const trend3 = last3.length >= 2 ? (last3[last3.length - 1] >= last3[0] ? "Positiva" : "Negativa") : "Estable";
+
+    return (
+      <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Evolución de Satisfacción Ciudadana</h3>
+        </div>
+        <p className="text-sm text-[#FFFFFF]/50 mb-4">Calificación promedio mensual</p>
+        {renderCombinedFilters(ratingEvolutionAgeFilter, setRatingEvolutionAgeFilter, ratingEvolutionGenderFilter, setRatingEvolutionGenderFilter)}
+        {!hasData ? (
+          <div className="text-center text-[#FFFFFF]/50 py-12">No hay datos para este filtro</div>
+        ) : (
+          <>
+            <div className="overflow-x-auto relative">
+              <svg width={chartWidth} height={chartHeight} className="mx-auto">
+                <defs>
+                  <linearGradient id="ratingGradientCba" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#F59E0B" />
+                    <stop offset="100%" stopColor="#FEF3C7" />
+                  </linearGradient>
+                </defs>
+                {[0, 1, 2, 3, 4, 5].map(v => (
+                  <g key={v}>
+                    <line x1={padding.left} y1={padding.top + yScale(v)} x2={chartWidth - padding.right} y2={padding.top + yScale(v)} stroke="#E5E7EB" strokeDasharray="4,4" />
+                    <text x={padding.left - 15} y={padding.top + yScale(v) + 4} textAnchor="end" className="text-xs fill-gray-500">{v}</text>
+                  </g>
+                ))}
+                {months.map((month: string, i: number) => (
+                  <text key={month} x={padding.left + i * xStep} y={chartHeight - 15} textAnchor="middle" className="text-xs fill-gray-500">{month}</text>
+                ))}
+                <path d={generateAreaPath(ratingData)} fill="url(#ratingGradientCba)" opacity={0.3} />
+                <path d={generatePath(ratingData)} fill="none" stroke="#F59E0B" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+                {ratingData.map((v: number, i: number) => (
+                  <g key={i}>
+                    <circle cx={padding.left + i * xStep} cy={padding.top + yScale(v)} r={15} fill="transparent" className="cursor-pointer"
+                      onMouseEnter={() => setHoveredRatingPoint({ index: i, value: v, month: months[i] })}
+                      onMouseLeave={() => setHoveredRatingPoint(null)} />
+                    <circle cx={padding.left + i * xStep} cy={padding.top + yScale(v)} r={hoveredRatingPoint?.index === i ? 8 : 6}
+                      fill="#F59E0B" stroke="white" strokeWidth={3} className="transition-all duration-150" />
+                  </g>
+                ))}
+                {hoveredRatingPoint && (
+                  <g>
+                    <line x1={padding.left + hoveredRatingPoint.index * xStep} y1={padding.top} x2={padding.left + hoveredRatingPoint.index * xStep} y2={padding.top + graphHeight} stroke="#9CA3AF" strokeWidth={1} strokeDasharray="4,4" />
+                    <rect x={padding.left + hoveredRatingPoint.index * xStep - 60} y={padding.top + yScale(hoveredRatingPoint.value) - 50} width={120} height={40} fill="white" stroke="#E5E7EB" strokeWidth={1} rx={6} />
+                    <text x={padding.left + hoveredRatingPoint.index * xStep} y={padding.top + yScale(hoveredRatingPoint.value) - 35} textAnchor="middle" className="text-sm font-medium fill-gray-900">{hoveredRatingPoint.month}</text>
+                    <text x={padding.left + hoveredRatingPoint.index * xStep} y={padding.top + yScale(hoveredRatingPoint.value) - 18} textAnchor="middle" className="text-sm fill-amber-600">⭐ {hoveredRatingPoint.value.toFixed(1)}</text>
+                  </g>
+                )}
+              </svg>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                <p className="text-sm text-amber-400">Mejora</p>
+                <p className={`text-xl font-bold ${isPositive ? "text-[#00C853]" : "text-red-400"}`}>{isPositive ? "+" : ""}{improvement.toFixed(1)}%</p>
+                <p className="text-xs text-amber-400/70">desde {months[0] || "inicio"}</p>
+              </div>
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                <p className="text-sm text-amber-400">Tendencia</p>
+                <p className={`text-xl font-bold ${trend3 === "Positiva" ? "text-[#00C853]" : trend3 === "Negativa" ? "text-red-400" : "text-[#FFFFFF]/70"}`}>{trend3}</p>
+                <p className="text-xs text-amber-400/70">últimos 3 meses</p>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const multipleQ = results.questions_summary.find(q => q.question_type === "percentage_distribution");
   const singleQ = results.questions_summary.find(q => q.question_type === "single_choice");
   const ratingQ = results.questions_summary.find(q => q.question_type === "rating");
@@ -972,6 +1231,12 @@ export default function CordobaDashboard() {
                 />
               </div>
             )}
+
+            {/* Gráficos de evolución temporal */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {renderBudgetEvolutionChart()}
+              {renderRatingEvolutionChart()}
+            </div>
 
             {/* Demografía */}
             <h2 className="text-2xl font-bold text-[#FFFFFF] mb-4 mt-4">Desglose Demográfico</h2>

@@ -522,16 +522,17 @@ class SurveyService:
                             return o.option_text
                     return k
 
-                # Use jsonb_each to expand percentage_data keys in SQL
-                pct_rows = db.execute(sql_text(f"""
+                # Two aggregated queries instead of 530k raw rows:
+                # 1) SUM + COUNT per key per demographic group
+                pct_agg_rows = db.execute(sql_text(f"""
                     SELECT
                         kv.key AS pct_key,
-                        kv.value::float AS pct_value,
                         {age_case} AS age_group,
                         COALESCE(u.gender, 'Sin especificar') AS gender,
                         COALESCE(u.city, 'Sin especificar') AS city,
                         COALESCE(u.neighborhood, 'Sin especificar') AS neighborhood,
-                        a.response_id
+                        SUM(kv.value::float) AS total_val,
+                        COUNT(*) AS cnt
                     FROM answers a
                     JOIN survey_responses sr ON a.response_id = sr.id
                     JOIN users u ON sr.user_id = u.id
@@ -541,53 +542,68 @@ class SurveyService:
                       AND a.question_id = :question_id
                       AND a.percentage_data IS NOT NULL
                     {date_filter_sql}
+                    GROUP BY pct_key, age_group, gender, city, neighborhood
                 """), q_params).fetchall()
 
-                # Count unique respondents per demographic for "otros" divisor
-                respondents_total: set = set()
-                respondents_by_age: Dict[str, set] = defaultdict(set)
-                respondents_by_gender: Dict[str, set] = defaultdict(set)
-                respondents_by_age_gender: Dict[str, set] = defaultdict(set)
-                respondents_by_neighborhood: Dict[str, set] = defaultdict(set)
-                respondents_by_city: Dict[str, set] = defaultdict(set)
+                # 2) Respondent counts per demographic (for "otros" divisor)
+                resp_count_rows = db.execute(sql_text(f"""
+                    SELECT
+                        {age_case} AS age_group,
+                        COALESCE(u.gender, 'Sin especificar') AS gender,
+                        COALESCE(u.city, 'Sin especificar') AS city,
+                        COALESCE(u.neighborhood, 'Sin especificar') AS neighborhood,
+                        COUNT(DISTINCT a.response_id) AS resp_cnt
+                    FROM answers a
+                    JOIN survey_responses sr ON a.response_id = sr.id
+                    JOIN users u ON sr.user_id = u.id
+                    WHERE sr.survey_id = :survey_id
+                      AND sr.completed = TRUE
+                      AND a.question_id = :question_id
+                      AND a.percentage_data IS NOT NULL
+                    {date_filter_sql}
+                    GROUP BY age_group, gender, city, neighborhood
+                """), q_params).fetchall()
 
-                # Accumulate sums and counts per key
+                # Build respondent count lookups
+                total_respondents = 0
+                resp_by_age: Dict[str, int] = defaultdict(int)
+                resp_by_gender: Dict[str, int] = defaultdict(int)
+                resp_by_age_gender: Dict[str, int] = defaultdict(int)
+                resp_by_neighborhood: Dict[str, int] = defaultdict(int)
+                resp_by_city: Dict[str, int] = defaultdict(int)
+                for row in resp_count_rows:
+                    total_respondents += row.resp_cnt
+                    resp_by_age[row.age_group] += row.resp_cnt
+                    resp_by_gender[row.gender] += row.resp_cnt
+                    resp_by_age_gender[f"{row.age_group}|{row.gender}"] += row.resp_cnt
+                    resp_by_neighborhood[row.neighborhood] += row.resp_cnt
+                    resp_by_city[row.city] += row.resp_cnt
+
+                # Accumulate sums and counts per key per group from aggregated rows
                 pct_totals: Dict[str, float] = defaultdict(float)
                 pct_counts: Dict[str, int] = defaultdict(int)
-                pct_by_age: Dict[str, Dict[str, list]] = defaultdict(lambda: defaultdict(list))
-                pct_by_gender: Dict[str, Dict[str, list]] = defaultdict(lambda: defaultdict(list))
-                pct_by_age_gender: Dict[str, Dict[str, list]] = defaultdict(lambda: defaultdict(list))
-                pct_by_neighborhood: Dict[str, Dict[str, list]] = defaultdict(lambda: defaultdict(list))
-                pct_by_city: Dict[str, Dict[str, list]] = defaultdict(lambda: defaultdict(list))
+                # group -> key -> {sum, count}
+                pct_by_age: Dict[str, Dict[str, Dict]] = defaultdict(lambda: defaultdict(lambda: {"sum": 0.0, "cnt": 0}))
+                pct_by_gender: Dict[str, Dict[str, Dict]] = defaultdict(lambda: defaultdict(lambda: {"sum": 0.0, "cnt": 0}))
+                pct_by_age_gender: Dict[str, Dict[str, Dict]] = defaultdict(lambda: defaultdict(lambda: {"sum": 0.0, "cnt": 0}))
+                pct_by_neighborhood: Dict[str, Dict[str, Dict]] = defaultdict(lambda: defaultdict(lambda: {"sum": 0.0, "cnt": 0}))
+                pct_by_city: Dict[str, Dict[str, Dict]] = defaultdict(lambda: defaultdict(lambda: {"sum": 0.0, "cnt": 0}))
 
-                for row in pct_rows:
+                for row in pct_agg_rows:
                     raw_key = row.pct_key
-                    value = row.pct_value
-                    ag, gn, ct, nb = row.age_group, row.gender, row.city, row.neighborhood
-                    resp_id = row.response_id
-                    ag_key = f"{ag}|{gn}"
-
-                    # Translate UUID key -> option_value
                     opt_info = option_id_map.get(raw_key)
                     option_key = opt_info["value"] if opt_info else raw_key
+                    ag, gn, ct, nb = row.age_group, row.gender, row.city, row.neighborhood
+                    ag_key = f"{ag}|{gn}"
 
-                    pct_totals[option_key] += value
-                    pct_counts[option_key] += 1
+                    pct_totals[option_key] += float(row.total_val)
+                    pct_counts[option_key] += row.cnt
 
-                    respondents_total.add(resp_id)
-                    respondents_by_age[ag].add(resp_id)
-                    respondents_by_gender[gn].add(resp_id)
-                    respondents_by_age_gender[ag_key].add(resp_id)
-                    respondents_by_neighborhood[nb].add(resp_id)
-                    respondents_by_city[ct].add(resp_id)
-
-                    pct_by_age[ag][option_key].append(value)
-                    pct_by_gender[gn][option_key].append(value)
-                    pct_by_age_gender[ag_key][option_key].append(value)
-                    pct_by_neighborhood[nb][option_key].append(value)
-                    pct_by_city[ct][option_key].append(value)
-
-                total_respondents = len(respondents_total)
+                    for bucket in [pct_by_age[ag][option_key], pct_by_gender[gn][option_key],
+                                   pct_by_age_gender[ag_key][option_key], pct_by_neighborhood[nb][option_key],
+                                   pct_by_city[ct][option_key]]:
+                        bucket["sum"] += float(row.total_val)
+                        bucket["cnt"] += row.cnt
 
                 def _build_pct_results(totals, counts, total_resp):
                     result = {}
@@ -597,27 +613,27 @@ class SurveyService:
                         result[key] = {"label": _get_option_label(key), "percentage": round(avg, 1)}
                     return result
 
-                def _calc_pct_by_group(group_data, group_respondents):
+                def _calc_pct_by_group(group_data, group_resp_counts):
                     result = {}
                     for grp, categories in group_data.items():
-                        grp_resp = len(group_respondents.get(grp, set()))
+                        grp_resp = group_resp_counts.get(grp, 0)
                         result[grp] = {}
-                        for key, values in categories.items():
+                        for key, bucket in categories.items():
                             if key == "otros":
-                                divisor = grp_resp or len(values)
-                                avg = sum(values) / divisor if divisor else 0
+                                divisor = grp_resp or bucket["cnt"]
                             else:
-                                avg = sum(values) / len(values) if values else 0
+                                divisor = bucket["cnt"]
+                            avg = bucket["sum"] / divisor if divisor else 0
                             result[grp][key] = {"label": _get_option_label(key), "percentage": round(avg, 1)}
                     return result
 
                 question_data["total_answers"] = total_respondents
                 question_data["results"] = _build_pct_results(pct_totals, pct_counts, total_respondents)
-                question_data["results_by_age"] = _calc_pct_by_group(pct_by_age, respondents_by_age)
-                question_data["results_by_gender"] = _calc_pct_by_group(pct_by_gender, respondents_by_gender)
-                question_data["results_by_age_and_gender"] = _calc_pct_by_group(pct_by_age_gender, respondents_by_age_gender)
-                question_data["results_by_neighborhood"] = _calc_pct_by_group(pct_by_neighborhood, respondents_by_neighborhood)
-                question_data["results_by_city"] = _calc_pct_by_group(pct_by_city, respondents_by_city)
+                question_data["results_by_age"] = _calc_pct_by_group(pct_by_age, resp_by_age)
+                question_data["results_by_gender"] = _calc_pct_by_group(pct_by_gender, resp_by_gender)
+                question_data["results_by_age_and_gender"] = _calc_pct_by_group(pct_by_age_gender, resp_by_age_gender)
+                question_data["results_by_neighborhood"] = _calc_pct_by_group(pct_by_neighborhood, resp_by_neighborhood)
+                question_data["results_by_city"] = _calc_pct_by_group(pct_by_city, resp_by_city)
 
                 # "Otros" free-text summary (only fetch the small text fields)
                 otros_texts_rows = db.execute(sql_text(f"""
@@ -755,7 +771,7 @@ class SurveyService:
                     total_cnt = sum(p[1] for p in pairs)
                     if not total_cnt:
                         return 0.0
-                    return round(sum(p[0] * p[1] for p in pairs) / total_cnt, 2)
+                    return round(float(sum(float(p[0]) * p[1] for p in pairs)) / total_cnt, 2)
 
                 rating_data = [_weighted_avg(month_rating.get(m, [])) for m in sorted_months]
                 evolution_result["rating"] = {
@@ -783,7 +799,10 @@ class SurveyService:
                     by_age_evo[ag] = {
                         "rating": {"data": [_weighted_avg(ag_month_data.get(m, [])) for m in sorted_months]}
                     }
-                evolution_result["by_age"] = by_age_evo
+                for ag, data in by_age_evo.items():
+                    if ag not in evolution_result["by_age"]:
+                        evolution_result["by_age"][ag] = {}
+                    evolution_result["by_age"][ag].update(data)
 
                 # by_gender
                 by_gender_evo: Dict[str, Dict] = {}
@@ -797,7 +816,10 @@ class SurveyService:
                     by_gender_evo[gn] = {
                         "rating": {"data": [_weighted_avg(gn_month_data.get(m, [])) for m in sorted_months]}
                     }
-                evolution_result["by_gender"] = by_gender_evo
+                for gn, data in by_gender_evo.items():
+                    if gn not in evolution_result["by_gender"]:
+                        evolution_result["by_gender"][gn] = {}
+                    evolution_result["by_gender"][gn].update(data)
 
                 # by_age_and_gender
                 by_ag_evo: Dict[str, Dict] = {}
@@ -813,7 +835,10 @@ class SurveyService:
                     by_ag_evo[ag_key] = {
                         "rating": {"data": [_weighted_avg(ag_gn_month_data.get(m, [])) for m in sorted_months]}
                     }
-                evolution_result["by_age_and_gender"] = by_ag_evo
+                for ag_key, data in by_ag_evo.items():
+                    if ag_key not in evolution_result["by_age_and_gender"]:
+                        evolution_result["by_age_and_gender"][ag_key] = {}
+                    evolution_result["by_age_and_gender"][ag_key].update(data)
 
             elif question.question_type == QuestionType.SINGLE_CHOICE:
                 sc_evo_rows = db.execute(sql_text(f"""
@@ -871,49 +896,172 @@ class SurveyService:
                 option_id_map = {str(opt.id): opt.option_value for opt in question.options}
                 option_labels_map = {opt.option_value: opt.option_text for opt in question.options}
                 option_labels_map["otros"] = "OTROS"
-                all_opt_values = [opt.option_value for opt in question.options] + ["otros"]
+                all_opt_values = [opt.option_value for opt in question.options]
 
+                # Single query with age_group and gender for all breakdowns
                 pct_evo_rows = db.execute(sql_text(f"""
                     SELECT
                         TO_CHAR(sr.started_at AT TIME ZONE 'UTC', 'YYYY-MM') AS month_key,
                         kv.key AS pct_key,
-                        AVG(kv.value::float) AS avg_pct,
-                        COUNT(DISTINCT a.response_id) AS respondents
+                        {age_case} AS age_group,
+                        COALESCE(u.gender, 'Sin especificar') AS gender,
+                        AVG(kv.value::float) AS avg_pct
                     FROM answers a
                     JOIN survey_responses sr ON a.response_id = sr.id
+                    JOIN users u ON sr.user_id = u.id
                     JOIN LATERAL jsonb_each(a.percentage_data) kv ON TRUE
                     WHERE sr.survey_id = :survey_id
                       AND sr.completed = TRUE
                       AND a.question_id = :question_id
                       AND a.percentage_data IS NOT NULL
                     {date_filter_sql}
-                    GROUP BY month_key, pct_key
+                    GROUP BY month_key, pct_key, age_group, gender
                 """), q_params).fetchall()
 
-                # month -> option_value -> avg_pct
-                month_pct: Dict[str, Dict[str, float]] = defaultdict(dict)
+                def _build_pct_categories(rows_iter, opt_values_list):
+                    """Build categories list from (month_key, opt_value, avg_pct) tuples."""
+                    mp: Dict[str, Dict[str, float]] = defaultdict(dict)
+                    local_opts = list(opt_values_list)
+                    for mk, ov, avg in rows_iter:
+                        if mk in sorted_months:
+                            mp[mk][ov] = round(float(avg), 1)
+                            if ov not in local_opts:
+                                local_opts.append(ov)
+                    evo: Dict[str, list] = {v: [] for v in local_opts}
+                    for m in sorted_months:
+                        for ov in local_opts:
+                            evo[ov].append(mp.get(m, {}).get(ov, 0))
+                    return [
+                        {"name": option_labels_map.get(ov, ov), "key": ov, "data": d}
+                        for ov, d in evo.items()
+                    ]
+
+                # General (all ages/genders)
+                general_rows = [
+                    (row.month_key, option_id_map.get(row.pct_key, row.pct_key), row.avg_pct)
+                    for row in pct_evo_rows if row.month_key in sorted_months
+                ]
+                # Aggregate general: group by (month, opt_value) using weighted average
+                gen_agg: Dict[tuple, list] = defaultdict(list)
                 for row in pct_evo_rows:
                     if row.month_key in sorted_months:
-                        opt_value = option_id_map.get(row.pct_key, row.pct_key)
-                        month_pct[row.month_key][opt_value] = round(row.avg_pct, 1)
+                        ov = option_id_map.get(row.pct_key, row.pct_key)
+                        gen_agg[(row.month_key, ov)].append(row.avg_pct)
+                        if ov not in all_opt_values:
+                            all_opt_values.append(ov)
+
+                month_pct_gen: Dict[str, Dict[str, float]] = defaultdict(dict)
+                for (mk, ov), vals in gen_agg.items():
+                    month_pct_gen[mk][ov] = round(float(sum(vals) / len(vals)), 1)
 
                 option_evo_data: Dict[str, list] = {v: [] for v in all_opt_values}
                 for m in sorted_months:
                     for opt_v in all_opt_values:
-                        option_evo_data[opt_v].append(month_pct.get(m, {}).get(opt_v, 0))
+                        option_evo_data[opt_v].append(month_pct_gen.get(m, {}).get(opt_v, 0))
+
+                gen_categories = [
+                    {"name": option_labels_map.get(ov, ov), "key": ov, "data": d}
+                    for ov, d in option_evo_data.items()
+                ]
 
                 evolution_result["percentage_distribution"] = {
                     "question_id": q_id_str,
                     "question_text": question.question_text,
-                    "categories": [
-                        {
-                            "name": option_labels_map.get(opt_value, opt_value),
-                            "key": opt_value,
-                            "data": data
-                        }
-                        for opt_value, data in option_evo_data.items()
-                    ]
+                    "categories": gen_categories
                 }
+
+                # by_age breakdown
+                age_groups_pct = set(row.age_group for row in pct_evo_rows)
+                by_age_pct: Dict[str, Dict] = {}
+                for ag in age_groups_pct:
+                    ag_agg: Dict[tuple, list] = defaultdict(list)
+                    for row in pct_evo_rows:
+                        if row.age_group == ag and row.month_key in sorted_months:
+                            ov = option_id_map.get(row.pct_key, row.pct_key)
+                            ag_agg[(row.month_key, ov)].append(row.avg_pct)
+                    ag_month_pct: Dict[str, Dict[str, float]] = defaultdict(dict)
+                    for (mk, ov), vals in ag_agg.items():
+                        ag_month_pct[mk][ov] = round(float(sum(vals) / len(vals)), 1)
+                    ag_evo: Dict[str, list] = {v: [] for v in all_opt_values}
+                    for m in sorted_months:
+                        for ov in all_opt_values:
+                            ag_evo[ov].append(ag_month_pct.get(m, {}).get(ov, 0))
+                    by_age_pct[ag] = {
+                        "percentage_distribution": {
+                            "categories": [
+                                {"name": option_labels_map.get(ov, ov), "key": ov, "data": d}
+                                for ov, d in ag_evo.items()
+                            ]
+                        }
+                    }
+                # Merge into existing by_age (may already have rating data)
+                for ag, data in by_age_pct.items():
+                    if ag not in evolution_result["by_age"]:
+                        evolution_result["by_age"][ag] = {}
+                    evolution_result["by_age"][ag].update(data)
+
+                # by_gender breakdown
+                genders_pct = set(row.gender for row in pct_evo_rows if row.gender != "Sin especificar")
+                by_gender_pct: Dict[str, Dict] = {}
+                for gn in genders_pct:
+                    gn_agg: Dict[tuple, list] = defaultdict(list)
+                    for row in pct_evo_rows:
+                        if row.gender == gn and row.month_key in sorted_months:
+                            ov = option_id_map.get(row.pct_key, row.pct_key)
+                            gn_agg[(row.month_key, ov)].append(row.avg_pct)
+                    gn_month_pct: Dict[str, Dict[str, float]] = defaultdict(dict)
+                    for (mk, ov), vals in gn_agg.items():
+                        gn_month_pct[mk][ov] = round(float(sum(vals) / len(vals)), 1)
+                    gn_evo: Dict[str, list] = {v: [] for v in all_opt_values}
+                    for m in sorted_months:
+                        for ov in all_opt_values:
+                            gn_evo[ov].append(gn_month_pct.get(m, {}).get(ov, 0))
+                    by_gender_pct[gn] = {
+                        "percentage_distribution": {
+                            "categories": [
+                                {"name": option_labels_map.get(ov, ov), "key": ov, "data": d}
+                                for ov, d in gn_evo.items()
+                            ]
+                        }
+                    }
+                for gn, data in by_gender_pct.items():
+                    if gn not in evolution_result["by_gender"]:
+                        evolution_result["by_gender"][gn] = {}
+                    evolution_result["by_gender"][gn].update(data)
+
+                # by_age_and_gender breakdown
+                by_ag_pct: Dict[str, Dict] = {}
+                age_genders_pct = set(
+                    f"{row.age_group}|{row.gender}" for row in pct_evo_rows
+                    if row.gender != "Sin especificar"
+                )
+                for ag_key in age_genders_pct:
+                    parts = ag_key.split("|")
+                    ag, gn = parts[0], parts[1]
+                    agg_agg: Dict[tuple, list] = defaultdict(list)
+                    for row in pct_evo_rows:
+                        if row.age_group == ag and row.gender == gn and row.month_key in sorted_months:
+                            ov = option_id_map.get(row.pct_key, row.pct_key)
+                            agg_agg[(row.month_key, ov)].append(row.avg_pct)
+                    agg_month_pct: Dict[str, Dict[str, float]] = defaultdict(dict)
+                    for (mk, ov), vals in agg_agg.items():
+                        agg_month_pct[mk][ov] = round(float(sum(vals) / len(vals)), 1)
+                    agg_evo: Dict[str, list] = {v: [] for v in all_opt_values}
+                    for m in sorted_months:
+                        for ov in all_opt_values:
+                            agg_evo[ov].append(agg_month_pct.get(m, {}).get(ov, 0))
+                    by_ag_pct[ag_key] = {
+                        "percentage_distribution": {
+                            "categories": [
+                                {"name": option_labels_map.get(ov, ov), "key": ov, "data": d}
+                                for ov, d in agg_evo.items()
+                            ]
+                        }
+                    }
+                for ag_key, data in by_ag_pct.items():
+                    if ag_key not in evolution_result["by_age_and_gender"]:
+                        evolution_result["by_age_and_gender"][ag_key] = {}
+                    evolution_result["by_age_and_gender"][ag_key].update(data)
 
         return evolution_result
 

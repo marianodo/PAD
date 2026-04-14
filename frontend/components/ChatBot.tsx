@@ -196,7 +196,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 bg-[#2962FF] hover:bg-[#1a4fd4] text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center transition-all hover:scale-105 print-hide"
+        className="fixed bottom-6 right-6 z-[1001] bg-[#2962FF] hover:bg-[#1a4fd4] text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center transition-all hover:scale-105 print-hide"
       >
         <svg
           className="w-6 h-6"
@@ -216,7 +216,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
   }
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 bg-[#1a1a2e] rounded-2xl shadow-2xl border border-white/10 flex flex-col overflow-hidden print-hide transition-all duration-300 ease-in-out ${
+    <div className={`fixed bottom-6 right-6 z-[1001] bg-[#1a1a2e] rounded-2xl shadow-2xl border border-white/10 flex flex-col overflow-hidden print-hide transition-all duration-300 ease-in-out ${
       isExpanded
         ? "w-[calc(100vw-2rem)] sm:w-[600px] h-[700px]"
         : "w-[calc(100vw-2rem)] sm:w-96 h-[500px]"
