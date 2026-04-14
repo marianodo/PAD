@@ -191,6 +191,7 @@ async def generate_ai_insights(
                     "tipo": q.get("question_type"),
                     "resultados_generales": q.get("results"),
                     f"resultados_por_{ctx['geo_unit']}": q.get("results_by_city"),
+                    "resultados_por_barrio": q.get("results_by_neighborhood"),
                     "resultados_por_edad": q.get("results_by_age"),
                     "resultados_por_genero": q.get("results_by_gender"),
                 })

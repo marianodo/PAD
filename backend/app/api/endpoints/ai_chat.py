@@ -58,6 +58,7 @@ async def chat_with_survey(
                 "tipo": q.get("question_type"),
                 "resultados_generales": q.get("results"),
                 f"resultados_por_{ctx['geo_unit']}": q.get("results_by_city"),
+                "resultados_por_barrio": q.get("results_by_neighborhood"),
                 "resultados_por_edad": q.get("results_by_age"),
                 "resultados_por_genero": q.get("results_by_gender"),
             }
@@ -80,8 +81,9 @@ DEMOGRAFIA:
 - Por edad: {_json_dumps(demographics.get('by_age_group', {}))}
 - Por genero: {_json_dumps(demographics.get('by_gender', {}))}
 - Por {ctx['geo_unit']}: {_json_dumps(demographics.get('by_city', {}))}
+- Por barrio: {_json_dumps(demographics.get('by_neighborhood', {}))}
 
-PREGUNTAS Y RESPUESTAS (con desglose por edad, genero y {ctx['geo_unit']}):
+PREGUNTAS Y RESPUESTAS (con desglose por edad, genero, {ctx['geo_unit']} y barrio):
 {_json_dumps(questions_for_prompt)}
 
 EVOLUCION TEMPORAL:
