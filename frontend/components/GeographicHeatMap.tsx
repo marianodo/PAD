@@ -22,9 +22,11 @@ interface GeographicHeatMapProps {
   subtitle?: string;
   participationOnly?: boolean;
   groupBy?: "neighborhood" | "city";
+  populationData?: Record<string, number>;
 }
 
 type ViewMode = "participation" | "pie-charts" | "winner-color";
+type ParticipationSubMode = "total" | "rate";
 
 const OPTION_COLORS = [
   "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444",
@@ -71,21 +73,32 @@ function createPieSvg(segments: { label: string; value: number; color: string }[
   </svg>`;
 }
 
+function normalizedColor(normalized: number): string {
+  if (normalized >= 0.75) return "#10B981";  // Verde - Muy Alta
+  if (normalized >= 0.5) return "#84CC16";   // Lima - Alta
+  if (normalized >= 0.25) return "#EAB308";  // Amarillo - Media
+  if (normalized >= 0.1) return "#F97316";   // Naranja - Baja
+  return "#EF4444";                          // Rojo - Muy Baja
+}
+
 export default function GeographicHeatMap({
   neighborhoodData, questions, neighborhoodCoords,
   mapCenter = [-31.6553, -64.4330], mapZoom = 14, circleRadius,
   title = "Desglose por Zona Geográfica", subtitle = "Participación y votación por ubicación",
   participationOnly = false,
   groupBy = "neighborhood",
+  populationData,
 }: GeographicHeatMapProps) {
   const [mounted, setMounted] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("participation");
+  const [participationSub, setParticipationSub] = useState<ParticipationSubMode>("total");
   const [selectedQuestionId, setSelectedQuestionId] = useState<string>("");
 
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<any[]>([]);
+  const clusterGroupRef = useRef<any>(null);
   const LRef = useRef<any>(null);
 
   const entries = Object.entries(neighborhoodData).filter(([key]) => key !== "Sin especificar");
@@ -110,6 +123,10 @@ export default function GeographicHeatMap({
     if (!mounted || mapRef.current || !mapContainerRef.current || entries.length === 0) return;
 
     import("leaflet").then((L) => {
+      // markercluster requires L on window/global
+      (window as any).L = L;
+      return import("leaflet.markercluster").then(() => L);
+    }).then((L) => {
       if (mapRef.current || !mapContainerRef.current) return;
       LRef.current = L;
       const mapInstance = L.map(mapContainerRef.current).setView(mapCenter, mapZoom);
@@ -137,14 +154,48 @@ export default function GeographicHeatMap({
     const mapInstance = mapRef.current;
     if (!mapReady || !L || !mapInstance) return;
 
-    // Clear markers
-    markersRef.current.forEach((m) => { try { m.remove(); } catch (_) { /* */ } });
+    // Clear previous cluster group
+    if (clusterGroupRef.current) {
+      mapInstance.removeLayer(clusterGroupRef.current);
+      clusterGroupRef.current = null;
+    }
     markersRef.current = [];
 
     if (entries.length === 0) return;
 
+    const clusterGroup = (L as any).markerClusterGroup({
+      maxClusterRadius: 20,
+      disableClusteringAtZoom: 9,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      iconCreateFunction: (cluster: any) => {
+        const count = cluster.getChildCount();
+        let size = "small";
+        if (count >= 20) size = "large";
+        else if (count >= 10) size = "medium";
+        return L.divIcon({
+          html: `<div><span>${count}</span></div>`,
+          className: `marker-cluster marker-cluster-${size}`,
+          iconSize: L.point(40, 40),
+        });
+      },
+    });
+
     const maxValue = Math.max(...entries.map(([, v]) => v));
     const minValue = Math.min(...entries.map(([, v]) => v));
+
+    // Precompute participation rates for normalization
+    const rateMap: Record<string, number> = {};
+    if (populationData) {
+      entries.forEach(([name, count]) => {
+        const pop = populationData[name];
+        if (pop) rateMap[name] = (count / pop) * 100;
+      });
+    }
+    const rateValues = Object.values(rateMap);
+    const maxRate = rateValues.length > 0 ? Math.max(...rateValues) : 1;
+    const minRate = rateValues.length > 0 ? Math.min(...rateValues) : 0;
 
     const isRating = selectedQuestion?.question_type?.toLowerCase() === "rating";
 
@@ -166,20 +217,51 @@ export default function GeographicHeatMap({
       if (!coords) return;
 
       if (viewMode === "participation") {
-        const normalized = maxValue > minValue ? (participationCount - minValue) / (maxValue - minValue) : 0.5;
-        const baseRadius = circleRadius ?? 200;
-        let color: string, radius: number;
-        if (normalized >= 0.75) { color = "#EF4444"; radius = baseRadius * 1.25; }
-        else if (normalized >= 0.5) { color = "#F97316"; radius = baseRadius * 1.1; }
-        else if (normalized >= 0.25) { color = "#EAB308"; radius = baseRadius * 0.9; }
-        else if (normalized >= 0.1) { color = "#22C55E"; radius = baseRadius * 0.7; }
-        else { color = "#3B82F6"; radius = baseRadius * 0.5; }
+        if (participationSub === "rate") {
+          const population = populationData?.[name];
+          if (!population) {
+            const m = L.circleMarker([coords.lat, coords.lng], { color: "#9CA3AF", fillColor: "#9CA3AF", fillOpacity: 0.4, radius: 6, weight: 2 })
+              .bindTooltip(
+                `<div style="text-align:center;padding:6px;"><strong style="font-size:14px;">${name}</strong><br/><span style="font-size:13px;color:#4B5563;">${participationCount} respuestas</span><br/><span style="font-size:11px;color:#9CA3AF;">Sin datos de población</span></div>`,
+                { direction: "top", offset: [0, -10], opacity: 0.95 }
+              );
+            clusterGroup.addLayer(m);
+            markersRef.current.push(m);
+            return;
+          }
+          const rate = rateMap[name] ?? (participationCount / population) * 100;
+          const normalized = maxRate > minRate ? (rate - minRate) / (maxRate - minRate) : 0.5;
+          const color = normalizedColor(normalized);
+          const pxRadius = 8 + Math.round(normalized * 12);
+          const m = L.circleMarker([coords.lat, coords.lng], { color, fillColor: color, fillOpacity: 0.6, radius: pxRadius, weight: 3 })
+            .bindTooltip(
+              `<div style="text-align:center;padding:8px;min-width:180px;">
+                <strong style="font-size:14px;">${name}</strong>
+                <hr style="margin:6px 0;border-color:#E5E7EB;"/>
+                <div style="font-size:18px;font-weight:700;color:${color};">${rate.toFixed(2)}%</div>
+                <div style="font-size:11px;color:#6B7280;margin-top:2px;">tasa de participación</div>
+                <hr style="margin:6px 0;border-color:#E5E7EB;"/>
+                <div style="font-size:12px;color:#4B5563;">${participationCount.toLocaleString()} respuestas</div>
+                <div style="font-size:12px;color:#4B5563;">${population.toLocaleString()} habitantes</div>
+              </div>`,
+              { direction: "top", offset: [0, -10], opacity: 0.95 }
+            );
+          clusterGroup.addLayer(m);
+          markersRef.current.push(m);
+          return;
+        }
 
-        const m = L.circle([coords.lat, coords.lng], { color, fillColor: color, fillOpacity: 0.6, radius, weight: 3 })
+        // sub === "total"
+        const normalized = maxValue > minValue ? (participationCount - minValue) / (maxValue - minValue) : 0.5;
+        const color = normalizedColor(normalized);
+        const pxRadius = 8 + Math.round(normalized * 12);
+
+        const m = L.circleMarker([coords.lat, coords.lng], { color, fillColor: color, fillOpacity: 0.6, radius: pxRadius, weight: 3 })
           .bindTooltip(
             `<div style="text-align:center;padding:6px;"><strong style="font-size:14px;">${name}</strong><br/><span style="font-size:13px;color:#4B5563;">${participationCount} respuestas</span></div>`,
             { direction: "top", offset: [0, -10], opacity: 0.95 }
-          ).addTo(mapInstance);
+          );
+        clusterGroup.addLayer(m);
         markersRef.current.push(m);
         return;
       }
@@ -192,7 +274,8 @@ export default function GeographicHeatMap({
           .bindTooltip(
             `<div style="text-align:center;padding:6px;"><strong>${name}</strong><br/><span style="font-size:12px;color:#9CA3AF;">Sin datos</span></div>`,
             { direction: "top", offset: [0, -10], opacity: 0.95 }
-          ).addTo(mapInstance);
+          );
+        clusterGroup.addLayer(m);
         markersRef.current.push(m);
         return;
       }
@@ -211,9 +294,9 @@ export default function GeographicHeatMap({
           <div style="font-size:13px;font-weight:600;color:${color};">${avg.toFixed(2)} / 5</div>
           <div style="font-size:11px;color:#6B7280;">${totalR} calificaciones</div>
         </div>`;
-        const m = L.circle([coords.lat, coords.lng], { color, fillColor: color, fillOpacity: 0.65, radius: circleRadius ?? 200, weight: 3 })
-          .bindTooltip(tooltip, { direction: "top", offset: [0, -10], opacity: 0.95 })
-          .addTo(mapInstance);
+        const m = L.circleMarker([coords.lat, coords.lng], { color, fillColor: color, fillOpacity: 0.65, radius: 12, weight: 3 })
+          .bindTooltip(tooltip, { direction: "top", offset: [0, -10], opacity: 0.95 });
+        clusterGroup.addLayer(m);
         markersRef.current.push(m);
         return;
       }
@@ -243,9 +326,9 @@ export default function GeographicHeatMap({
       if (viewMode === "winner-color") {
         const winnerKey = resultEntries[0]?.[0] ?? "";
         const winnerColor = optionColorMap[winnerKey] || "#9CA3AF";
-        const m = L.circle([coords.lat, coords.lng], { color: winnerColor, fillColor: winnerColor, fillOpacity: 0.65, radius: circleRadius ?? 200, weight: 3 })
-          .bindTooltip(tooltip, { direction: "top", offset: [0, -10], opacity: 0.95 })
-          .addTo(mapInstance);
+        const m = L.circleMarker([coords.lat, coords.lng], { color: winnerColor, fillColor: winnerColor, fillOpacity: 0.65, radius: 12, weight: 3 })
+          .bindTooltip(tooltip, { direction: "top", offset: [0, -10], opacity: 0.95 });
+        clusterGroup.addLayer(m);
         markersRef.current.push(m);
       } else if (viewMode === "pie-charts") {
         const segments = resultEntries.map(([key, val]) => ({
@@ -256,13 +339,16 @@ export default function GeographicHeatMap({
         const svgHtml = createPieSvg(segments, 50);
         const icon = L.divIcon({ html: svgHtml, className: "pie-chart-icon", iconSize: [50, 50], iconAnchor: [25, 25] });
         const m = L.marker([coords.lat, coords.lng], { icon })
-          .bindTooltip(tooltip, { direction: "top", offset: [0, -25], opacity: 0.95 })
-          .addTo(mapInstance);
+          .bindTooltip(tooltip, { direction: "top", offset: [0, -25], opacity: 0.95 });
+        clusterGroup.addLayer(m);
         markersRef.current.push(m);
       }
     });
+
+    mapInstance.addLayer(clusterGroup);
+    clusterGroupRef.current = clusterGroup;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, viewMode, effectiveQuestionId, neighborhoodData]);
+  }, [mapReady, viewMode, participationSub, effectiveQuestionId, neighborhoodData, populationData]);
 
   // --- Render ---
 
@@ -325,6 +411,18 @@ export default function GeographicHeatMap({
         </div>
       )}
 
+      {/* Participation Sub-tabs */}
+      {viewMode === "participation" && populationData && (
+        <div className="flex gap-1 mb-4 bg-[#000000]/50 rounded-lg p-1 w-fit">
+          {([["total", "Total"], ["rate", "% Población"]] as [ParticipationSubMode, string][]).map(([sub, label]) => (
+            <button key={sub} onClick={() => setParticipationSub(sub)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition ${participationSub === sub ? "bg-white/15 text-white" : "text-[#FFFFFF]/40 hover:text-[#FFFFFF]/70"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Question Selector */}
       {!participationOnly && viewMode !== "participation" && mappableQuestions.length > 0 && (
         <div className="mb-4">
@@ -343,9 +441,12 @@ export default function GeographicHeatMap({
       {/* Legend */}
       {viewMode === "participation" ? (
         <div className="mb-4">
-          <p className="text-xs font-medium text-[#FFFFFF]/60 mb-2">Intensidad de participación:</p>
+          <p className="text-xs font-medium text-[#FFFFFF]/60 mb-2">
+            {participationSub === "rate" ? "Tasa de participación relativa:" : "Intensidad de participación:"}
+          </p>
           <div className="flex flex-wrap gap-3">
-            {[{ color: "#EF4444", label: "Muy Alta" }, { color: "#F97316", label: "Alta" }, { color: "#EAB308", label: "Media" }, { color: "#22C55E", label: "Baja-Media" }, { color: "#3B82F6", label: "Baja" }].map(({ color, label }) => (
+            {([{ color: "#10B981", label: "Muy Alta" }, { color: "#84CC16", label: "Alta" }, { color: "#EAB308", label: "Media" }, { color: "#F97316", label: "Baja" }, { color: "#EF4444", label: "Muy Baja" }]
+            ).map(({ color, label }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }} />
                 <span className="text-xs text-[#FFFFFF]/60">{label}</span>
@@ -373,7 +474,21 @@ export default function GeographicHeatMap({
       <div className="bg-[#000000] border border-white/10 rounded-lg p-4">
         <p className="text-sm text-[#FFFFFF]/70">
           {viewMode === "participation" ? (
-            <>La zona <span className="font-semibold text-[#FFFFFF]">{topZone[0]}</span> lidera con <span className="font-semibold text-[#FFFFFF]">{topZone[1].toLocaleString()}</span> respuestas.</>
+            participationSub === "rate" ? (
+              (() => {
+                const ranked = entries
+                  .filter(([name]) => populationData?.[name])
+                  .map(([name, count]) => ({ name, count, pop: populationData![name], rate: (count / populationData![name]) * 100 }))
+                  .sort((a, b) => b.rate - a.rate);
+                const top = ranked[0];
+                const bottom = ranked[ranked.length - 1];
+                return top && bottom ? (
+                  <>Mayor tasa: <span className="font-semibold text-[#FFFFFF]">{top.name}</span> con <span className="font-semibold text-[#10B981]">{top.rate.toFixed(2)}%</span> ({top.count.toLocaleString()} resp. / {top.pop.toLocaleString()} hab.). Menor tasa: <span className="font-semibold text-[#FFFFFF]">{bottom.name}</span> con <span className="font-semibold text-[#EF4444]">{bottom.rate.toFixed(2)}%</span> ({bottom.count.toLocaleString()} resp. / {bottom.pop.toLocaleString()} hab.).</>
+                ) : <>No hay datos de población disponibles.</>;
+              })()
+            ) : (
+              <>La zona <span className="font-semibold text-[#FFFFFF]">{topZone[0]}</span> lidera con <span className="font-semibold text-[#FFFFFF]">{topZone[1].toLocaleString()}</span> respuestas.</>
+            )
           ) : viewMode === "pie-charts" ? (
             isRatingSelected ? "Cada barrio muestra un círculo con color según la calificación promedio. Pase el cursor para ver el detalle." : "Cada barrio muestra un mini gráfico circular con la distribución de respuestas."
           ) : (
@@ -382,7 +497,18 @@ export default function GeographicHeatMap({
         </p>
       </div>
 
-      <style jsx global>{`.pie-chart-icon { background: transparent !important; border: none !important; }`}</style>
+      <style jsx global>{`
+        .pie-chart-icon { background: transparent !important; border: none !important; }
+        .marker-cluster { background-clip: padding-box; border-radius: 20px; }
+        .marker-cluster div { width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; text-align: center; border-radius: 15px; font: 13px/30px "Helvetica Neue", Arial, sans-serif; font-weight: 700; }
+        .marker-cluster span { color: #fff; }
+        .marker-cluster-small { background-color: rgba(59, 130, 246, 0.5); }
+        .marker-cluster-small div { background-color: rgba(59, 130, 246, 0.8); }
+        .marker-cluster-medium { background-color: rgba(234, 179, 8, 0.5); }
+        .marker-cluster-medium div { background-color: rgba(234, 179, 8, 0.8); }
+        .marker-cluster-large { background-color: rgba(239, 68, 68, 0.5); }
+        .marker-cluster-large div { background-color: rgba(239, 68, 68, 0.8); }
+      `}</style>
     </div>
   );
 }

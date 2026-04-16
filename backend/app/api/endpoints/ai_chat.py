@@ -138,8 +138,8 @@ REGLAS PARA GRAFICOS:
 
         raw_text = response.content[0].text
 
-        # Extract chart blocks from the response
-        chart_pattern = r'~~~chart\s*\n(.*?)\n~~~'
+        # Extract chart blocks from the response (handles ~~~chart, ```chart, variations)
+        chart_pattern = r'(?:~~~|```)\s*chart\s*\n(.*?)\n\s*(?:~~~|```)'
         chart_matches = re.findall(chart_pattern, raw_text, re.DOTALL)
 
         charts = []
@@ -151,8 +151,28 @@ REGLAS PARA GRAFICOS:
             except json.JSONDecodeError:
                 pass
 
-        # Remove chart blocks from text
-        clean_text = re.sub(r'~~~chart\s*\n.*?\n~~~', '', raw_text, flags=re.DOTALL).strip()
+        # Fallback: detect loose JSON chart objects in text
+        if not charts:
+            json_pattern = r'\{[^{}]*"type"\s*:\s*"(?:bar|pie)"[^{}]*"data"\s*:\s*\[.*?\]\s*\}'
+            json_matches = re.findall(json_pattern, raw_text, re.DOTALL)
+            for match in json_matches:
+                try:
+                    chart_data = json.loads(match.strip())
+                    if chart_data.get("type") in ("bar", "pie") and "data" in chart_data:
+                        charts.append(chart_data)
+                except json.JSONDecodeError:
+                    pass
+
+        # Remove chart blocks and loose JSON charts from text
+        clean_text = re.sub(r'(?:~~~|```)\s*chart\s*\n.*?\n\s*(?:~~~|```)', '', raw_text, flags=re.DOTALL)
+        if charts:
+            for chart in charts:
+                # Remove the JSON string from text
+                chart_str = json.dumps(chart, ensure_ascii=False)
+                clean_text = clean_text.replace(chart_str, '')
+            # Also remove any remaining raw JSON chart patterns
+            clean_text = re.sub(r'\{[^{}]*"type"\s*:\s*"(?:bar|pie)"[^{}]*"data"\s*:\s*\[.*?\]\s*\}', '', clean_text, flags=re.DOTALL)
+        clean_text = clean_text.strip()
 
         return {"response": clean_text, "charts": charts}
 

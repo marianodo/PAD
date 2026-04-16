@@ -188,6 +188,69 @@ const LOCALIDAD_COORDS: Record<string, { lat: number; lng: number }> = {
   "San Esteban": { lat: -31.5800, lng: -64.5300 },
 };
 
+// Población estimada por localidad (Censo 2022 aproximado)
+const POBLACION_LOCALIDADES: Record<string, number> = {
+  "Córdoba Capital": 1535000, "Río Cuarto": 170000, "Villa María": 100000,
+  "San Francisco": 82000, "Alta Gracia": 55000, "Villa Carlos Paz": 75000,
+  "Villa Allende": 35000, "La Calera": 32000, "Río Tercero": 50000,
+  "Jesús María": 35000, "Cosquín": 25000, "La Falda": 20000,
+  "Marcos Juárez": 30000, "Bell Ville": 35000, "Deán Funes": 25000,
+  "Villa Dolores": 30000, "Cruz del Eje": 32000, "Laboulaye": 22000,
+  "Unquillo": 20000, "Río Ceballos": 20000, "Malvinas Argentinas": 14000,
+  "Colonia Caroya": 20000, "Mendiolaza": 15000, "Saldán": 12000,
+  "Malagueño": 15000, "Monte Cristo": 10000, "Toledo": 8000,
+  "Colonia Tirolesa": 6000, "Mi Granja": 5000, "Juárez Celman": 5000,
+  "Estación Juárez Celman": 5000, "Salsipuedes": 12000,
+  "Santa Rosa de Calamuchita": 15000, "Embalse": 10000,
+  "Villa General Belgrano": 12000, "Almafuerte": 12000,
+  "Villa del Dique": 8000, "Tanti": 8000, "Bialet Massé": 8000,
+  "Huerta Grande": 6000, "Valle Hermoso": 6000, "La Cumbre": 8000,
+  "Los Cocos": 4000, "Capilla del Monte": 12000, "La Granja": 5000,
+  "San Marcos Sierras": 3000, "Agua de Oro": 5000, "Sinsacate": 5000,
+  "Villa del Totoral": 8000, "Arroyito": 20000, "Las Varillas": 18000,
+  "Oliva": 15000, "Oncativo": 14000, "Hernando": 10000,
+  "Villa Nueva": 15000, "Leones": 12000, "Morteros": 18000,
+  "Brinkmann": 8000, "Porteña": 5000, "Freyre": 6000,
+  "Devoto": 7000, "El Tío": 4000, "San Pedro": 3000,
+  "Balnearia": 5000, "Mina Clavero": 12000, "Villa Cura Brochero": 6000,
+  "Nono": 3000, "Las Calles": 2000, "Los Hornillos": 2000,
+  "San Javier": 4000, "Villa de las Rosas": 5000, "Las Tapias": 4000,
+  "Sampacho": 8000, "Coronel Moldes": 8000, "Adelia María": 7000,
+  "Vicuña Mackenna": 12000, "General Cabrera": 12000, "General Deheza": 10000,
+  "Huinca Renancó": 9000, "Canals": 10000, "Arias": 8000,
+  "Corral de Bustos": 8000, "Inriville": 4000, "Isla Verde": 5000,
+  "Monte Buey": 6000, "Justiniano Posse": 8000, "Camilo Aldao": 5000,
+  "Monte Maíz": 8000, "Noetinger": 5000,
+  "Morrison": 3000, "Villa del Rosario": 15000, "Pilar": 15000,
+  "Río Segundo": 20000, "Despeñaderos": 8000, "Anisacate": 6000,
+  "Villa Huidobro": 5000, "Del Campillo": 4000, "Serrezuela": 2000,
+  "Tulumba": 3000, "Chancaní": 2000, "Villa de Pocho": 2000,
+  "Salsacate": 3000, "Sobremonte": 2000, "James Craik": 8000,
+  "General Levalle": 5000, "General Roca": 4000, "Jovita": 4000,
+  "Buchardo": 3000, "Mattaldi": 2000, "Serrano": 4000,
+  "Alejandro Roca": 3000, "Alcira Gigena": 7000, "Berrotarán": 6000,
+  "Elena": 2000, "Los Cóndores": 4000, "Reducción": 4000,
+  "San Agustín": 4000, "Los Reartes": 3000, "Villa Rumipal": 4000,
+  "Villa de María": 3000, "San José de la Dormida": 3000,
+  "Quilino": 5000, "Sebastián Elcano": 3000, "San Pedro Norte": 2000,
+  "Obispo Trejo": 4000, "Sacanta": 4000, "Calchín": 5000,
+  "La Para": 4000, "La Paz": 4000, "Alejo Ledesma": 3000,
+  "San Marcos Sud": 3000, "Pozo del Molle": 5000, "Tancacha": 4000,
+  "Lozada": 3000, "Washington": 2000, "La Puerta": 3000,
+  "Ucacha": 5000, "Bengolea": 2000, "Etruria": 4000,
+  "Ausonia": 2000, "Carrilobo": 3000, "Arroyo Cabral": 4000,
+  "Pascanas": 4000, "Los Surgentes": 3000, "Ticino": 3000,
+  "Dalmacio Vélez Sársfield": 3000, "Villa Fontana": 2000,
+  "Idiazábal": 3000, "Luque": 5000, "Lucio V. Mansilla": 2000,
+  "Saturnino María Laspiur": 2000, "Pampayasta": 2000,
+  "Ordóñez": 4000, "Las Perdices": 5000, "General Baldissera": 2000,
+  "General Fotheringham": 2000, "Los Cisnes": 2000,
+  "Wenceslao Escalante": 2000, "Italó": 2000, "Charbonier": 2000,
+  "San Esteban": 3000, "San Carlos Minas": 2000, "Ischilín": 2000,
+  "Taninga": 2000, "La Higuera": 2000, "Santa Elena": 2000,
+  "Yacanto": 2000, "Marull": 3000, "Villa de Soto": 4000,
+};
+
 const SURVEY_ID = "ccc73cdb-c0e2-4d99-9a88-e383c5505ceb";
 
 interface Demographics {
@@ -1228,6 +1291,7 @@ export default function CordobaDashboard() {
                   groupBy="city"
                   title="Desglose por Localidad"
                   subtitle="Participación por ciudad de la provincia"
+                  populationData={POBLACION_LOCALIDADES}
                 />
               </div>
             )}
