@@ -515,7 +515,7 @@ class SurveyService:
                     option_id_map[str(opt.id)] = {"value": opt.option_value, "text": opt.option_text}
 
                 def _get_option_label(k):
-                    if k == "otros":
+                    if k in ("otros", "otro"):
                         return "OTROS"
                     for o in question.options:
                         if o.option_value == k:
@@ -593,6 +593,8 @@ class SurveyService:
                     raw_key = row.pct_key
                     opt_info = option_id_map.get(raw_key)
                     option_key = opt_info["value"] if opt_info else raw_key
+                    if option_key.lower() in ("otro", "otros"):
+                        option_key = "otros"
                     ag, gn, ct, nb = row.age_group, row.gender, row.city, row.neighborhood
                     ag_key = f"{ag}|{gn}"
 
@@ -608,7 +610,7 @@ class SurveyService:
                 def _build_pct_results(totals, counts, total_resp):
                     result = {}
                     for key in totals:
-                        divisor = total_resp if key == "otros" else counts[key]
+                        divisor = total_resp if key in ("otros", "otro") else counts[key]
                         avg = totals[key] / divisor if divisor else 0
                         result[key] = {"label": _get_option_label(key), "percentage": round(avg, 1)}
                     return result
@@ -619,7 +621,7 @@ class SurveyService:
                         grp_resp = group_resp_counts.get(grp, 0)
                         result[grp] = {}
                         for key, bucket in categories.items():
-                            if key == "otros":
+                            if key in ("otros", "otro"):
                                 divisor = grp_resp or bucket["cnt"]
                             else:
                                 divisor = bucket["cnt"]
@@ -635,20 +637,27 @@ class SurveyService:
                 question_data["results_by_neighborhood"] = _calc_pct_by_group(pct_by_neighborhood, resp_by_neighborhood)
                 question_data["results_by_city"] = _calc_pct_by_group(pct_by_city, resp_by_city)
 
-                # "Otros" free-text summary (only fetch the small text fields)
-                otros_texts_rows = db.execute(sql_text(f"""
-                    SELECT a.answer_text
-                    FROM answers a
-                    JOIN survey_responses sr ON a.response_id = sr.id
-                    WHERE sr.survey_id = :survey_id
-                      AND sr.completed = TRUE
-                      AND a.question_id = :question_id
-                      AND a.answer_text IS NOT NULL
-                      AND a.answer_text != ''
-                      AND (a.percentage_data->>'otros')::float > 0
-                    {date_filter_sql}
-                    LIMIT 500
-                """), q_params).fetchall()
+                # "Otros" free-text summary — find UUID of the "otro/otros" option
+                otro_uuid = next(
+                    (uid for uid, meta in option_id_map.items()
+                     if meta["value"].lower() in ("otro", "otros")),
+                    None
+                )
+                otros_texts_rows = []
+                if otro_uuid:
+                    otros_texts_rows = db.execute(sql_text(f"""
+                        SELECT a.answer_text
+                        FROM answers a
+                        JOIN survey_responses sr ON a.response_id = sr.id
+                        WHERE sr.survey_id = :survey_id
+                          AND sr.completed = TRUE
+                          AND a.question_id = :question_id
+                          AND a.answer_text IS NOT NULL
+                          AND a.answer_text != ''
+                          AND COALESCE((a.percentage_data->>'{otro_uuid}')::float, 0) > 0
+                        {date_filter_sql}
+                        LIMIT 500
+                    """), q_params).fetchall()
 
                 otros_raw_texts = [r.answer_text.strip() for r in otros_texts_rows if r.answer_text and r.answer_text.strip()]
                 if otros_raw_texts:

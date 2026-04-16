@@ -327,25 +327,34 @@ export default function CordobaDashboard() {
   const [ratingEvolutionGenderFilter, setRatingEvolutionGenderFilter] = useState("Todos");
   const [hiddenBudgetCategories, setHiddenBudgetCategories] = useState<Set<string>>(new Set());
   const [hoveredRatingPoint, setHoveredRatingPoint] = useState<{ index: number; value: number; month: string } | null>(null);
+  const [crossAnalysisTab, setCrossAnalysisTab] = useState<"city" | "age" | "gender">("city");
 
   const ageFilterOptions = ["General", "18-30", "31-45", "46-60", "60+"];
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const fetchResults = async () => {
-    try {
-      const token = localStorage.getItem("access_token");
-      if (!token) return;
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${SURVEY_ID}/results`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (!response.ok) throw new Error("Error al obtener los resultados");
-      const data = await response.json();
-      setResults(data);
-      setLoading(false);
-    } catch (err: any) {
-      setError(err.message);
-      setLoading(false);
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${SURVEY_ID}/results`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!response.ok) throw new Error("Error al obtener los resultados");
+        const data = await response.json();
+        setResults(data);
+        setLoading(false);
+        return;
+      } catch (err: any) {
+        if (attempt === maxAttempts) {
+          setError(err.message);
+          setLoading(false);
+        } else {
+          await new Promise((r) => setTimeout(r, 1000 * attempt));
+        }
+      }
     }
   };
 
@@ -892,11 +901,24 @@ export default function CordobaDashboard() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#000000]">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">{error}</p>
-          <button onClick={() => router.push("/client")} className="px-4 py-2 bg-[#2962FF] text-white rounded-lg">
-            Volver
-          </button>
+        <div className="text-center max-w-sm">
+          <div className="text-4xl mb-4">⚠️</div>
+          <p className="text-[#FFFFFF] font-semibold text-lg mb-2">No se pudo cargar la información</p>
+          <p className="text-[#FFFFFF]/50 text-sm mb-6">Hubo un problema al conectarse con el servidor. Por favor intentá de nuevo.</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => { setError(""); setLoading(true); fetchResults(); }}
+              className="px-4 py-2 bg-[#2962FF] text-white rounded-lg text-sm font-medium"
+            >
+              Reintentar
+            </button>
+            <button
+              onClick={() => router.push("/client")}
+              className="px-4 py-2 bg-white/10 text-white rounded-lg text-sm font-medium"
+            >
+              Volver
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -959,9 +981,9 @@ export default function CordobaDashboard() {
     const categories = rawCategories.map((cat: any, index: number) => ({ ...cat, color: categoryColors[index % categoryColors.length] }));
     const hasData = months.length > 0 && categories.length > 0;
 
-    const padding = { top: 20, right: 20, bottom: 40, left: 50 };
-    const chartWidth = Math.max(300, Math.min(500, padding.left + padding.right + (months.length - 1) * 80 + 20));
-    const chartHeight = 300;
+    const padding = { top: 20, right: 30, bottom: 40, left: 55 };
+    const chartWidth = padding.left + padding.right + (months.length - 1) * 180 + 20;
+    const chartHeight = 320;
     const graphWidth = chartWidth - padding.left - padding.right;
     const graphHeight = chartHeight - padding.top - padding.bottom;
     const allValues = categories.flatMap((c: any) => c.data as number[]);
@@ -988,41 +1010,49 @@ export default function CordobaDashboard() {
           <div className="text-center text-[#FFFFFF]/50 py-12">No hay datos para este filtro</div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <svg width={chartWidth} height={chartHeight} className="mx-auto">
-                {Array.from({ length: 5 }, (_, i) => Math.round((maxValue / 4) * i)).map(v => (
-                  <g key={v}>
-                    <line x1={padding.left} y1={padding.top + yScale(v)} x2={chartWidth - padding.right} y2={padding.top + yScale(v)} stroke="#E5E7EB" strokeDasharray="4,4" />
-                    <text x={padding.left - 10} y={padding.top + yScale(v) + 4} textAnchor="end" className="text-xs fill-gray-500">{v}%</text>
-                  </g>
-                ))}
-                {months.map((month: string, i: number) => (
-                  <text key={month} x={padding.left + i * xStep} y={chartHeight - 10} textAnchor="middle" className="text-xs fill-gray-500">{month}</text>
-                ))}
-                {categories.filter((c: any) => !hiddenBudgetCategories.has(c.name)).map((cat: any) => (
-                  <g key={cat.name}>
-                    <path d={generatePath(cat.data)} fill="none" stroke={cat.color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-                    {cat.data.map((v: number, i: number) => (
-                      <circle key={i} cx={padding.left + i * xStep} cy={padding.top + yScale(v)} r={4} fill={cat.color} stroke="white" strokeWidth={2} />
-                    ))}
-                  </g>
-                ))}
-              </svg>
-            </div>
-            <div className="flex flex-wrap justify-center gap-4 mt-4">
-              {categories.map((cat: any) => {
-                const isHidden = hiddenBudgetCategories.has(cat.name);
-                return (
-                  <button key={cat.name} onClick={() => setHiddenBudgetCategories(prev => { const n = new Set(prev); n.has(cat.name) ? n.delete(cat.name) : n.add(cat.name); return n; })}
-                    className="flex items-center gap-2 transition-opacity" style={{ opacity: isHidden ? 0.3 : 1 }}>
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
-                    <span className={`text-sm ${isHidden ? "line-through text-[#FFFFFF]/30" : "text-[#FFFFFF]/70"}`}>{cat.name}</span>
-                  </button>
-                );
-              })}
+            <div className="flex gap-6">
+              {/* Chart */}
+              <div className="flex-1 min-w-0">
+                <svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+                  {Array.from({ length: 5 }, (_, i) => Math.round((maxValue / 4) * i)).map(v => (
+                    <g key={v}>
+                      <line x1={padding.left} y1={padding.top + yScale(v)} x2={chartWidth - padding.right} y2={padding.top + yScale(v)} stroke="#E5E7EB" strokeDasharray="4,4" />
+                      <text x={padding.left - 10} y={padding.top + yScale(v) + 4} textAnchor="end" className="text-xs fill-gray-500">{v}%</text>
+                    </g>
+                  ))}
+                  {months.map((month: string, i: number) => (
+                    <text key={month} x={padding.left + i * xStep} y={chartHeight - 10} textAnchor="middle" className="text-xs fill-gray-500">{month}</text>
+                  ))}
+                  {categories.filter((c: any) => !hiddenBudgetCategories.has(c.name)).map((cat: any) => (
+                    <g key={cat.name}>
+                      <path d={generatePath(cat.data)} fill="none" stroke={cat.color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+                      {cat.data.map((v: number, i: number) => (
+                        <circle key={i} cx={padding.left + i * xStep} cy={padding.top + yScale(v)} r={4} fill={cat.color} stroke="white" strokeWidth={2} />
+                      ))}
+                    </g>
+                  ))}
+                </svg>
+              </div>
+              {/* Legend — right side */}
+              <div className="flex flex-col gap-1 justify-center min-w-[220px] max-w-[260px]">
+                {categories.map((cat: any) => {
+                  const isHidden = hiddenBudgetCategories.has(cat.name);
+                  const lastVal = cat.data[cat.data.length - 1] ?? 0;
+                  return (
+                    <button key={cat.name}
+                      onClick={() => setHiddenBudgetCategories(prev => { const n = new Set(prev); n.has(cat.name) ? n.delete(cat.name) : n.add(cat.name); return n; })}
+                      className="flex items-center gap-2 text-left transition-opacity px-2 py-1 rounded hover:bg-white/5"
+                      style={{ opacity: isHidden ? 0.3 : 1 }}>
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                      <span className={`text-xs flex-1 ${isHidden ? "line-through text-[#FFFFFF]/30" : "text-[#FFFFFF]/70"}`}>{cat.name}</span>
+                      <span className="text-xs text-[#FFFFFF]/40 font-medium">{lastVal.toFixed(1)}%</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             {firstCat && (
-              <div className="mt-6 bg-[#2962FF]/10 border border-[#2962FF]/20 rounded-lg p-4">
+              <div className="mt-4 bg-[#2962FF]/10 border border-[#2962FF]/20 rounded-lg p-4">
                 <p className="text-sm font-semibold text-[#5E8AFF]">Tendencia Principal</p>
                 <p className="text-sm text-[#5E8AFF]">La preferencia por {firstCat.name} {trendDir} de {startVal}% a {endVal}% en el período analizado</p>
               </div>
@@ -1065,9 +1095,9 @@ export default function CordobaDashboard() {
     }
 
     const hasData = months.length > 0 && ratingData.length > 0 && ratingData.some((v: number) => v > 0);
-    const padding = { top: 30, right: 30, bottom: 50, left: 50 };
-    const chartWidth = Math.max(300, Math.min(500, padding.left + padding.right + (months.length - 1) * 80 + 30));
-    const chartHeight = 300;
+    const padding = { top: 30, right: 30, bottom: 50, left: 55 };
+    const chartWidth = padding.left + padding.right + (months.length - 1) * 180 + 30;
+    const chartHeight = 320;
     const graphWidth = chartWidth - padding.left - padding.right;
     const graphHeight = chartHeight - padding.top - padding.bottom;
     const xStep = months.length > 1 ? graphWidth / (months.length - 1) : graphWidth;
@@ -1100,8 +1130,9 @@ export default function CordobaDashboard() {
           <div className="text-center text-[#FFFFFF]/50 py-12">No hay datos para este filtro</div>
         ) : (
           <>
-            <div className="overflow-x-auto relative">
-              <svg width={chartWidth} height={chartHeight} className="mx-auto">
+            <div className="flex gap-6">
+            <div className="flex-1 min-w-0">
+              <svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
                 <defs>
                   <linearGradient id="ratingGradientCba" x1="0%" y1="0%" x2="0%" y2="100%">
                     <stop offset="0%" stopColor="#F59E0B" />
@@ -1138,17 +1169,24 @@ export default function CordobaDashboard() {
                 )}
               </svg>
             </div>
-            <div className="grid grid-cols-2 gap-4 mt-6">
+            {/* Stats — right side */}
+            <div className="flex flex-col gap-4 justify-center min-w-[180px]">
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                 <p className="text-sm text-amber-400">Mejora</p>
-                <p className={`text-xl font-bold ${isPositive ? "text-[#00C853]" : "text-red-400"}`}>{isPositive ? "+" : ""}{improvement.toFixed(1)}%</p>
+                <p className={`text-2xl font-bold ${isPositive ? "text-[#00C853]" : "text-red-400"}`}>{isPositive ? "+" : ""}{improvement.toFixed(1)}%</p>
                 <p className="text-xs text-amber-400/70">desde {months[0] || "inicio"}</p>
               </div>
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                 <p className="text-sm text-amber-400">Tendencia</p>
-                <p className={`text-xl font-bold ${trend3 === "Positiva" ? "text-[#00C853]" : trend3 === "Negativa" ? "text-red-400" : "text-[#FFFFFF]/70"}`}>{trend3}</p>
+                <p className={`text-2xl font-bold ${trend3 === "Positiva" ? "text-[#00C853]" : trend3 === "Negativa" ? "text-red-400" : "text-[#FFFFFF]/70"}`}>{trend3}</p>
                 <p className="text-xs text-amber-400/70">últimos 3 meses</p>
               </div>
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                <p className="text-sm text-amber-400">Último mes</p>
+                <p className="text-2xl font-bold text-[#FFFFFF]">{"★".repeat(Math.round(endVal))}{"☆".repeat(5 - Math.round(endVal))}</p>
+                <p className="text-xs text-amber-400/70">{endVal.toFixed(2)} / 5</p>
+              </div>
+            </div>
             </div>
           </>
         )}
@@ -1159,6 +1197,168 @@ export default function CordobaDashboard() {
   const multipleQ = results.questions_summary.find(q => q.question_type === "percentage_distribution");
   const singleQ = results.questions_summary.find(q => q.question_type === "single_choice");
   const ratingQ = results.questions_summary.find(q => q.question_type === "rating");
+
+  const renderOtrosSummary = () => {
+    if (!multipleQ) return null;
+    const otrosSummary = (multipleQ as any).otros_summary as Array<{ text: string; count: number }> | undefined;
+    if (!otrosSummary || otrosSummary.length === 0) return null;
+    const totalOtros = otrosSummary.reduce((sum, item) => sum + item.count, 0);
+    return (
+      <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6 mb-6">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Otras Propuestas Ciudadanas</h3>
+          <p className="text-sm text-[#FFFFFF]/50">{totalOtros} personas sugirieron áreas adicionales de inversión</p>
+        </div>
+        <div className="space-y-3">
+          {otrosSummary.slice(0, 10).map((item, index) => {
+            const pct = ((item.count / totalOtros) * 100).toFixed(0);
+            return (
+              <div key={index} className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium text-[#FFFFFF]/80">{item.text}</span>
+                    <span className="text-sm text-[#FFFFFF]/50">{item.count} mención{item.count !== 1 ? "es" : ""}</span>
+                  </div>
+                  <div className="w-full bg-[#000000] rounded-full h-2">
+                    <div className="bg-[#2962FF] h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderCrossAnalysis = () => {
+    const priorityColors = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#06B6D4"];
+
+    type SegmentKey = "results_by_city" | "results_by_age" | "results_by_gender";
+    type DemographicKey = "by_city" | "by_age_group" | "by_gender";
+
+    const segmentKeyMap: Record<string, SegmentKey> = {
+      city: "results_by_city", age: "results_by_age", gender: "results_by_gender",
+    };
+    const demographicKeyMap: Record<string, DemographicKey> = {
+      city: "by_city", age: "by_age_group", gender: "by_gender",
+    };
+    const tabLabels: Record<string, string> = { city: "Por Ciudad", age: "Por Edad", gender: "Por Género" };
+    const columnLabel: Record<string, string> = { city: "Ciudad", age: "Edad", gender: "Género" };
+
+    const segmentKey = segmentKeyMap[crossAnalysisTab];
+    const demographicKey = demographicKeyMap[crossAnalysisTab];
+    const demographics = (results.demographics as any)[demographicKey] || {};
+
+    const groups = Object.entries(demographics as Record<string, number>)
+      .filter(([key]) => key !== "Sin especificar" && key !== "Menor de 18")
+      .sort((a, b) => b[1] - a[1]);
+
+    const displayGroups = crossAnalysisTab === "city" ? groups.slice(0, 15) : groups;
+
+    const getTopPriorities = (data: Record<string, any> | undefined, n: number) => {
+      if (!data) return [];
+      return Object.entries(data)
+        .filter(([, val]) => (val as any).label !== "OTROS")
+        .map(([key, val]) => ({ key, label: (val as any).label || key, percentage: (val as any).percentage || 0 }))
+        .sort((a, b) => b.percentage - a.percentage)
+        .slice(0, n);
+    };
+
+    const allBudgetLabels: string[] = [];
+    groups.forEach(([groupName]) => {
+      const data = (multipleQ as any)?.[segmentKey]?.[groupName];
+      if (data) Object.values(data).forEach((val: any) => {
+        const label = val.label || "";
+        if (label && label !== "OTROS" && !allBudgetLabels.includes(label)) allBudgetLabels.push(label);
+      });
+    });
+    const budgetColorMap: Record<string, string> = {};
+    allBudgetLabels.forEach((label, idx) => { budgetColorMap[label] = priorityColors[idx % priorityColors.length]; });
+
+    return (
+      <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6 mb-6">
+        <div className="mb-4">
+          <h3 className="text-xl font-bold text-[#FFFFFF]">Análisis Cruzado</h3>
+          <p className="text-sm text-[#FFFFFF]/50">Compara preferencias segmentando por diferentes dimensiones</p>
+        </div>
+
+        <div className="flex gap-1 mb-6 bg-[#000000] rounded-lg p-1 w-fit">
+          {(["city", "age", "gender"] as const).map((tab) => (
+            <button key={tab} onClick={() => setCrossAnalysisTab(tab)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition ${crossAnalysisTab === tab ? "bg-[#1a1a2e] text-[#FFFFFF] shadow-none" : "text-[#FFFFFF]/50 hover:text-[#FFFFFF]"}`}>
+              {tabLabels[tab]}
+            </button>
+          ))}
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="text-left py-3 px-2 font-semibold text-[#FFFFFF]/80">{columnLabel[crossAnalysisTab]}</th>
+                <th className="text-center py-3 px-2 font-semibold text-[#FFFFFF]/80">Respuestas</th>
+                {multipleQ && <th className="text-left py-3 px-2 font-semibold text-[#FFFFFF]/80">Prioridad #1</th>}
+                {multipleQ && <th className="text-left py-3 px-2 font-semibold text-[#FFFFFF]/80">Prioridad #2</th>}
+                {multipleQ && <th className="text-left py-3 px-2 font-semibold text-[#FFFFFF]/80">Prioridad #3</th>}
+                {singleQ && <th className="text-left py-3 px-2 font-semibold text-[#FFFFFF]/80">Apoyo gestión</th>}
+                {ratingQ && <th className="text-right py-3 px-2 font-semibold text-[#FFFFFF]/80">Calificación</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {displayGroups.map(([groupName, count]) => {
+                const budgetData = (multipleQ as any)?.[segmentKey]?.[groupName];
+                const singleData = (singleQ as any)?.[segmentKey]?.[groupName];
+                const ratingData = (ratingQ as any)?.[segmentKey]?.[groupName];
+                const priorities = getTopPriorities(budgetData, 3);
+                const topSingle = singleData ? Object.entries(singleData)
+                  .map(([k, v]) => ({ key: k, label: (v as any).label || k, percentage: (v as any).percentage || 0 }))
+                  .sort((a, b) => b.percentage - a.percentage)[0] : null;
+                const rating = ratingData ? { average: ratingData.average || 0, total: ratingData.total_ratings || 0 } : null;
+                const ratingColor = rating && rating.average >= 4 ? "text-[#00C853]" : rating && rating.average >= 3 ? "text-orange-500" : "text-red-500";
+
+                return (
+                  <tr key={groupName} className="border-b border-white/5 hover:bg-[#000000] transition">
+                    <td className="py-3 px-2 font-medium text-[#FFFFFF]">{groupName}</td>
+                    <td className="py-3 px-2 text-center text-[#FFFFFF]/70">{(count as number).toLocaleString()}</td>
+                    {multipleQ && [0, 1, 2].map((i) => (
+                      <td key={i} className="py-3 px-2">
+                        {priorities[i] ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: budgetColorMap[priorities[i].label] || "#9CA3AF" }} />
+                            <span className="text-[#FFFFFF] text-xs">{priorities[i].label}</span>
+                            <span className="text-[#FFFFFF]/40 text-xs">({priorities[i].percentage.toFixed(1)}%)</span>
+                          </div>
+                        ) : <span className="text-[#FFFFFF]/30">—</span>}
+                      </td>
+                    ))}
+                    {singleQ && (
+                      <td className="py-3 px-2">
+                        {topSingle ? (
+                          <span className="text-[#FFFFFF] text-xs">{topSingle.label} <span className="text-[#FFFFFF]/40">({topSingle.percentage.toFixed(1)}%)</span></span>
+                        ) : <span className="text-[#FFFFFF]/30">—</span>}
+                      </td>
+                    )}
+                    {ratingQ && (
+                      <td className="py-3 px-2 text-right">
+                        {rating && rating.total > 0 ? (
+                          <span className={`font-bold ${ratingColor}`}>{rating.average.toFixed(1)}<span className="text-[#FFFFFF]/40 font-normal">/5</span></span>
+                        ) : <span className="text-[#FFFFFF]/30">—</span>}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {crossAnalysisTab === "city" && groups.length > 15 && (
+          <p className="text-xs text-[#FFFFFF]/40 mt-3">Mostrando las 15 ciudades con más respuestas de {groups.length} totales</p>
+        )}
+      </div>
+    );
+  };
 
   // ── Main render ────────────────────────────────────────────────────────────
   return (
@@ -1276,6 +1476,7 @@ export default function CordobaDashboard() {
               {multipleQ && renderBudgetPieChart(multipleQ)}
               {singleQ && renderSingleChoice(singleQ)}
             </div>
+            {renderOtrosSummary()}
             {ratingQ && renderRating(ratingQ)}
 
             {/* Mapa por Localidad */}
@@ -1296,8 +1497,11 @@ export default function CordobaDashboard() {
               </div>
             )}
 
+            {/* Análisis Cruzado */}
+            {renderCrossAnalysis()}
+
             {/* Gráficos de evolución temporal */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="flex flex-col gap-6 mb-6">
               {renderBudgetEvolutionChart()}
               {renderRatingEvolutionChart()}
             </div>
