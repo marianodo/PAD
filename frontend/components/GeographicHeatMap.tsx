@@ -2,6 +2,23 @@
 
 import { useEffect, useState, useRef } from "react";
 
+// leaflet.markercluster needs window.L set before its script runs (uses global L internally)
+let markerClusterLoaded = false;
+
+function loadMarkerCluster(L: any): Promise<void> {
+  if (markerClusterLoaded) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    // Must set window.L BEFORE the script executes — plugin uses global L internally
+    (window as any).L = L;
+    const script = document.createElement("script");
+    // Served from /public/leaflet.markercluster.js
+    script.src = "/leaflet.markercluster.js";
+    script.onload = () => { markerClusterLoaded = true; resolve(); };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
 interface QuestionSummary {
   question_id: string;
   question_text: string;
@@ -83,7 +100,7 @@ function normalizedColor(normalized: number): string {
 
 export default function GeographicHeatMap({
   neighborhoodData, questions, neighborhoodCoords,
-  mapCenter = [-31.6553, -64.4330], mapZoom = 14, circleRadius,
+  mapCenter = [-31.6553, -64.4330], mapZoom = 14, circleRadius: _circleRadius,
   title = "Desglose por Zona Geográfica", subtitle = "Participación y votación por ubicación",
   participationOnly = false,
   groupBy = "neighborhood",
@@ -122,15 +139,14 @@ export default function GeographicHeatMap({
   useEffect(() => {
     if (!mounted || mapRef.current || !mapContainerRef.current || entries.length === 0) return;
 
-    import("leaflet").then((L) => {
-      // markercluster requires L on window/global
-      (window as any).L = L;
-      return import("leaflet.markercluster").then(() => L);
-    }).then((L) => {
+    import("leaflet").then(async (L) => {
+      await loadMarkerCluster(L);
       if (mapRef.current || !mapContainerRef.current) return;
-      LRef.current = L;
-      const mapInstance = L.map(mapContainerRef.current).setView(mapCenter, mapZoom);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      // Use window.L — the script tag patched it with markerClusterGroup
+      LRef.current = (window as any).L;
+      const WL = (window as any).L;
+      const mapInstance = WL.map(mapContainerRef.current).setView(mapCenter, mapZoom);
+      WL.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(mapInstance);
       mapRef.current = mapInstance;
@@ -163,7 +179,10 @@ export default function GeographicHeatMap({
 
     if (entries.length === 0) return;
 
-    const clusterGroup = (L as any).markerClusterGroup({
+    // Always use window.L for markerClusterGroup — the plugin patches window.L, not the module object
+    const WL = (window as any).L ?? L;
+
+    const clusterGroup = WL.markerClusterGroup({
       maxClusterRadius: 20,
       disableClusteringAtZoom: 9,
       spiderfyOnMaxZoom: true,

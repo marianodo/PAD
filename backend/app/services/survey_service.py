@@ -3,6 +3,8 @@ from sqlalchemy import and_, func
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta, date
 from uuid import UUID
+from collections import Counter
+import time
 
 from app.models.survey import Survey, Question, QuestionOption, QuestionType
 from app.models.response import SurveyResponse, Answer
@@ -17,6 +19,10 @@ import json
 import logging
 
 logger = logging.getLogger(__name__)
+
+# In-memory cache for AI classification results (TTL: 1 hour)
+_otros_cache: Dict[str, Any] = {}
+_OTROS_CACHE_TTL = 3600
 
 
 class SurveyService:
@@ -637,7 +643,7 @@ class SurveyService:
                 question_data["results_by_neighborhood"] = _calc_pct_by_group(pct_by_neighborhood, resp_by_neighborhood)
                 question_data["results_by_city"] = _calc_pct_by_group(pct_by_city, resp_by_city)
 
-                # "Otros" free-text summary — find UUID of the "otro/otros" option
+                # "Otros" free-text summary — support UUID key (Córdoba) and string key "otros" (Alta Gracia)
                 otro_uuid = next(
                     (uid for uid, meta in option_id_map.items()
                      if meta["value"].lower() in ("otro", "otros")),
@@ -658,10 +664,26 @@ class SurveyService:
                         {date_filter_sql}
                         LIMIT 500
                     """), q_params).fetchall()
+                if not otros_texts_rows:
+                    # Fallback: string key "otros" (legacy surveys like Alta Gracia)
+                    otros_texts_rows = db.execute(sql_text(f"""
+                        SELECT a.answer_text
+                        FROM answers a
+                        JOIN survey_responses sr ON a.response_id = sr.id
+                        WHERE sr.survey_id = :survey_id
+                          AND sr.completed = TRUE
+                          AND a.question_id = :question_id
+                          AND a.answer_text IS NOT NULL
+                          AND a.answer_text != ''
+                          AND COALESCE((a.percentage_data->>'otros')::float, 0) > 0
+                        {date_filter_sql}
+                        LIMIT 500
+                    """), q_params).fetchall()
 
                 otros_raw_texts = [r.answer_text.strip() for r in otros_texts_rows if r.answer_text and r.answer_text.strip()]
                 if otros_raw_texts:
-                    question_data["otros_summary"] = SurveyService._classify_otros_texts(otros_raw_texts)
+                    cache_key = f"{survey_id_str}:{q_id_str}:{date_filter_sql}"
+                    question_data["otros_summary"] = SurveyService._classify_otros_texts(otros_raw_texts, cache_key)
                 else:
                     question_data["otros_summary"] = []
 
@@ -1506,7 +1528,7 @@ class SurveyService:
         }
 
     @staticmethod
-    def _classify_otros_texts(texts: List[str]) -> List[Dict[str, Any]]:
+    def _classify_otros_texts(texts: List[str], cache_key: str = "") -> List[Dict[str, Any]]:
         """
         Usa Claude para clasificar textos libres de 'otros' en categorías semánticas.
         Retorna lista de {text: nombre_categoria, count: cantidad}.
@@ -1514,20 +1536,32 @@ class SurveyService:
         if not texts:
             return []
 
+        # Check in-memory cache first
+        if cache_key:
+            cached = _otros_cache.get(cache_key)
+            if cached and time.time() - cached["ts"] < _OTROS_CACHE_TTL:
+                return cached["data"]
+
+        # Pre-aggregate by exact text — reduces tokens and makes result deterministic
+        counts = Counter(t.lower().strip() for t in texts)
+        # If all texts are already clean categories (≤ 20 unique), skip AI
+        unique_texts = list(counts.keys())
+
         api_key = settings.ANTHROPIC_API_KEY
-        if not api_key:
-            # Fallback: agrupar por texto exacto si no hay API key
-            from collections import Counter
-            counts = Counter(texts)
-            return [
-                {"text": text, "count": count}
+        if not api_key or len(unique_texts) <= 20:
+            result = [
+                {"text": text.capitalize(), "count": count}
                 for text, count in counts.most_common()
             ]
+            if cache_key:
+                _otros_cache[cache_key] = {"data": result, "ts": time.time()}
+            return result
 
         try:
             client = Anthropic(api_key=api_key)
 
-            texts_list = "\n".join(f"- {t}" for t in texts)
+            # Pass pre-aggregated counts so Claude groups semantically similar ones
+            texts_list = "\n".join(f"- {t} ({c} menciones)" for t, c in counts.most_common())
 
             response = client.messages.create(
                 model=settings.CLAUDE_MODEL,
@@ -1559,18 +1593,22 @@ Ordená de mayor a menor count."""
 
             categories = json.loads(result_text)
 
-            return [
+            result = [
                 {"text": cat["category"], "count": cat["count"]}
                 for cat in categories
                 if cat.get("count", 0) > 0
             ]
+            if cache_key:
+                _otros_cache[cache_key] = {"data": result, "ts": time.time()}
+            return result
 
         except Exception as e:
             logger.error(f"Error clasificando textos con AI: {e}")
-            # Fallback: agrupar por texto exacto
-            from collections import Counter
-            counts = Counter(texts)
-            return [
-                {"text": text, "count": count}
+            # Fallback: already have counts from pre-aggregation above
+            result = [
+                {"text": text.capitalize(), "count": count}
                 for text, count in counts.most_common()
             ]
+            if cache_key:
+                _otros_cache[cache_key] = {"data": result, "ts": time.time()}
+            return result
