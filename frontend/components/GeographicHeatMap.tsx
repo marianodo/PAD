@@ -2,18 +2,15 @@
 
 import { useEffect, useState, useRef } from "react";
 
-// leaflet.markercluster needs window.L set before its script runs (uses global L internally)
-let markerClusterLoaded = false;
-
 function loadMarkerCluster(L: any): Promise<void> {
-  if (markerClusterLoaded) return Promise.resolve();
+  // leaflet module is a singleton in webpack — same object every import().
+  // Set window.L so the script can patch it, then check if already patched.
+  (window as any).L = L;
+  if ((L as any).markerClusterGroup) return Promise.resolve();
   return new Promise((resolve, reject) => {
-    // Must set window.L BEFORE the script executes — plugin uses global L internally
-    (window as any).L = L;
     const script = document.createElement("script");
-    // Served from /public/leaflet.markercluster.js
     script.src = "/leaflet.markercluster.js";
-    script.onload = () => { markerClusterLoaded = true; resolve(); };
+    script.onload = () => resolve();
     script.onerror = reject;
     document.head.appendChild(script);
   });

@@ -308,7 +308,12 @@ export default function CordobaDashboard() {
   const [results, setResults] = useState<SurveyResults | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"datos" | "ai-insights">("datos");
+  const [activeTab, setActiveTab] = useState<"datos" | "ai-insights" | "reportes">("datos");
+  const [segmentsData, setSegmentsData] = useState<any>(null);
+  const [loadingSegments, setLoadingSegments] = useState(false);
+  const [exportingXLSX, setExportingXLSX] = useState(false);
+  const [segmentThreshold, setSegmentThreshold] = useState(20);
+  const [expandedSegments, setExpandedSegments] = useState<Record<string, boolean>>({});
   const [aiInsights, setAiInsights] = useState<any[] | null>(null);
   const [aiPredictions, setAiPredictions] = useState<any[] | null>(null);
   const [loadingAiInsights, setLoadingAiInsights] = useState(false);
@@ -379,6 +384,63 @@ export default function CordobaDashboard() {
     fetchResults();
     loadCachedInsights();
   }, []);
+
+  const SURVEY_ID = "ccc73cdb-c0e2-4d99-9a88-e383c5505ceb";
+
+  const fetchSegments = async (threshold: number) => {
+    try {
+      setLoadingSegments(true);
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${SURVEY_ID}/segments?threshold=${threshold}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) setSegmentsData(await res.json());
+    } catch (err) {
+      console.error("Error fetching segments:", err);
+    } finally {
+      setLoadingSegments(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "reportes" && !segmentsData) fetchSegments(segmentThreshold);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "reportes") {
+      const timer = setTimeout(() => fetchSegments(segmentThreshold), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [segmentThreshold]);
+
+  const handleExportXLSX = async () => {
+    try {
+      setExportingXLSX(true);
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/surveys/${SURVEY_ID}/segments/export?threshold=${segmentThreshold}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `segmentos-cordoba.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error("Error exporting XLSX:", err);
+    } finally {
+      setExportingXLSX(false);
+    }
+  };
 
   const generateAIInsights = async () => {
     setLoadingAiInsights(true);
@@ -1400,6 +1462,7 @@ export default function CordobaDashboard() {
           {[
             { id: "datos", label: "📊 Datos" },
             { id: "ai-insights", label: "🤖 AI Insights" },
+            { id: "reportes", label: "📋 Reportes" },
           ].map(tab => (
             <button key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
@@ -1574,6 +1637,161 @@ export default function CordobaDashboard() {
             </div>
 
             {renderPredictionsSection()}
+          </div>
+        )}
+
+        {/* Tab: Reportes */}
+        {activeTab === "reportes" && (
+          <div>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-[#FFFFFF]">Segmentación por Preferencias</h2>
+              <p className="text-[#FFFFFF]/50 mt-1">
+                Clasificación de votantes según las áreas donde asignaron mayor porcentaje de inversión.
+                Ideal para enviar reportes personalizados a cada segmento.
+              </p>
+            </div>
+
+            {/* Threshold slider + Export */}
+            <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-6 mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex-1">
+                  <label className="text-sm font-medium text-[#FFFFFF]/80 block mb-2">
+                    Umbral mínimo: <span className="text-[#2962FF] font-bold text-lg">{segmentThreshold}%</span>
+                  </label>
+                  <p className="text-xs text-[#FFFFFF]/40 mb-3">
+                    Una persona se incluye en un segmento si asignó al menos este porcentaje al área
+                  </p>
+                  <input
+                    type="range" min="1" max="100" value={segmentThreshold}
+                    onChange={(e) => setSegmentThreshold(parseInt(e.target.value))}
+                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                    style={{ background: `linear-gradient(to right, #2563eb 0%, #2563eb ${segmentThreshold}%, #e5e7eb ${segmentThreshold}%, #e5e7eb 100%)` }}
+                  />
+                  <div className="flex justify-between text-xs text-[#FFFFFF]/40 mt-1">
+                    <span>1%</span><span>50%</span><span>100%</span>
+                  </div>
+                </div>
+                <button
+                  onClick={handleExportXLSX}
+                  disabled={!segmentsData || segmentsData.segments.length === 0 || exportingXLSX}
+                  className="px-6 py-3 bg-[#00C853] text-white rounded-lg font-medium hover:bg-[#33D968] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+                >
+                  {exportingXLSX ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-r-transparent rounded-full animate-spin" />
+                      Generando...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Exportar XLSX
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Loading */}
+            {loadingSegments && (
+              <div className="flex justify-center items-center py-12">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#2962FF] border-r-transparent" />
+                <span className="ml-3 text-[#FFFFFF]/50">Cargando segmentos...</span>
+              </div>
+            )}
+
+            {/* Summary + cards */}
+            {segmentsData && !loadingSegments && (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                  <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-4 text-center">
+                    <p className="text-2xl font-bold text-[#2962FF]">{segmentsData.segments.length}</p>
+                    <p className="text-xs text-[#FFFFFF]/50">Segmentos</p>
+                  </div>
+                  <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-4 text-center">
+                    <p className="text-2xl font-bold text-[#FFFFFF]">{segmentsData.total_respondents}</p>
+                    <p className="text-xs text-[#FFFFFF]/50">Votantes totales</p>
+                  </div>
+                  <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-4 text-center">
+                    <p className="text-2xl font-bold text-[#00C853]">
+                      {segmentsData.segments.reduce((sum: number, s: any) => sum + s.count, 0)}
+                    </p>
+                    <p className="text-xs text-[#FFFFFF]/50">Asignaciones totales</p>
+                  </div>
+                  <div className="bg-[#1a1a2e] rounded-xl border border-white/10 p-4 text-center">
+                    <p className="text-2xl font-bold text-[#5E8AFF]">{segmentThreshold}%</p>
+                    <p className="text-xs text-[#FFFFFF]/50">Umbral activo</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {segmentsData.segments.map((segment: any) => {
+                    const isExpanded = expandedSegments[segment.area_key] || false;
+                    const displayUsers = isExpanded ? segment.users : segment.users.slice(0, 5);
+                    const pctOfTotal = ((segment.count / segmentsData.total_respondents) * 100).toFixed(1);
+                    return (
+                      <div key={segment.area_key} className="bg-[#1a1a2e] rounded-2xl border border-white/10 overflow-hidden">
+                        <div className="p-6 border-b border-white/5">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-lg font-bold text-[#FFFFFF]">{segment.area}</h3>
+                              <p className="text-sm text-[#FFFFFF]/50">
+                                {segment.count} persona{segment.count !== 1 ? "s" : ""} ({pctOfTotal}% del total)
+                              </p>
+                            </div>
+                            <div className="bg-[#2962FF]/10 text-[#5E8AFF] px-4 py-2 rounded-full text-sm font-semibold">
+                              {segment.count}
+                            </div>
+                          </div>
+                          <div className="mt-3 w-full bg-[#000000] rounded-full h-2">
+                            <div className="bg-[#2962FF] h-2 rounded-full transition-all" style={{ width: `${pctOfTotal}%` }} />
+                          </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="bg-[#000000]">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#FFFFFF]/50 uppercase">Nombre</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#FFFFFF]/50 uppercase">Email</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#FFFFFF]/50 uppercase">Ciudad</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-[#FFFFFF]/50 uppercase">% Asignado</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                              {displayUsers.map((user: any, idx: number) => (
+                                <tr key={idx} className="hover:bg-[#000000]">
+                                  <td className="px-6 py-3 text-sm text-[#FFFFFF]">{user.name}</td>
+                                  <td className="px-6 py-3 text-sm text-[#FFFFFF]/50">{user.email}</td>
+                                  <td className="px-6 py-3 text-sm text-[#FFFFFF]/50">{user.neighborhood ?? user.city ?? "—"}</td>
+                                  <td className="px-6 py-3 text-sm text-right font-semibold text-[#2962FF]">{user.percentage}%</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {segment.users.length > 5 && (
+                          <div className="px-6 py-3 border-t border-white/5 bg-[#000000]">
+                            <button
+                              onClick={() => setExpandedSegments(prev => ({ ...prev, [segment.area_key]: !isExpanded }))}
+                              className="text-sm text-[#2962FF] hover:text-[#5E8AFF] font-medium"
+                            >
+                              {isExpanded ? "Ver menos" : `Ver todos (${segment.users.length} personas)`}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {segmentsData.segments.length === 0 && (
+                  <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 p-12 text-center">
+                    <p className="text-[#FFFFFF]/50">No hay segmentos con el umbral seleccionado. Probá bajando el porcentaje.</p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>

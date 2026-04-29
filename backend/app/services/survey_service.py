@@ -1385,10 +1385,13 @@ class SurveyService:
     @staticmethod
     def get_survey_segments(db: Session, survey_id: UUID, threshold: int = 20) -> Dict[str, Any]:
         """
-        Segmenta a los votantes según sus preferencias en la pregunta de distribución porcentual.
-        Una persona entra en un segmento si asignó >= threshold% a esa área.
+        Segmenta votantes según preferencias en la pregunta de distribución porcentual.
+        Usa SQL agregado para evitar cargar miles de filas en Python.
         """
-        # Obtener la encuesta con preguntas
+        from sqlalchemy import text as sql_text
+        survey_id_str = str(survey_id)
+
+        # Obtener pregunta y sus opciones
         survey = db.query(Survey).options(
             joinedload(Survey.questions).joinedload(Question.options)
         ).filter(Survey.id == survey_id).first()
@@ -1396,135 +1399,101 @@ class SurveyService:
         if not survey:
             return {"segments": [], "threshold": threshold, "total_respondents": 0}
 
-        # Encontrar la pregunta de distribución porcentual
-        pct_question = None
-        for q in survey.questions:
-            if q.question_type == QuestionType.PERCENTAGE_DISTRIBUTION:
-                pct_question = q
-                break
-
+        pct_question = next(
+            (q for q in survey.questions if q.question_type == QuestionType.PERCENTAGE_DISTRIBUTION),
+            None
+        )
         if not pct_question:
             return {"segments": [], "threshold": threshold, "total_respondents": 0}
 
-        # Mapeo option_id -> option info
-        option_map = {}
-        for opt in pct_question.options:
-            option_map[str(opt.id)] = {
-                "text": opt.option_text,
-                "value": opt.option_value or str(opt.id)
-            }
+        # Mapeo option_id -> {text, value}
+        option_map = {
+            str(opt.id): {"text": opt.option_text, "value": opt.option_value or str(opt.id)}
+            for opt in pct_question.options
+        }
 
-        # Obtener respuestas completadas con datos de usuario
-        responses = (
-            db.query(SurveyResponse, User)
-            .join(User, SurveyResponse.user_id == User.id)
-            .filter(
-                SurveyResponse.survey_id == survey_id,
-                SurveyResponse.completed == True
-            )
-            .all()
-        )
+        pct_question_id_str = str(pct_question.id)
 
-        # Obtener las answers de la pregunta de distribución porcentual
-        response_ids = [r.id for r, _ in responses]
-        user_by_response = {r.id: u for r, u in responses}
+        # Single SQL: promedio por (user_id, pct_key), filtrando ya por threshold
+        rows = db.execute(sql_text(f"""
+            SELECT
+                u.id        AS user_id,
+                u.name      AS user_name,
+                u.email     AS user_email,
+                u.neighborhood AS neighborhood,
+                u.city      AS city,
+                kv.key      AS pct_key,
+                AVG(kv.value::float) AS avg_pct,
+                MAX(a.answer_text)   AS otros_text
+            FROM answers a
+            JOIN survey_responses sr ON a.response_id = sr.id
+            JOIN users u ON sr.user_id = u.id
+            JOIN LATERAL jsonb_each(a.percentage_data) kv ON TRUE
+            WHERE sr.survey_id = :survey_id
+              AND sr.completed = TRUE
+              AND a.question_id = :question_id
+            GROUP BY u.id, u.name, u.email, u.neighborhood, u.city, kv.key
+            HAVING AVG(kv.value::float) >= :threshold
+            ORDER BY avg_pct DESC
+        """), {
+            "survey_id": survey_id_str,
+            "question_id": pct_question_id_str,
+            "threshold": threshold,
+        }).fetchall()
 
-        if not response_ids:
-            return {"segments": [], "threshold": threshold, "total_respondents": 0}
+        # Total respondents (sin filtro de threshold)
+        total_row = db.execute(sql_text("""
+            SELECT COUNT(DISTINCT u.id)
+            FROM survey_responses sr
+            JOIN users u ON sr.user_id = u.id
+            WHERE sr.survey_id = :survey_id AND sr.completed = TRUE
+        """), {"survey_id": survey_id_str}).scalar()
+        total_respondents = total_row or 0
 
-        answers = (
-            db.query(Answer)
-            .filter(
-                Answer.response_id.in_(response_ids),
-                Answer.question_id == pct_question.id
-            )
-            .all()
-        )
-
-        # Agrupar por usuario y promediar porcentajes (un usuario puede tener múltiples respuestas)
-        # user_id -> {area_key -> [values]}
-        user_area_values: Dict[UUID, Dict[str, List[float]]] = {}
-        user_otros_texts: Dict[UUID, str] = {}
-        users_map: Dict[UUID, User] = {}
-
-        for answer in answers:
-            if not answer.percentage_data:
-                continue
-
-            user = user_by_response.get(answer.response_id)
-            if not user:
-                continue
-
-            users_map[user.id] = user
-
-            if user.id not in user_area_values:
-                user_area_values[user.id] = {}
-
-            for key, value in answer.percentage_data.items():
-                if key not in user_area_values[user.id]:
-                    user_area_values[user.id][key] = []
-                user_area_values[user.id][key].append(value)
-
-                if key == "otros" and answer.answer_text:
-                    user_otros_texts[user.id] = answer.answer_text
-
-        # Contar usuarios únicos
-        total_respondents = len(user_area_values)
-
-        # Construir segmentos con promedios
+        # Agrupar en segmentos
         segments_data: Dict[str, Dict[str, Any]] = {}
 
-        for user_id, area_values in user_area_values.items():
-            user = users_map[user_id]
+        for row in rows:
+            key = row.pct_key
+            avg_value = float(row.avg_pct)
 
-            for key, values in area_values.items():
-                avg_value = sum(values) / len(values)
+            if key in ("otros", "otro"):
+                area_name = "OTROS"
+                area_key = "otros"
+            else:
+                opt_info = option_map.get(key)
+                if opt_info:
+                    area_name = opt_info["text"]
+                    area_key = opt_info["value"]
+                else:
+                    area_name = key
+                    area_key = key
 
-                if avg_value >= threshold:
-                    # Determinar nombre del área
-                    if key == "otros":
-                        area_name = "OTROS"
-                        area_key = "otros"
-                    else:
-                        opt_info = option_map.get(key)
-                        if opt_info:
-                            area_name = opt_info["text"]
-                            area_key = opt_info["value"]
-                        else:
-                            area_name = key
-                            area_key = key
+            if area_key not in segments_data:
+                segments_data[area_key] = {"area": area_name, "area_key": area_key, "users": []}
 
-                    if area_key not in segments_data:
-                        segments_data[area_key] = {
-                            "area": area_name,
-                            "area_key": area_key,
-                            "users": []
-                        }
+            segments_data[area_key]["users"].append({
+                "id": str(row.user_id),
+                "name": row.user_name or "Sin nombre",
+                "email": row.user_email,
+                "neighborhood": row.neighborhood or "N/A",
+                "city": row.city or "N/A",
+                "percentage": round(avg_value, 1),
+                "otros_text": row.otros_text if key in ("otros", "otro") else None,
+            })
 
-                    segments_data[area_key]["users"].append({
-                        "id": str(user.id),
-                        "name": user.name or "Sin nombre",
-                        "email": user.email,
-                        "neighborhood": user.neighborhood or "N/A",
-                        "city": user.city or "N/A",
-                        "percentage": round(avg_value, 1),
-                        "otros_text": user_otros_texts.get(user_id) if key == "otros" else None
-                    })
-
-        # Ordenar usuarios dentro de cada segmento por porcentaje descendente
         segments = []
         for seg in segments_data.values():
             seg["users"].sort(key=lambda u: u["percentage"], reverse=True)
             seg["count"] = len(seg["users"])
             segments.append(seg)
 
-        # Ordenar segmentos por cantidad de personas descendente
         segments.sort(key=lambda s: s["count"], reverse=True)
 
         return {
             "segments": segments,
             "threshold": threshold,
-            "total_respondents": total_respondents
+            "total_respondents": total_respondents,
         }
 
     @staticmethod
