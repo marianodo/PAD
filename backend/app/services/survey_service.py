@@ -633,6 +633,7 @@ class SurveyService:
                                 divisor = bucket["cnt"]
                             avg = bucket["sum"] / divisor if divisor else 0
                             result[grp][key] = {"label": _get_option_label(key), "percentage": round(avg, 1)}
+                            
                     return result
 
                 question_data["total_answers"] = total_respondents
