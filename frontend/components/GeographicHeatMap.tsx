@@ -1,20 +1,14 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
+import {
+  APIProvider,
+  Map,
+  useMap,
+} from "@vis.gl/react-google-maps";
+import { MarkerClusterer, Marker } from "@googlemaps/markerclusterer";
 
-function loadMarkerCluster(L: any): Promise<void> {
-  // leaflet module is a singleton in webpack — same object every import().
-  // Set window.L so the script can patch it, then check if already patched.
-  (window as any).L = L;
-  if ((L as any).markerClusterGroup) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "/leaflet.markercluster.js";
-    script.onload = () => resolve();
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 interface QuestionSummary {
   question_id: string;
@@ -54,6 +48,14 @@ function ratingColor(avg: number): string {
   return "#EF4444";
 }
 
+function normalizedColor(normalized: number): string {
+  if (normalized >= 0.75) return "#10B981";  // Verde - Muy Alta
+  if (normalized >= 0.5) return "#84CC16";   // Lima - Alta
+  if (normalized >= 0.25) return "#EAB308";  // Amarillo - Media
+  if (normalized >= 0.1) return "#F97316";   // Naranja - Baja
+  return "#EF4444";                          // Rojo - Muy Baja
+}
+
 function createPieSvg(segments: { label: string; value: number; color: string }[], size = 50): string {
   const center = size / 2;
   const radius = size / 2 - 2;
@@ -87,12 +89,139 @@ function createPieSvg(segments: { label: string; value: number; color: string }[
   </svg>`;
 }
 
-function normalizedColor(normalized: number): string {
-  if (normalized >= 0.75) return "#10B981";  // Verde - Muy Alta
-  if (normalized >= 0.5) return "#84CC16";   // Lima - Alta
-  if (normalized >= 0.25) return "#EAB308";  // Amarillo - Media
-  if (normalized >= 0.1) return "#F97316";   // Naranja - Baja
-  return "#EF4444";                          // Rojo - Muy Baja
+interface MarkerData {
+  name: string;
+  position: { lat: number; lng: number };
+  color: string;
+  radius: number;
+  tooltip: string;
+  isPie?: boolean;
+  pieSvg?: string;
+}
+
+// Inner component that has access to map instance via useMap
+function MarkersLayer({ markers }: { markers: MarkerData[] }) {
+  const map = useMap();
+  const clustererRef = useRef<MarkerClusterer | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+
+    // Custom tooltip div anchored to the map container
+    const mapDiv = map.getDiv() as HTMLDivElement;
+    if (!tooltipRef.current) {
+      const tip = document.createElement("div");
+      tip.style.cssText = [
+        "position:absolute",
+        "pointer-events:none",
+        "background:#fff",
+        "color:#111",
+        "border-radius:8px",
+        "box-shadow:0 4px 12px rgba(0,0,0,0.18)",
+        "font-family:system-ui,-apple-system,sans-serif",
+        "z-index:1000",
+        "display:none",
+        "transform:translate(-50%, calc(-100% - 14px))",
+      ].join(";");
+      mapDiv.appendChild(tip);
+      tooltipRef.current = tip;
+    }
+    const tip = tooltipRef.current;
+
+    // Clear existing clusterer
+    if (clustererRef.current) {
+      clustererRef.current.clearMarkers();
+      clustererRef.current = null;
+    }
+
+    if (markers.length === 0) return;
+
+    const projection = () => {
+      // The OverlayView projection is the only way to convert LatLng -> pixel on the map
+      // We use a tiny dummy OverlayView lazy-init
+      return null;
+    };
+    void projection;
+
+    // Helper: convert lat/lng to pixel relative to mapDiv using a one-shot OverlayView
+    const overlayHelper = new google.maps.OverlayView();
+    overlayHelper.draw = () => {};
+    overlayHelper.setMap(map);
+
+    const showTip = (m: MarkerData) => {
+      const proj = overlayHelper.getProjection();
+      if (!proj) return;
+      const point = proj.fromLatLngToContainerPixel(new google.maps.LatLng(m.position.lat, m.position.lng));
+      if (!point) return;
+      tip.innerHTML = m.tooltip;
+      tip.style.left = `${point.x}px`;
+      tip.style.top = `${point.y}px`;
+      tip.style.display = "block";
+    };
+    const hideTip = () => { tip.style.display = "none"; };
+
+    const gMarkers: Marker[] = markers.map((m) => {
+      const marker = new google.maps.Marker({
+        position: m.position,
+        icon: m.isPie && m.pieSvg
+          ? {
+              url: `data:image/svg+xml;utf-8,${encodeURIComponent(m.pieSvg)}`,
+              scaledSize: new google.maps.Size(50, 50),
+              anchor: new google.maps.Point(25, 25),
+            }
+          : {
+              path: google.maps.SymbolPath.CIRCLE,
+              fillColor: m.color,
+              fillOpacity: 0.65,
+              strokeColor: m.color,
+              strokeWeight: 2,
+              scale: m.radius,
+            },
+        title: m.name,
+      });
+      marker.addListener("mouseover", () => showTip(m));
+      marker.addListener("mouseout", hideTip);
+      return marker;
+    });
+
+    clustererRef.current = new MarkerClusterer({
+      map,
+      markers: gMarkers,
+      renderer: {
+        render: ({ count, position }) => {
+          let bg = "rgba(59, 130, 246, 0.85)";
+          if (count >= 20) bg = "rgba(239, 68, 68, 0.9)";
+          else if (count >= 10) bg = "rgba(234, 179, 8, 0.9)";
+          const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+            <circle cx="20" cy="20" r="18" fill="${bg}" stroke="white" stroke-width="2"/>
+            <text x="20" y="25" text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="Arial">${count}</text>
+          </svg>`;
+          return new google.maps.Marker({
+            position,
+            icon: {
+              url: `data:image/svg+xml;utf-8,${encodeURIComponent(svg)}`,
+              scaledSize: new google.maps.Size(40, 40),
+              anchor: new google.maps.Point(20, 20),
+            },
+            zIndex: 1000 + count,
+          });
+        },
+      },
+    });
+
+    return () => {
+      hideTip();
+      overlayHelper.setMap(null);
+      if (clustererRef.current) {
+        clustererRef.current.clearMarkers();
+        clustererRef.current = null;
+      }
+      gMarkers.forEach((m) => (m as google.maps.Marker).setMap(null));
+    };
+  }, [map, markers]);
+
+  return null;
 }
 
 export default function GeographicHeatMap({
@@ -103,20 +232,11 @@ export default function GeographicHeatMap({
   groupBy = "neighborhood",
   populationData,
 }: GeographicHeatMapProps) {
-  const [mounted, setMounted] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("participation");
   const [participationSub, setParticipationSub] = useState<ParticipationSubMode>("total");
   const [selectedQuestionId, setSelectedQuestionId] = useState<string>("");
 
-  const mapRef = useRef<any>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const markersRef = useRef<any[]>([]);
-  const clusterGroupRef = useRef<any>(null);
-  const LRef = useRef<any>(null);
-
   const entries = Object.entries(neighborhoodData).filter(([key]) => key !== "Sin especificar");
-
   const resultsKey = groupBy === "city" ? "results_by_city" : "results_by_neighborhood";
 
   const mappableQuestions = questions.filter(
@@ -124,84 +244,16 @@ export default function GeographicHeatMap({
       && q.question_type !== "open_text"
   );
 
-  // Derive the effective question id (use first if none selected)
   const effectiveQuestionId = selectedQuestionId || (mappableQuestions[0]?.question_id ?? "");
   const selectedQuestion = mappableQuestions.find((q) => q.question_id === effectiveQuestionId) ?? null;
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Initialize map once
-  useEffect(() => {
-    if (!mounted || mapRef.current || !mapContainerRef.current || entries.length === 0) return;
-
-    import("leaflet").then(async (L) => {
-      await loadMarkerCluster(L);
-      if (mapRef.current || !mapContainerRef.current) return;
-      // Use window.L — the script tag patched it with markerClusterGroup
-      LRef.current = (window as any).L;
-      const WL = (window as any).L;
-      const mapInstance = WL.map(mapContainerRef.current).setView(mapCenter, mapZoom);
-      WL.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(mapInstance);
-      mapRef.current = mapInstance;
-      setMapReady(true);
-    });
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        LRef.current = null;
-        setMapReady(false);
-      }
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted]);
-
-  // Update markers whenever map, viewMode, or question changes
-  useEffect(() => {
-    const L = LRef.current;
-    const mapInstance = mapRef.current;
-    if (!mapReady || !L || !mapInstance) return;
-
-    // Clear previous cluster group
-    if (clusterGroupRef.current) {
-      mapInstance.removeLayer(clusterGroupRef.current);
-      clusterGroupRef.current = null;
-    }
-    markersRef.current = [];
-
-    if (entries.length === 0) return;
-
-    // Always use window.L for markerClusterGroup — the plugin patches window.L, not the module object
-    const WL = (window as any).L ?? L;
-
-    const clusterGroup = WL.markerClusterGroup({
-      maxClusterRadius: 20,
-      disableClusteringAtZoom: 9,
-      spiderfyOnMaxZoom: true,
-      showCoverageOnHover: false,
-      zoomToBoundsOnClick: true,
-      iconCreateFunction: (cluster: any) => {
-        const count = cluster.getChildCount();
-        let size = "small";
-        if (count >= 20) size = "large";
-        else if (count >= 10) size = "medium";
-        return L.divIcon({
-          html: `<div><span>${count}</span></div>`,
-          className: `marker-cluster marker-cluster-${size}`,
-          iconSize: L.point(40, 40),
-        });
-      },
-    });
+  // Build markers data based on viewMode
+  const markers = useMemo<MarkerData[]>(() => {
+    if (entries.length === 0) return [];
 
     const maxValue = Math.max(...entries.map(([, v]) => v));
     const minValue = Math.min(...entries.map(([, v]) => v));
 
-    // Precompute participation rates for normalization
     const rateMap: Record<string, number> = {};
     if (populationData) {
       entries.forEach(([name, count]) => {
@@ -215,7 +267,6 @@ export default function GeographicHeatMap({
 
     const isRating = selectedQuestion?.question_type?.toLowerCase() === "rating";
 
-    // Build color/label maps for non-rating questions
     const optionColorMap: Record<string, string> = {};
     const optionLabels: Record<string, string> = {};
     if (selectedQuestion && !isRating) {
@@ -225,60 +276,49 @@ export default function GeographicHeatMap({
       });
     }
 
-    const missing = entries.filter(([name]) => !neighborhoodCoords[name]).map(([name]) => name);
-    if (missing.length > 0) console.warn("Barrios sin coordenadas:", missing);
+    const out: MarkerData[] = [];
 
     entries.forEach(([name, participationCount]) => {
       const coords = neighborhoodCoords[name];
       if (!coords) return;
+      const position = { lat: coords.lat, lng: coords.lng };
 
       if (viewMode === "participation") {
         if (participationSub === "rate") {
           const population = populationData?.[name];
           if (!population) {
-            const m = L.circleMarker([coords.lat, coords.lng], { color: "#9CA3AF", fillColor: "#9CA3AF", fillOpacity: 0.4, radius: 6, weight: 2 })
-              .bindTooltip(
-                `<div style="text-align:center;padding:6px;"><strong style="font-size:14px;">${name}</strong><br/><span style="font-size:13px;color:#4B5563;">${participationCount} respuestas</span><br/><span style="font-size:11px;color:#9CA3AF;">Sin datos de población</span></div>`,
-                { direction: "top", offset: [0, -10], opacity: 0.95 }
-              );
-            clusterGroup.addLayer(m);
-            markersRef.current.push(m);
+            out.push({
+              name, position, color: "#9CA3AF", radius: 6,
+              tooltip: `<div style="text-align:center;padding:6px;"><strong style="font-size:14px;">${name}</strong><br/><span style="font-size:13px;color:#4B5563;">${participationCount} respuestas</span><br/><span style="font-size:11px;color:#9CA3AF;">Sin datos de población</span></div>`,
+            });
             return;
           }
           const rate = rateMap[name] ?? (participationCount / population) * 100;
           const normalized = maxRate > minRate ? (rate - minRate) / (maxRate - minRate) : 0.5;
           const color = normalizedColor(normalized);
-          const pxRadius = 8 + Math.round(normalized * 12);
-          const m = L.circleMarker([coords.lat, coords.lng], { color, fillColor: color, fillOpacity: 0.6, radius: pxRadius, weight: 3 })
-            .bindTooltip(
-              `<div style="text-align:center;padding:8px;min-width:180px;">
-                <strong style="font-size:14px;">${name}</strong>
-                <hr style="margin:6px 0;border-color:#E5E7EB;"/>
-                <div style="font-size:18px;font-weight:700;color:${color};">${rate.toFixed(2)}%</div>
-                <div style="font-size:11px;color:#6B7280;margin-top:2px;">tasa de participación</div>
-                <hr style="margin:6px 0;border-color:#E5E7EB;"/>
-                <div style="font-size:12px;color:#4B5563;">${participationCount.toLocaleString()} respuestas</div>
-                <div style="font-size:12px;color:#4B5563;">${population.toLocaleString()} habitantes</div>
-              </div>`,
-              { direction: "top", offset: [0, -10], opacity: 0.95 }
-            );
-          clusterGroup.addLayer(m);
-          markersRef.current.push(m);
+          const radius = 8 + Math.round(normalized * 12);
+          out.push({
+            name, position, color, radius,
+            tooltip: `<div style="text-align:center;padding:8px;min-width:180px;">
+              <strong style="font-size:14px;">${name}</strong>
+              <hr style="margin:6px 0;border-color:#E5E7EB;"/>
+              <div style="font-size:18px;font-weight:700;color:${color};">${rate.toFixed(2)}%</div>
+              <div style="font-size:11px;color:#6B7280;margin-top:2px;">tasa de participación</div>
+              <hr style="margin:6px 0;border-color:#E5E7EB;"/>
+              <div style="font-size:12px;color:#4B5563;">${participationCount.toLocaleString()} respuestas</div>
+              <div style="font-size:12px;color:#4B5563;">${population.toLocaleString()} habitantes</div>
+            </div>`,
+          });
           return;
         }
 
-        // sub === "total"
         const normalized = maxValue > minValue ? (participationCount - minValue) / (maxValue - minValue) : 0.5;
         const color = normalizedColor(normalized);
-        const pxRadius = 8 + Math.round(normalized * 12);
-
-        const m = L.circleMarker([coords.lat, coords.lng], { color, fillColor: color, fillOpacity: 0.6, radius: pxRadius, weight: 3 })
-          .bindTooltip(
-            `<div style="text-align:center;padding:6px;"><strong style="font-size:14px;">${name}</strong><br/><span style="font-size:13px;color:#4B5563;">${participationCount} respuestas</span></div>`,
-            { direction: "top", offset: [0, -10], opacity: 0.95 }
-          );
-        clusterGroup.addLayer(m);
-        markersRef.current.push(m);
+        const radius = 8 + Math.round(normalized * 12);
+        out.push({
+          name, position, color, radius,
+          tooltip: `<div style="text-align:center;padding:6px;"><strong style="font-size:14px;">${name}</strong><br/><span style="font-size:13px;color:#4B5563;">${participationCount} respuestas</span></div>`,
+        });
         return;
       }
 
@@ -286,38 +326,32 @@ export default function GeographicHeatMap({
 
       const nbResults = (selectedQuestion as any)[resultsKey]?.[name];
       if (!nbResults) {
-        const m = L.circleMarker([coords.lat, coords.lng], { color: "#9CA3AF", fillColor: "#9CA3AF", fillOpacity: 0.4, radius: 8, weight: 2 })
-          .bindTooltip(
-            `<div style="text-align:center;padding:6px;"><strong>${name}</strong><br/><span style="font-size:12px;color:#9CA3AF;">Sin datos</span></div>`,
-            { direction: "top", offset: [0, -10], opacity: 0.95 }
-          );
-        clusterGroup.addLayer(m);
-        markersRef.current.push(m);
+        out.push({
+          name, position, color: "#9CA3AF", radius: 8,
+          tooltip: `<div style="text-align:center;padding:6px;"><strong>${name}</strong><br/><span style="font-size:12px;color:#9CA3AF;">Sin datos</span></div>`,
+        });
         return;
       }
 
-      // RATING
       if (isRating) {
         const avg: number = (nbResults as any).average ?? 0;
         const totalR: number = (nbResults as any).total_ratings ?? 0;
         const color = ratingColor(avg);
         const stars = "★".repeat(Math.round(avg)) + "☆".repeat(5 - Math.round(avg));
-        const tooltip = `<div style="padding:8px;min-width:160px;">
-          <strong style="font-size:14px;">${name}</strong><br/>
-          <span style="font-size:11px;color:#6B7280;">${participationCount} respuestas</span>
-          <hr style="margin:6px 0;border-color:#E5E7EB;"/>
-          <div style="font-size:18px;color:#F59E0B;">${stars}</div>
-          <div style="font-size:13px;font-weight:600;color:${color};">${avg.toFixed(2)} / 5</div>
-          <div style="font-size:11px;color:#6B7280;">${totalR} calificaciones</div>
-        </div>`;
-        const m = L.circleMarker([coords.lat, coords.lng], { color, fillColor: color, fillOpacity: 0.65, radius: 12, weight: 3 })
-          .bindTooltip(tooltip, { direction: "top", offset: [0, -10], opacity: 0.95 });
-        clusterGroup.addLayer(m);
-        markersRef.current.push(m);
+        out.push({
+          name, position, color, radius: 12,
+          tooltip: `<div style="padding:8px;min-width:160px;">
+            <strong style="font-size:14px;">${name}</strong><br/>
+            <span style="font-size:11px;color:#6B7280;">${participationCount} respuestas</span>
+            <hr style="margin:6px 0;border-color:#E5E7EB;"/>
+            <div style="font-size:18px;color:#F59E0B;">${stars}</div>
+            <div style="font-size:13px;font-weight:600;color:${color};">${avg.toFixed(2)} / 5</div>
+            <div style="font-size:11px;color:#6B7280;">${totalR} calificaciones</div>
+          </div>`,
+        });
         return;
       }
 
-      // SINGLE_CHOICE / PERCENTAGE_DISTRIBUTION
       const resultEntries = Object.entries(nbResults).sort((a, b) => {
         const aVal = (a[1] as any).percentage ?? (a[1] as any).votes ?? 0;
         const bVal = (b[1] as any).percentage ?? (b[1] as any).votes ?? 0;
@@ -342,10 +376,7 @@ export default function GeographicHeatMap({
       if (viewMode === "winner-color") {
         const winnerKey = resultEntries[0]?.[0] ?? "";
         const winnerColor = optionColorMap[winnerKey] || "#9CA3AF";
-        const m = L.circleMarker([coords.lat, coords.lng], { color: winnerColor, fillColor: winnerColor, fillOpacity: 0.65, radius: 12, weight: 3 })
-          .bindTooltip(tooltip, { direction: "top", offset: [0, -10], opacity: 0.95 });
-        clusterGroup.addLayer(m);
-        markersRef.current.push(m);
+        out.push({ name, position, color: winnerColor, radius: 12, tooltip });
       } else if (viewMode === "pie-charts") {
         const segments = resultEntries.map(([key, val]) => ({
           label: (val as any).label || key,
@@ -353,37 +384,30 @@ export default function GeographicHeatMap({
           color: optionColorMap[key] || "#9CA3AF",
         }));
         const svgHtml = createPieSvg(segments, 50);
-        const icon = L.divIcon({ html: svgHtml, className: "pie-chart-icon", iconSize: [50, 50], iconAnchor: [25, 25] });
-        const m = L.marker([coords.lat, coords.lng], { icon })
-          .bindTooltip(tooltip, { direction: "top", offset: [0, -25], opacity: 0.95 });
-        clusterGroup.addLayer(m);
-        markersRef.current.push(m);
+        out.push({ name, position, color: "#000", radius: 0, tooltip, isPie: true, pieSvg: svgHtml });
       }
     });
 
-    mapInstance.addLayer(clusterGroup);
-    clusterGroupRef.current = clusterGroup;
+    return out;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, viewMode, participationSub, effectiveQuestionId, neighborhoodData, populationData]);
+  }, [viewMode, participationSub, effectiveQuestionId, neighborhoodData, populationData, neighborhoodCoords]);
 
   // --- Render ---
-
-  if (!mounted) {
-    return (
-      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
-        <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">{title}</h3>
-        <div className="h-96 bg-[#000000] rounded-lg flex items-center justify-center">
-          <p className="text-[#FFFFFF]/50">Cargando mapa...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (entries.length === 0) {
     return (
       <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
         <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">{title}</h3>
         <p className="text-[#FFFFFF]/50 text-sm">No hay datos geográficos disponibles.</p>
+      </div>
+    );
+  }
+
+  if (!GOOGLE_MAPS_API_KEY) {
+    return (
+      <div className="bg-[#1a1a2e] rounded-2xl shadow-none border border-white/10 p-6">
+        <h3 className="text-xl font-bold text-[#FFFFFF] mb-2">{title}</h3>
+        <p className="text-red-400 text-sm">Falta NEXT_PUBLIC_GOOGLE_MAPS_API_KEY en las variables de entorno.</p>
       </div>
     );
   }
@@ -401,7 +425,7 @@ export default function GeographicHeatMap({
         { label: "Mala (1-2)", color: "#EF4444" },
       ];
     } else {
-      optionLegend = Object.entries(selectedQuestion.results).map(([key, val], idx) => ({
+      optionLegend = Object.entries(selectedQuestion!.results).map(([key, val], idx) => ({
         label: (val as any).label || key,
         color: OPTION_COLORS[idx % OPTION_COLORS.length],
       }));
@@ -452,7 +476,20 @@ export default function GeographicHeatMap({
       )}
 
       {/* Map */}
-      <div ref={mapContainerRef} className="h-[500px] rounded-lg overflow-hidden border border-white/10 mb-4" />
+      <div className="h-[500px] rounded-lg overflow-hidden border border-white/10 mb-4">
+        <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+          <Map
+            defaultCenter={{ lat: mapCenter[0], lng: mapCenter[1] }}
+            defaultZoom={mapZoom}
+            mapId="pad-cordoba-map"
+            gestureHandling="greedy"
+            disableDefaultUI={false}
+            style={{ width: "100%", height: "100%" }}
+          >
+            <MarkersLayer markers={markers} />
+          </Map>
+        </APIProvider>
+      </div>
 
       {/* Legend */}
       {viewMode === "participation" ? (
@@ -512,19 +549,6 @@ export default function GeographicHeatMap({
           )}
         </p>
       </div>
-
-      <style jsx global>{`
-        .pie-chart-icon { background: transparent !important; border: none !important; }
-        .marker-cluster { background-clip: padding-box; border-radius: 20px; }
-        .marker-cluster div { width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; text-align: center; border-radius: 15px; font: 13px/30px "Helvetica Neue", Arial, sans-serif; font-weight: 700; }
-        .marker-cluster span { color: #fff; }
-        .marker-cluster-small { background-color: rgba(59, 130, 246, 0.5); }
-        .marker-cluster-small div { background-color: rgba(59, 130, 246, 0.8); }
-        .marker-cluster-medium { background-color: rgba(234, 179, 8, 0.5); }
-        .marker-cluster-medium div { background-color: rgba(234, 179, 8, 0.8); }
-        .marker-cluster-large { background-color: rgba(239, 68, 68, 0.5); }
-        .marker-cluster-large div { background-color: rgba(239, 68, 68, 0.8); }
-      `}</style>
     </div>
   );
 }
