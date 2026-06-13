@@ -11,6 +11,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!frontend/**/lib/
 lib64/
 parts/
 sdist/
@@ -75,3 +76,5 @@ logs/
 # Railway
 .railway/
 .DS_Store
+
+sandbox/

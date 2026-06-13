@@ -109,8 +109,8 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
   const renderChatBarChart = (chart: ChartInfo) => {
     const maxValue = Math.max(...chart.data.map((d) => d.value), 1);
     return (
-      <div className="mt-3 bg-white rounded-xl p-3 border border-gray-200">
-        <h4 className="text-xs font-bold text-gray-700 mb-2">{chart.title}</h4>
+      <div className="mt-3 bg-white/10 rounded-xl p-3 border border-white/10">
+        <h4 className="text-xs font-bold text-white/80 mb-2">{chart.title}</h4>
         <div className="space-y-2">
           {chart.data.map((item, index) => {
             const barWidth = (item.value / maxValue) * 100;
@@ -118,10 +118,10 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
             return (
               <div key={index}>
                 <div className="flex justify-between items-center mb-0.5">
-                  <span className="text-xs text-gray-600 truncate mr-2">{item.label}</span>
-                  <span className="text-xs font-semibold text-gray-700 shrink-0">{item.value}</span>
+                  <span className="text-xs text-white/60 truncate mr-2">{item.label}</span>
+                  <span className="text-xs font-semibold text-white/80 shrink-0">{item.value}</span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="w-full bg-white/10 rounded-full h-2">
                   <div
                     className="h-2 rounded-full transition-all duration-500"
                     style={{ width: `${barWidth}%`, backgroundColor: color }}
@@ -158,8 +158,8 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
     };
 
     return (
-      <div className="mt-3 bg-white rounded-xl p-3 border border-gray-200">
-        <h4 className="text-xs font-bold text-gray-700 mb-2">{chart.title}</h4>
+      <div className="mt-3 bg-white/10 rounded-xl p-3 border border-white/10">
+        <h4 className="text-xs font-bold text-white/80 mb-2">{chart.title}</h4>
         <div className="flex items-center gap-3">
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
             {segments.map((seg, i) => {
@@ -177,7 +177,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
             {segments.map((seg, i) => (
               <div key={i} className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: seg.color }} />
-                <span className="text-xs text-gray-600 truncate">{seg.label} ({seg.pct.toFixed(1)}%)</span>
+                <span className="text-xs text-white/60 truncate">{seg.label} ({seg.pct.toFixed(1)}%)</span>
               </div>
             ))}
           </div>
@@ -196,7 +196,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 bg-[#2962FF] hover:bg-[#1a4fd4] text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center transition-all hover:scale-105 print-hide"
+        className="fixed bottom-6 right-6 z-[1001] bg-[#2962FF] hover:bg-[#1a4fd4] text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center transition-all hover:scale-105 print-hide"
       >
         <svg
           className="w-6 h-6"
@@ -216,7 +216,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
   }
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden print-hide transition-all duration-300 ease-in-out ${
+    <div className={`fixed bottom-6 right-6 z-[1001] bg-[#1a1a2e] rounded-2xl shadow-2xl border border-white/10 flex flex-col overflow-hidden print-hide transition-all duration-300 ease-in-out ${
       isExpanded
         ? "w-[calc(100vw-2rem)] sm:w-[600px] h-[700px]"
         : "w-[calc(100vw-2rem)] sm:w-96 h-[500px]"
@@ -290,7 +290,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
                 />
               </svg>
             </div>
-            <p className="text-gray-600 text-sm mb-3">
+            <p className="text-white/60 text-sm mb-3">
               Preguntame sobre los resultados de esta consulta
             </p>
             <div className="space-y-2">
@@ -325,7 +325,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
               } rounded-2xl px-4 py-2.5 text-sm ${
                 msg.role === "user"
                   ? "bg-[#2962FF] text-white rounded-br-md whitespace-pre-wrap"
-                  : "bg-gray-100 text-gray-800 rounded-bl-md"
+                  : "bg-white/10 text-white/90 rounded-bl-md"
               }`}
             >
               {msg.role === "user" ? (
@@ -344,10 +344,10 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
                       li: ({ children }) => <li className="text-sm">{children}</li>,
                       p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
                       table: ({ children }) => <div className="overflow-x-auto my-2"><table className="text-xs border-collapse w-full">{children}</table></div>,
-                      thead: ({ children }) => <thead className="bg-gray-200">{children}</thead>,
-                      th: ({ children }) => <th className="border border-gray-300 px-2 py-1 text-left font-semibold">{children}</th>,
-                      td: ({ children }) => <td className="border border-gray-300 px-2 py-1">{children}</td>,
-                      tr: ({ children }) => <tr className="even:bg-gray-50">{children}</tr>,
+                      thead: ({ children }) => <thead className="bg-white/10">{children}</thead>,
+                      th: ({ children }) => <th className="border border-white/20 px-2 py-1 text-left font-semibold">{children}</th>,
+                      td: ({ children }) => <td className="border border-white/20 px-2 py-1">{children}</td>,
+                      tr: ({ children }) => <tr className="even:bg-white/5">{children}</tr>,
                     }}
                   >
                     {msg.content}
@@ -363,11 +363,11 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
+            <div className="bg-white/10 rounded-2xl rounded-bl-md px-4 py-3">
               <div className="flex gap-1.5">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]" />
+                <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce [animation-delay:0ms]" />
+                <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce [animation-delay:150ms]" />
+                <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce [animation-delay:300ms]" />
               </div>
             </div>
           </div>
@@ -377,7 +377,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-200 p-3 flex-shrink-0">
+      <div className="border-t border-white/10 p-3 flex-shrink-0">
         <div className="flex gap-2">
           <input
             ref={inputRef}
@@ -387,7 +387,7 @@ export default function ChatBot({ surveyId }: ChatBotProps) {
             onKeyDown={handleKeyDown}
             placeholder="Escribe tu pregunta..."
             disabled={isLoading}
-            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2962FF] focus:border-transparent disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 border border-white/20 bg-white/5 text-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2962FF] focus:border-transparent disabled:opacity-50 placeholder:text-white/40"
           />
           <button
             onClick={sendMessage}

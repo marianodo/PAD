@@ -1,5 +1,5 @@
 """
-AI Chat endpoint - Chat conversacional sobre datos de encuestas usando Claude AI
+AI Chat endpoint - Chat conversacional sobre datos de consultas usando Claude AI
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -7,6 +7,7 @@ from anthropic import Anthropic
 from pydantic import BaseModel
 import json
 import re
+from decimal import Decimal
 from typing import List, Union
 from uuid import UUID
 
@@ -17,6 +18,7 @@ from app.core.config import settings
 from app.models.admin import Admin
 from app.models.client import Client
 from app.models.user import User
+from app.api.endpoints.ai_insights import _json_dumps, _get_client_context
 
 router = APIRouter()
 
@@ -47,36 +49,55 @@ async def chat_with_survey(
             )
 
         results = SurveyService.get_survey_results(db, UUID(survey_id))
+        ctx = _get_client_context(db, survey_id)
 
-        system_prompt = f"""Eres un asistente de IA especializado en analizar datos de encuestas ciudadanas.
-Tu UNICA funcion es responder preguntas sobre los datos de esta encuesta especifica.
+        demographics = results.get('demographics', {})
+        questions_for_prompt = [
+            {
+                "pregunta": q.get("question_text"),
+                "tipo": q.get("question_type"),
+                "resultados_generales": q.get("results"),
+                f"resultados_por_{ctx['geo_unit']}": q.get("results_by_city"),
+                "resultados_por_barrio": q.get("results_by_neighborhood"),
+                "resultados_por_edad": q.get("results_by_age"),
+                "resultados_por_genero": q.get("results_by_gender"),
+            }
+            for q in results.get("questions_summary", [])
+        ]
 
-DATOS DE LA ENCUESTA:
+        system_prompt = f"""Eres un asistente de IA especializado en analizar datos de consultas ciudadanas.
+Tu UNICA funcion es responder preguntas sobre los datos de esta consulta especifica.
+
+CONTEXTO DEL CLIENTE:
+{ctx['context_line']}
+Tipo de organismo: {ctx['org_type']}
+Unidad geografica: {ctx['geo_unit_plural']} (usa siempre este termino)
+
+DATOS DE LA CONSULTA:
 
 Total de respuestas: {results.get('total_responses', 0)}
-Respuestas mensuales: {results.get('monthly_responses', 0)}
 
 DEMOGRAFIA:
-- Por edad: {json.dumps(results.get('demographics', {}).get('by_age_group', {}), ensure_ascii=False)}
-- Por barrio: {json.dumps(results.get('demographics', {}).get('by_neighborhood', {}), ensure_ascii=False)}
-- Por ciudad: {json.dumps(results.get('demographics', {}).get('by_city', {}), ensure_ascii=False)}
-- Por genero: {json.dumps(results.get('demographics', {}).get('by_gender', {}), ensure_ascii=False)}
+- Por edad: {_json_dumps(demographics.get('by_age_group', {}))}
+- Por genero: {_json_dumps(demographics.get('by_gender', {}))}
+- Por {ctx['geo_unit']}: {_json_dumps(demographics.get('by_city', {}))}
+- Por barrio: {_json_dumps(demographics.get('by_neighborhood', {}))}
 
-PREGUNTAS Y RESPUESTAS (con desglose por edad, genero y barrio):
-{json.dumps(results.get('questions_summary', []), indent=2, ensure_ascii=False)}
+PREGUNTAS Y RESPUESTAS (con desglose por edad, genero, {ctx['geo_unit']} y barrio):
+{_json_dumps(questions_for_prompt)}
 
 EVOLUCION TEMPORAL:
-{json.dumps(results.get('evolution_data', {}), indent=2, ensure_ascii=False)}
+{_json_dumps(results.get('evolution_data', {}))}
 
 REGLAS ESTRICTAS:
-1. SOLO responde preguntas relacionadas con estos datos de la encuesta.
-2. Si te preguntan algo no relacionado con la encuesta, responde: "Solo puedo responder preguntas relacionadas con los datos de esta encuesta. ¿Qué te gustaría saber sobre los resultados?"
+1. SOLO responde preguntas relacionadas con estos datos de la consulta.
+2. Si te preguntan algo no relacionado con la consulta, responde: "Solo puedo responder preguntas relacionadas con los datos de esta consulta. ¿Qué te gustaría saber sobre los resultados?"
 3. Siempre responde en español.
-4. Usa datos concretos (números, porcentajes, nombres de barrios) en tus respuestas.
+4. Usa datos concretos (números, porcentajes, nombres de {ctx['geo_unit_plural']}) en tus respuestas.
 5. Sé conciso pero informativo.
 6. NO inventes datos que no estén en el contexto proporcionado.
 7. Cuando hables de porcentajes o votos, cita los números exactos del contexto.
-8. INSIGHTS: Al final de tu respuesta (despues del grafico si lo hay), agrega un breve insight analitico marcado con "💡 **Insight:**". Puede ser una tendencia, un dato destacado, una comparacion interesante, o una conclusion accionable derivada de los datos. Debe ser util para la toma de decisiones. Ejemplo: "💡 **Insight:** El barrio Centro concentra el 35% de la participacion, lo que sugiere mayor engagement civico en zonas centricas."
+8. INSIGHTS: Al final de tu respuesta (despues del grafico si lo hay), agrega un breve insight analitico marcado con "💡 **Insight:**". Puede ser una tendencia, un dato destacado, una comparacion interesante, o una conclusion accionable derivada de los datos. Debe ser util para la toma de decisiones. Ejemplo: "💡 **Insight:** La {ctx['geo_unit']} Centro concentra el 35% de la participacion, lo que sugiere mayor engagement civico en zonas centricas."
 9. GRAFICOS: Cuando una pregunta se beneficie de una representacion visual (comparaciones, distribuciones, rankings), incluye UN bloque de grafico en tu respuesta usando este formato exacto:
 
 ~~~chart
@@ -91,7 +112,7 @@ o para pie charts:
 
 REGLAS PARA GRAFICOS:
 - Solo usa "bar" o "pie" como type.
-- Usa "bar" para comparaciones y rankings (ej: votos por proyecto, participacion por barrio).
+- Usa "bar" para comparaciones y rankings (ej: votos por proyecto, participacion por {ctx['geo_unit']}).
 - Usa "pie" para distribuciones porcentuales (ej: distribucion de presupuesto, genero).
 - Los valores deben ser numeros exactos del contexto, NO inventados.
 - Maximo 8 categorias. Si hay mas, agrupa las menores en "Otros".
@@ -117,8 +138,8 @@ REGLAS PARA GRAFICOS:
 
         raw_text = response.content[0].text
 
-        # Extract chart blocks from the response
-        chart_pattern = r'~~~chart\s*\n(.*?)\n~~~'
+        # Extract chart blocks from the response (handles ~~~chart, ```chart, variations)
+        chart_pattern = r'(?:~~~|```)\s*chart\s*\n(.*?)\n\s*(?:~~~|```)'
         chart_matches = re.findall(chart_pattern, raw_text, re.DOTALL)
 
         charts = []
@@ -130,8 +151,28 @@ REGLAS PARA GRAFICOS:
             except json.JSONDecodeError:
                 pass
 
-        # Remove chart blocks from text
-        clean_text = re.sub(r'~~~chart\s*\n.*?\n~~~', '', raw_text, flags=re.DOTALL).strip()
+        # Fallback: detect loose JSON chart objects in text
+        if not charts:
+            json_pattern = r'\{[^{}]*"type"\s*:\s*"(?:bar|pie)"[^{}]*"data"\s*:\s*\[.*?\]\s*\}'
+            json_matches = re.findall(json_pattern, raw_text, re.DOTALL)
+            for match in json_matches:
+                try:
+                    chart_data = json.loads(match.strip())
+                    if chart_data.get("type") in ("bar", "pie") and "data" in chart_data:
+                        charts.append(chart_data)
+                except json.JSONDecodeError:
+                    pass
+
+        # Remove chart blocks and loose JSON charts from text
+        clean_text = re.sub(r'(?:~~~|```)\s*chart\s*\n.*?\n\s*(?:~~~|```)', '', raw_text, flags=re.DOTALL)
+        if charts:
+            for chart in charts:
+                # Remove the JSON string from text
+                chart_str = json.dumps(chart, ensure_ascii=False)
+                clean_text = clean_text.replace(chart_str, '')
+            # Also remove any remaining raw JSON chart patterns
+            clean_text = re.sub(r'\{[^{}]*"type"\s*:\s*"(?:bar|pie)"[^{}]*"data"\s*:\s*\[.*?\]\s*\}', '', clean_text, flags=re.DOTALL)
+        clean_text = clean_text.strip()
 
         return {"response": clean_text, "charts": charts}
 

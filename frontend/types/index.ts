@@ -40,6 +40,7 @@ export interface Survey {
 export interface Answer {
   question_id: string;
   option_id?: string;
+  option_ids?: string[]; // Para MULTIPLE_CHOICE (uso frontend, se expande al enviar)
   answer_text?: string;
   rating?: number;
   percentage_data?: Record<string, number>;

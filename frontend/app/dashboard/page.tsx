@@ -331,7 +331,7 @@ export default function DashboardPage() {
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-[280px] bg-gradient-to-b from-[#000000] to-[#1a1a2e] flex flex-col transform transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
         {/* Logo */}
         <div className="px-6 pt-6 pb-4 flex items-center gap-3">
-          <Image src="/logo.jpeg" alt="Data Insights" width={40} height={40} className="rounded-xl" />
+          <Image src="/logo_di_white.png" alt="Data Insights" width={100} height={40} />
           <div>
             <p className="text-white/60 text-[10px] font-medium tracking-widest uppercase">Portal Ciudadano</p>
             <p className="text-white text-base font-bold">PAD</p>
@@ -439,7 +439,7 @@ export default function DashboardPage() {
               </div>
               {/* Progress bar */}
               <div className="w-full bg-gray-100 rounded-full h-2 mb-4">
-                <div className="bg-gradient-to-r from-amber-400 to-amber-500 h-2 rounded-full transition-all duration-700" style={{ width: `${stats.total_points > 0 ? (stats.available_points / stats.total_points) * 100 : 0}%` }} />
+                <div className="bg-gradient-to-r from-amber-400 to-amber-500 h-2 rounded-full transition-all duration-700" style={{ width: `${Math.min(stats.total_points > 0 ? (stats.available_points / stats.total_points) * 100 : 0, 100)}%` }} />
               </div>
               {/* Acumulados / Canjeados */}
               <div className="flex items-center justify-between">

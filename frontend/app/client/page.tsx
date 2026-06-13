@@ -174,8 +174,10 @@ export default function ClientDashboard() {
   };
 
   // Reportes disponibles (hardcoded por ahora, luego migrar a DB)
-  const clientReports = [
+  // Se filtran según las surveys que tenga el cliente
+  const allReports = [
     {
+      surveyId: "5a986dda-437e-40ae-a43e-3ad72ec54fb9",
       municipality: "Municipalidad de Alta Gracia",
       slug: "alta-gracia",
       logo: "AG",
@@ -191,7 +193,27 @@ export default function ClientDashboard() {
         },
       ],
     },
+    {
+      surveyId: "ccc73cdb-c0e2-4d99-9a88-e383c5505ceb",
+      municipality: "Gobierno de la Provincia de Córdoba",
+      slug: "cordoba",
+      logo: "CBA",
+      color: "bg-[#0ea5e9]",
+      periods: [
+        {
+          period: "2026",
+          title: "Plan de Gobierno 2026 — Apertura de Sesiones Legislativas",
+          description: "Seguridad, salud, obra pública, educación, trabajo, industria, campo y economía. 8 áreas de gestión.",
+          url: "/reports/cordoba/2026",
+          date: "Febrero 2026",
+          segments: ["Seguridad", "Salud", "Obra Pública", "Educación", "Trabajo", "Industria", "Campo", "Economía"],
+        },
+      ],
+    },
   ];
+
+  const clientSurveyIds = surveys.map(s => s.id);
+  const clientReports = allReports.filter(r => clientSurveyIds.includes(r.surveyId));
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -285,7 +307,7 @@ export default function ClientDashboard() {
         {/* Logo */}
         <div className="px-6 pt-6 pb-4">
           <div className="flex items-center gap-3">
-            <Image src="/logo.jpeg" alt="Data Insights" width={40} height={40} className="rounded-xl" />
+            <Image src="/logo_di_white.png" alt="Data Insights" width={100} height={40} />
             <div>
               <p className="text-[#FFFFFF]/40 text-[10px] font-medium tracking-widest uppercase">Panel de Gobierno</p>
               <p className="text-[#FFFFFF] text-base font-bold">PAD</p>

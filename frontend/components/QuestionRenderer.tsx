@@ -124,29 +124,54 @@ export function QuestionRenderer({
       );
     }
 
-    case QuestionType.MULTIPLE_CHOICE:
+    case QuestionType.MULTIPLE_CHOICE: {
+      const selectedIds: string[] = answer.option_ids || [];
+      const otroOptionId = question.options.find((o) => o.option_value === "otro")?.id || "";
+
+      const toggleOption = (optionId: string) => {
+        const newSelected = selectedIds.includes(optionId)
+          ? selectedIds.filter((id) => id !== optionId)
+          : [...selectedIds, optionId];
+        handleChange({ option_ids: newSelected });
+      };
+
       return (
-        <div className="space-y-3">
-          {question.options.map((option) => (
-            <label
-              key={option.id}
-              className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-[#2962FF] transition"
-            >
-              <input
-                type="checkbox"
-                value={option.id}
-                className="w-5 h-5 text-[#2962FF] rounded"
-              />
-              <div className="ml-3">
-                <span className="text-gray-800">{option.option_text}</span>
-                {option.description && (
-                  <p className="text-xs text-gray-400 mt-0.5">{option.description}</p>
+        <div className="space-y-1.5">
+          {question.options.map((option) => {
+            const checked = selectedIds.includes(option.id);
+            return (
+              <div key={option.id}>
+                <label className={`flex items-center px-3 py-2.5 border-2 rounded-lg cursor-pointer transition ${checked ? "border-[#2962FF] bg-blue-50" : "border-gray-200 hover:border-[#2962FF]"}`}>
+                  <input
+                    type="checkbox"
+                    value={option.id}
+                    checked={checked}
+                    onChange={() => toggleOption(option.id)}
+                    className="w-4 h-4 text-[#2962FF] rounded shrink-0"
+                  />
+                  <div className="ml-2.5">
+                    <span className="text-gray-800 text-sm">{option.option_text}</span>
+                    {option.description && (
+                      <p className="text-xs text-gray-400 leading-tight">{option.description}</p>
+                    )}
+                  </div>
+                </label>
+                {option.id === otroOptionId && checked && (
+                  <input
+                    type="text"
+                    value={answer.answer_text || ""}
+                    onChange={(e) => handleChange({ answer_text: e.target.value })}
+                    placeholder="Especificá tu respuesta..."
+                    className="mt-2 w-full px-3 py-2 border-2 border-[#2962FF] rounded-lg text-sm focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
+                    autoFocus
+                  />
                 )}
               </div>
-            </label>
-          ))}
+            );
+          })}
         </div>
       );
+    }
 
     case QuestionType.PERCENTAGE_DISTRIBUTION:
       return (
@@ -279,44 +304,56 @@ function PercentageDistribution({
               }%, #e5e7eb ${percentages[option.id] || 0}%, #e5e7eb 100%)`,
             }}
           />
+          {(option.option_value === "otro" || option.option_text?.toLowerCase() === "otro") &&
+            (percentages[option.id] || 0) > 0 && (
+              <input
+                type="text"
+                value={otherText}
+                onChange={(e) => setOtherText(e.target.value)}
+                placeholder="¿En qué área te gustaría invertir?"
+                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
+              />
+            )}
         </div>
       ))}
 
-      {/* Otros */}
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          <div>
-            <label className="text-sm font-medium text-gray-700">OTROS</label>
-            <p className="text-xs text-gray-400 mt-0.5">Especificá otra área de tu interés</p>
+      {/* Otros — solo mostrar si la pregunta NO tiene una opción "otro" en sus opciones */}
+      {!question.options.some(o => o.option_value === "otro" || o.option_text?.toLowerCase() === "otro") && (
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <div>
+              <label className="text-sm font-medium text-gray-700">OTROS</label>
+              <p className="text-xs text-gray-400 mt-0.5">Especificá otra área de tu interés</p>
+            </div>
+            <span className="text-lg font-semibold text-[#2962FF] shrink-0 ml-4">
+              {percentages["otros"] || 0}%
+            </span>
           </div>
-          <span className="text-lg font-semibold text-[#2962FF] shrink-0 ml-4">
-            {percentages["otros"] || 0}%
-          </span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          value={percentages["otros"] || 0}
-          onChange={(e) => handlePercentageChange("otros", e.target.value)}
-          className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-          style={{
-            background: `linear-gradient(to right, #2962FF 0%, #2962FF ${
-              percentages["otros"] || 0
-            }%, #e5e7eb ${percentages["otros"] || 0}%, #e5e7eb 100%)`,
-          }}
-        />
-        {(percentages["otros"] || 0) > 0 && (
           <input
-            type="text"
-            value={otherText}
-            onChange={(e) => setOtherText(e.target.value)}
-            placeholder="¿En qué área te gustaría invertir?"
-            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={percentages["otros"] || 0}
+            onChange={(e) => handlePercentageChange("otros", e.target.value)}
+            className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+            style={{
+              background: `linear-gradient(to right, #2962FF 0%, #2962FF ${
+                percentages["otros"] || 0
+              }%, #e5e7eb ${percentages["otros"] || 0}%, #e5e7eb 100%)`,
+            }}
           />
-        )}
-      </div>
+          {(percentages["otros"] || 0) > 0 && (
+            <input
+              type="text"
+              value={otherText}
+              onChange={(e) => setOtherText(e.target.value)}
+              placeholder="¿En qué área te gustaría invertir?"
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-[#2962FF] focus:ring-2 focus:ring-[#2962FF]/20 outline-none transition"
+            />
+          )}
+        </div>
+      )}
 
       <div
         className={`mt-6 p-4 rounded-lg ${

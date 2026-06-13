@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 from anthropic import Anthropic
 import json
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime
+from decimal import Decimal
 
 from app.db.base import get_db
 from app.api.dependencies import get_current_user
@@ -17,11 +18,76 @@ from uuid import UUID
 from typing import Union
 from app.models.admin import Admin
 from app.models.client import Client
+from app.models.survey import Survey
 from app.models.user import User
 from app.models.ai_insight import AIInsight
 import hashlib
 
 router = APIRouter()
+
+
+class _DecimalEncoder(json.JSONEncoder):
+    """JSON encoder que convierte Decimal (resultado de AVG en PostgreSQL) a float."""
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
+
+def _json_dumps(obj) -> str:
+    return json.dumps(obj, cls=_DecimalEncoder, ensure_ascii=False)
+
+
+def _get_client_context(db: Session, survey_id: str) -> Dict[str, str]:
+    """
+    Devuelve contexto del cliente asociado a la encuesta para personalizar el prompt.
+    Si no hay cliente, devuelve defaults genéricos.
+    """
+    survey = db.query(Survey).filter(Survey.id == UUID(survey_id)).first()
+    if not survey or not survey.client:
+        return {
+            "org_name": "el organismo",
+            "org_type": "municipio/organismo público",
+            "geo_unit": "localidad",
+            "geo_unit_plural": "localidades",
+            "context_line": "",
+        }
+
+    client = survey.client
+    name = client.name or "el organismo"
+    city = client.city or ""
+    description = client.description or ""
+
+    # Determinar tipo de organismo y unidad geográfica
+    name_lower = name.lower()
+    desc_lower = description.lower()
+
+    if any(w in name_lower or w in desc_lower for w in ["provincia", "provincial", "gobierno de la provincia"]):
+        org_type = "gobierno provincial"
+        geo_unit = "ciudad"
+        geo_unit_plural = "ciudades"
+    elif any(w in name_lower or w in desc_lower for w in ["municipio", "municipalidad", "intendencia"]):
+        org_type = "municipio"
+        geo_unit = "barrio"
+        geo_unit_plural = "barrios"
+    else:
+        org_type = "organismo público"
+        geo_unit = "localidad"
+        geo_unit_plural = "localidades"
+
+    context_parts = [f"El cliente es {name}"]
+    if city:
+        context_parts.append(f"con sede en {city}")
+    if description:
+        context_parts.append(f"({description[:200]})")
+
+    return {
+        "org_name": name,
+        "org_type": org_type,
+        "geo_unit": geo_unit,
+        "geo_unit_plural": geo_unit_plural,
+        "context_line": ". ".join(context_parts) + ".",
+    }
 
 
 @router.get("/surveys/{survey_id}/ai-insights")
@@ -31,7 +97,7 @@ async def get_ai_insights(
     current_user: Union[User, Admin, Client] = Depends(get_current_user)
 ):
     """
-    Obtiene los insights de IA cacheados para una encuesta.
+    Obtiene los insights de IA cacheados para una consulta.
     Retorna None si no hay insights generados aún.
     """
     cached_insight = db.query(AIInsight).filter(
@@ -42,7 +108,7 @@ async def get_ai_insights(
         return {
             "insights": None,
             "from_cache": False,
-            "message": "No hay insights generados para esta encuesta"
+            "message": "No hay insights generados para esta consulta"
         }
 
     return {
@@ -63,7 +129,7 @@ async def generate_ai_insights(
     current_user: Union[User, Admin, Client] = Depends(get_current_user)
 ):
     """
-    Genera insights inteligentes usando Claude AI basándose en los datos de la encuesta.
+    Genera insights inteligentes usando Claude AI basándose en los datos de la consulta.
     Usa cache de la base de datos para evitar regenerar si los datos no cambiaron.
 
     - force_regenerate: Si es True, regenera los insights aunque exista cache
@@ -78,19 +144,25 @@ async def generate_ai_insights(
         )
 
     try:
-        # 2. Obtener datos de la encuesta
+        # 2. Obtener datos de la consulta
         results = SurveyService.get_survey_results(db, UUID(survey_id))
 
         if not results:
             raise HTTPException(
                 status_code=404,
-                detail="No se encontraron resultados para esta encuesta"
+                detail="No se encontraron resultados para esta consulta"
             )
 
-        # 3. Calcular hash de las respuestas para detectar cambios
+        # 3. Calcular hash liviano (solo total + resultados top-level, no desglose por ciudad)
         total_responses = results.get('total_responses', 0)
-        responses_data = json.dumps(results, sort_keys=True)
-        responses_hash = hashlib.md5(responses_data.encode()).hexdigest()
+        hash_data = {
+            "total": total_responses,
+            "questions": [
+                {"id": q.get("question_id"), "results": q.get("results")}
+                for q in results.get("questions_summary", [])
+            ]
+        }
+        responses_hash = hashlib.md5(_json_dumps(hash_data).encode()).hexdigest()
 
         # 4. Buscar insights en cache
         if not force_regenerate:
@@ -108,32 +180,47 @@ async def generate_ai_insights(
                     "from_cache": True
                 }
 
-        # 5. Si no hay cache o se forzó regeneración, generar nuevos insights
-        results = SurveyService.get_survey_results(db, UUID(survey_id))
+        # 5. Preparar prompt — incluir todos los datos demográficos y por ciudad
+        ctx = _get_client_context(db, survey_id)
 
-        if not results:
-            raise HTTPException(
-                status_code=404,
-                detail="No se encontraron resultados para esta encuesta"
-            )
+        def summarize_questions(questions_summary):
+            summary = []
+            for q in questions_summary:
+                summary.append({
+                    "pregunta": q.get("question_text"),
+                    "tipo": q.get("question_type"),
+                    "resultados_generales": q.get("results"),
+                    f"resultados_por_{ctx['geo_unit']}": q.get("results_by_city"),
+                    "resultados_por_barrio": q.get("results_by_neighborhood"),
+                    "resultados_por_edad": q.get("results_by_age"),
+                    "resultados_por_genero": q.get("results_by_gender"),
+                })
+            return summary
 
-        # 3. Preparar el prompt para Claude
-        prompt = f"""Analiza estos datos de una encuesta ciudadana de Alta Gracia, Córdoba, Argentina:
+        demographics = results.get('demographics', {})
+
+        # Preparar el prompt para Claude
+        prompt = f"""Analiza los datos de una consulta ciudadana.
+
+CONTEXTO DEL CLIENTE:
+{ctx['context_line']}
+Tipo de organismo: {ctx['org_type']}
+Unidad geográfica relevante: {ctx['geo_unit_plural']} (usar este término, no "barrios" ni "localidades" si no corresponde)
 
 📊 DATOS GENERALES:
-- Total de respuestas: {results.get('total_responses', 0)}
-- Respuestas este mes: {results.get('total_responses', 0)}
+- Total de respuestas: {total_responses}
 
 👥 DEMOGRAFÍA:
-- Por edad: {json.dumps(results.get('demographics', {}).get('by_age_group', {}), ensure_ascii=False)}
-- Por barrio: {json.dumps(results.get('demographics', {}).get('by_neighborhood', {}), ensure_ascii=False)}
-- Por ciudad: {json.dumps(results.get('demographics', {}).get('by_city', {}), ensure_ascii=False)}
+- Por edad: {_json_dumps(demographics.get('by_age_group', {}))}
+- Por género: {_json_dumps(demographics.get('by_gender', {}))}
+- Por {ctx['geo_unit']}: {_json_dumps(demographics.get('by_city', {}))}
+- Por barrio: {_json_dumps(demographics.get('by_neighborhood', {}))}
 
-📈 PREGUNTAS Y RESPUESTAS:
-{json.dumps(results.get('questions_summary', []), indent=2, ensure_ascii=False)}
+📈 PREGUNTAS Y RESPUESTAS (con desglose por edad, género, {ctx['geo_unit']} y barrio):
+{_json_dumps(summarize_questions(results.get('questions_summary', [])))}
 
-⏰ EVOLUCIÓN TEMPORAL:
-{json.dumps(results.get('evolution_data', {}), indent=2, ensure_ascii=False)}
+⏰ EVOLUCIÓN TEMPORAL (últimos meses):
+{_json_dumps(results.get('evolution_data', {}))}
 
 ---
 
@@ -142,19 +229,19 @@ Tu tarea es generar EXACTAMENTE 5 insights profundos y accionables en formato JS
 Cada insight debe tener:
 1. **title**: Título corto y llamativo (max 60 caracteres)
 2. **description**: Descripción detallada con datos específicos y porcentajes concretos (2-3 oraciones)
-3. **recommendation**: Recomendación accionable y específica para el municipio (1-2 oraciones)
+3. **recommendation**: Recomendación accionable y específica para {ctx['org_name']} (1-2 oraciones)
 4. **impact**: "Alta", "Media" o "Baja"
 5. **category**: Una de estas categorías exactas: "participation", "satisfaction", "demographics", "infrastructure", "consensus"
 
 REQUISITOS IMPORTANTES:
-- Usa datos REALES y específicos de la encuesta
-- Incluye números, porcentajes y nombres concretos
+- Usa datos REALES y específicos de la consulta
+- Incluye números, porcentajes y nombres concretos de {ctx['geo_unit_plural']}
 - NO inventes datos que no estén en el contexto
-- Detecta patrones, tendencias, brechas, oportunidades
+- Detecta patrones, tendencias, brechas, oportunidades entre {ctx['geo_unit_plural']}
 - Sé crítico: menciona tanto fortalezas como áreas de mejora
 - Prioriza insights NO OBVIOS que un humano podría pasar por alto
 - Usa un tono profesional pero accesible, en español neutro
-- Las recomendaciones deben ser directas y accionables, sin muletillas informales
+- Las recomendaciones deben ser directas y accionables, dirigidas a {ctx['org_name']}
 
 Responde SOLO con el JSON, sin texto adicional:
 
@@ -262,7 +349,7 @@ Responde SOLO con el JSON, sin texto adicional:
         model_used = settings.CLAUDE_MODEL
         generated_at = datetime.utcnow()
 
-        # Eliminar insights anteriores de esta encuesta
+        # Eliminar insights anteriores de esta consulta
         db.query(AIInsight).filter(AIInsight.survey_id == UUID(survey_id)).delete()
 
         # Crear nuevo registro
@@ -302,7 +389,7 @@ async def generate_ai_predictions(
     current_user: Union[User, Admin, Client] = Depends(get_current_user)
 ):
     """
-    Genera predicciones y proyecciones usando Claude AI basándose en los datos de la encuesta.
+    Genera predicciones y proyecciones usando Claude AI basándose en los datos de la consulta.
     """
 
     # 1. Verificar que existe la API key
@@ -314,33 +401,50 @@ async def generate_ai_predictions(
         )
 
     try:
-        # 2. Obtener datos de la encuesta
+        # 2. Obtener datos de la consulta
         results = SurveyService.get_survey_results(db, UUID(survey_id))
 
         if not results:
             raise HTTPException(
                 status_code=404,
-                detail="No se encontraron resultados para esta encuesta"
+                detail="No se encontraron resultados para esta consulta"
             )
 
         # 3. Preparar el prompt para predicciones
         total_responses = results.get('total_responses', 0)
+        demographics = results.get('demographics', {})
+        ctx = _get_client_context(db, survey_id)
+        questions_pred = [
+            {
+                "pregunta": q.get("question_text"),
+                "tipo": q.get("question_type"),
+                "resultados_generales": q.get("results"),
+                f"resultados_por_{ctx['geo_unit']}": q.get("results_by_city"),
+                "resultados_por_barrio": q.get("results_by_neighborhood"),
+            }
+            for q in results.get("questions_summary", [])
+        ]
 
-        prompt = f"""Eres un analista de datos experto en proyecciones estadísticas para gobiernos municipales.
+        prompt = f"""Eres un analista de datos experto en proyecciones estadísticas para {ctx['org_type']}s.
 
-Analiza estos datos de una encuesta ciudadana de Alta Gracia, Córdoba, Argentina:
+CONTEXTO DEL CLIENTE:
+{ctx['context_line']}
+
+Analiza los datos de una consulta ciudadana:
 
 📊 DATOS GENERALES:
 - Total de respuestas: {total_responses}
 
 📈 EVOLUCIÓN TEMPORAL:
-{json.dumps(results.get('evolution_data', {}), indent=2, ensure_ascii=False)}
+{_json_dumps(results.get('evolution_data', {}))}
 
 👥 DEMOGRAFÍA:
-{json.dumps(results.get('demographics', {}), indent=2, ensure_ascii=False)}
+- Por edad: {_json_dumps(demographics.get('by_age_group', {}))}
+- Por género: {_json_dumps(demographics.get('by_gender', {}))}
+- Por {ctx['geo_unit']}: {_json_dumps(demographics.get('by_city', {}))}
 
 📊 RESPUESTAS:
-{json.dumps(results.get('questions_summary', []), indent=2, ensure_ascii=False)}
+{_json_dumps(questions_pred)}
 
 ---
 
@@ -353,7 +457,7 @@ Cada predicción debe tener:
 4. **confidence**: Número entre 70-95 representando % de confianza
 
 REQUISITOS:
-- Usa SOLO datos reales de la encuesta para calcular proyecciones
+- Usa SOLO datos reales de la consulta para calcular proyecciones
 - Incluye números específicos en las proyecciones (ej: "alcanzar X respuestas")
 - Proyecciones deben ser realizables en 3-6 meses
 - Confidence basado en cantidad de datos disponibles
@@ -424,7 +528,7 @@ Responde SOLO con el JSON:
             # Crear nuevo registro si no existe
             new_insight = AIInsight(
                 survey_id=UUID(survey_id),
-                responses_hash=hashlib.md5(json.dumps(results, sort_keys=True).encode()).hexdigest(),
+                responses_hash=hashlib.md5(_json_dumps(results).encode()).hexdigest(),
                 total_responses=total_responses,
                 insights=[],  # Vacío por ahora
                 predictions=predictions,

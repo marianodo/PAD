@@ -2706,12 +2706,15 @@ export default function SurveyResultsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Image src="/logo.jpeg" alt="Data Insights" width={48} height={48} className="rounded-xl" />
+              <Image src="/logo_di_white.png" alt="Data Insights" width={120} height={48} />
               <div>
                 <h1 className="text-4xl font-bold text-[#FFFFFF]">
                   Panel de Consultas Ciudadanas
                 </h1>
-                <p className="text-[#FFFFFF]/50 mt-2">
+                <p className="text-[#2962FF] font-semibold text-sm mt-1">
+                  Municipalidad de Alta Gracia
+                </p>
+                <p className="text-[#FFFFFF]/50 mt-1">
                   Democratizando la Voluntad Popular
                 </p>
               </div>
@@ -2856,7 +2859,7 @@ export default function SurveyResultsPage() {
                   {metrics.totalResponses.toLocaleString()}
                 </p>
                 <p className="text-sm font-medium text-[#FFFFFF]/50">
-                  Desde el inicio de la encuesta
+                  Desde el inicio de la consulta
                 </p>
               </div>
               <div className="bg-[#2962FF]/20 rounded-full p-3">

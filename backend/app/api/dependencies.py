@@ -148,6 +148,13 @@ def get_current_account(
             detail="Cuenta no encontrada"
         )
 
+    # Bloquear usuarios deshabilitados (solo aplica a users)
+    if account_type == "user" and not getattr(account, "is_active", True):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Usuario deshabilitado"
+        )
+
     return account
 
 

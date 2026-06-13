@@ -45,6 +45,19 @@ def register(
             detail="Email ya registrado"
         )
 
+    # Validate minimum age (18 years)
+    if user_data.birth_date:
+        from datetime import date
+        today = date.today()
+        age = today.year - user_data.birth_date.year - (
+            (today.month, today.day) < (user_data.birth_date.month, user_data.birth_date.day)
+        )
+        if age < 18:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Debés tener al menos 18 años para registrarte"
+            )
+
     # Create new user (citizen)
     hashed_password = get_password_hash(user_data.password)
     new_user = User(
@@ -144,6 +157,14 @@ def login_v2(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Check is_active for users (only users tienen este flag)
+    if account_type == "user" and not getattr(account, "is_active", True):
+        logger.warning(f"❌ DISABLED USER attempted login: {credentials.cuil}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Usuario deshabilitado. Contactá al administrador.",
         )
 
     # Create access token with account type
