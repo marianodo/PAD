@@ -76,3 +76,5 @@ logs/
 # Railway
 .railway/
 .DS_Store
+
+sandbox/
