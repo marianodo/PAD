@@ -53,9 +53,10 @@ PAD/
 - **Database**: PostgreSQL 15+ con PostGIS
 
 ### Deployment
-- **Frontend**: Vercel
-- **Backend + DB**: Railway
-- **CI/CD**: GitHub Actions (próximamente)
+- **Frontend + Backend + DB**: Railway (3 entornos: develop / staging / production)
+- **CI/CD**: GitHub Actions (tests backend + lint/build frontend + validación de PR)
+
+Ver [docs/ENVIRONMENTS.md](./docs/ENVIRONMENTS.md) y [docs/RELEASING.md](./docs/RELEASING.md).
 
 ## 📦 Quick Start
 
@@ -169,8 +170,13 @@ Ver detalles en [SETUP.md](./SETUP.md)
 
 ## 📖 Documentación
 
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - Ramas, commits, PRs y setup local
+- [docs/RELEASING.md](./docs/RELEASING.md) - Cómo se promueve y publica un release
+- [docs/ENVIRONMENTS.md](./docs/ENVIRONMENTS.md) - Entornos y variables de entorno
+- [CHANGELOG.md](./CHANGELOG.md) - Historial de cambios
 - [ARQUITECTURA.md](./ARQUITECTURA.md) - Arquitectura completa del sistema
-- [SETUP.md](./SETUP.md) - Guía de instalación y deployment
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Guía de deployment en Railway
+- [SETUP.md](./SETUP.md) - Guía de instalación
 - [backend/README.md](./backend/README.md) - Documentación del backend
 - [frontend/README.md](./frontend/README.md) - Documentación del frontend
 
@@ -203,11 +209,11 @@ Ver detalles en [SETUP.md](./SETUP.md)
 
 ## 🤝 Contribuir
 
-1. Fork el proyecto
-2. Crear rama de feature (`git checkout -b feature/AmazingFeature`)
-3. Commit cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abrir Pull Request
+El proceso completo (ramas, Conventional Commits, PRs y deploy) está en
+**[CONTRIBUTING.md](./CONTRIBUTING.md)**.
+
+Resumen: salí de `develop`, abrí PR con título Conventional Commits, esperá el CI en verde y mergeá.
+Promoción a producción: `develop → staging → main` (ver [docs/RELEASING.md](./docs/RELEASING.md)).
 
 ## 📝 Licencia
 

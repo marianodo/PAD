@@ -34,10 +34,11 @@ env/
 *.swo
 *~
 
-# Environment variables
+# Environment variables (nunca commitear secretos; usar los *.example)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
 
 # Next.js
 frontend/.next/
@@ -64,6 +65,10 @@ coverage/
 *.db
 *.sqlite
 *.sqlite3
+*.sql
+
+# Runtime cache (AI / generados)
+backend/cache/
 
 # OS
 .DS_Store
