@@ -42,7 +42,7 @@ Probá ahí el conjunto de cambios (QA): flujos críticos, encuestas, puntos, da
 Cuando QA está OK, abrí un PR `staging → main`:
 
 ```bash
-gh pr create --base main --head staging --title "release: vX.Y.Z" --fill
+gh pr create --base main --head staging --title "chore(release): vX.Y.Z" --fill
 ```
 
 Mergealo (requiere CI verde + es rama protegida). Railway deploya a **production**.
