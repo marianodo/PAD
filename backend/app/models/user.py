@@ -38,6 +38,7 @@ class User(Base):
 
     # Relationships
     client = relationship("Client", back_populates="users")
+    client_memberships = relationship("UserClient", back_populates="user", cascade="all, delete-orphan")
     responses = relationship("SurveyResponse", back_populates="user")
     points = relationship("UserPoints", back_populates="user", uselist=False)
     point_transactions = relationship("PointTransaction", back_populates="user")

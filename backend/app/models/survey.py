@@ -24,6 +24,7 @@ class Survey(Base):
     description = Column(Text)
     status = Column(String(50), default="active")  # active, inactive, archived
     is_active = Column(Boolean, default=True)  # Flag rápido para activar/desactivar
+    is_public = Column(Boolean, nullable=False, server_default="false", default=False)  # Abierta a cualquier ciudadano logueado (sin chequear membresía)
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)  # Cliente owner de la encuesta
     points_per_question = Column(Integer, default=10)  # Puntos por pregunta respondida
     bonus_points = Column(Integer, default=70)  # Puntos bonus por completar todo

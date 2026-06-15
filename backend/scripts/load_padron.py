@@ -19,6 +19,7 @@ from sqlalchemy import text
 from app.db.base import get_db
 from app.models.electoral_roll import ElectoralRoll
 from app.models.user import User
+from app.services.membership_service import get_ancestor_client_ids
 
 
 def load_padron(xlsx_path: str, client_id: str):
@@ -96,7 +97,7 @@ def load_padron(xlsx_path: str, client_id: str):
 
         wb.close()
 
-        # Vincular usuarios existentes a este client
+        # Vincular usuarios existentes a este client (municipio principal informativo)
         print(f"\n\nVinculando usuarios existentes al municipio...")
         result = db.execute(
             text("""
@@ -111,6 +112,24 @@ def load_padron(xlsx_path: str, client_id: str):
         )
         users_linked = result.rowcount
 
+        # Crear membresías (user_clients) con herencia por parent_id:
+        # el padrón municipal habilita también la membresía provincial, etc.
+        memberships_created = 0
+        for cid in get_ancestor_client_ids(db, client_id):
+            res = db.execute(
+                text("""
+                    INSERT INTO user_clients (id, user_id, client_id)
+                    SELECT gen_random_uuid(), u.id, :cid
+                    FROM users u
+                    WHERE u.cuil IN (
+                        SELECT cuil FROM electoral_roll WHERE client_id = :client_id
+                    )
+                    ON CONFLICT (user_id, client_id) DO NOTHING
+                """),
+                {"cid": str(cid), "client_id": client_id}
+            )
+            memberships_created += res.rowcount or 0
+
         db.commit()
 
         print(f"\n{'=' * 50}")
@@ -121,6 +140,7 @@ def load_padron(xlsx_path: str, client_id: str):
         print(f"Sin CUIL (omitidos): {skipped_no_cuil}")
         print(f"Duplicados (omitidos): {skipped_duplicate}")
         print(f"Usuarios vinculados al municipio: {users_linked}")
+        print(f"Membresías creadas (incluye herencia): {memberships_created}")
 
     except Exception as e:
         db.rollback()

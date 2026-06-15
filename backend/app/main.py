@@ -49,6 +49,35 @@ if not _TESTING:
                 ))
                 conn.commit()
 
+        # Migración: jerarquía de clientes (parent_id)
+        client_columns = [col["name"] for col in inspector.get_columns("clients")]
+        if "parent_id" not in client_columns:
+            conn.execute(text(
+                "ALTER TABLE clients ADD COLUMN parent_id UUID REFERENCES clients(id) ON DELETE SET NULL"
+            ))
+            conn.commit()
+
+        # Migración: encuestas públicas (is_public)
+        survey_columns = [col["name"] for col in inspector.get_columns("surveys")]
+        if "is_public" not in survey_columns:
+            conn.execute(text(
+                "ALTER TABLE surveys ADD COLUMN is_public BOOLEAN NOT NULL DEFAULT FALSE"
+            ))
+            conn.commit()
+
+        # Backfill: membresías user_clients a partir de users.client_id (una sola vez)
+        if inspector.has_table("user_clients"):
+            count = conn.execute(text("SELECT COUNT(*) FROM user_clients")).scalar()
+            if count == 0:
+                conn.execute(text("""
+                    INSERT INTO user_clients (id, user_id, client_id)
+                    SELECT gen_random_uuid(), id, client_id
+                    FROM users
+                    WHERE client_id IS NOT NULL
+                    ON CONFLICT (user_id, client_id) DO NOTHING
+                """))
+                conn.commit()
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_PREFIX}/openapi.json",
