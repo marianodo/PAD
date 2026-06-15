@@ -43,9 +43,13 @@ class AnswerResponse(AnswerCreate):
 
 
 class SurveyResponseCreate(BaseModel):
-    """Schema para iniciar o completar una respuesta de encuesta"""
+    """Schema para iniciar o completar una respuesta de encuesta.
+
+    `user_id` es opcional: el backend usa el usuario autenticado (del token).
+    Se mantiene por compatibilidad pero el servidor lo ignora.
+    """
     survey_id: UUID
-    user_id: UUID
+    user_id: Optional[UUID] = None
     answers: List[AnswerCreate] = []
     completed: bool = False
 

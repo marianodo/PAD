@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, func
+from sqlalchemy import Column, String, DateTime, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -12,6 +12,10 @@ class Client(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
+
+    # Jerarquía opcional: un cliente puede tener un "padre" (ej: una ciudad cuyo
+    # padre es la provincia). Las membresías de ciudadanos se heredan hacia arriba.
+    parent_id = Column(UUID(as_uuid=True), ForeignKey("clients.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # Datos de la organización/municipalidad
     name = Column(String(255), nullable=False)  # Nombre de la organización
@@ -39,3 +43,7 @@ class Client(Base):
     users = relationship("User", back_populates="client")
     provider_clients = relationship("ProviderClient", back_populates="client")
     electoral_roll_entries = relationship("ElectoralRoll", back_populates="client", cascade="all, delete-orphan")
+    user_memberships = relationship("UserClient", back_populates="client", cascade="all, delete-orphan")
+
+    # Jerarquía de clientes (self-referential)
+    parent = relationship("Client", remote_side=[id], backref="children")

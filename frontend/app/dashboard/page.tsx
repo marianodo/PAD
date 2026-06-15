@@ -74,6 +74,7 @@ interface ResponseDetail {
 export default function DashboardPage() {
   const router = useRouter();
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
+  const [availableSurveys, setAvailableSurveys] = useState<{ id: string; title: string; description?: string; is_public?: boolean }[]>([]);
   const [stats, setStats] = useState<UserStats>({
     total_responses: 0,
     total_points: 0,
@@ -232,6 +233,11 @@ export default function DashboardPage() {
         if (!responsesResponse.ok) { if (responsesResponse.status === 401) { localStorage.removeItem("access_token"); router.push("/auth/login"); return; } throw new Error("Error al cargar las respuestas"); }
         const data = await responsesResponse.json();
         setResponses(data);
+        // Consultas que el ciudadano puede responder (membresía + públicas)
+        try {
+          const availRes = await fetch(`${API_URL}/api/v1/surveys/available`, { headers: { Authorization: `Bearer ${token}` } });
+          if (availRes.ok) { setAvailableSurveys(await availRes.json()); }
+        } catch (err) { /* ignore */ }
         const completedResponses = data.filter((r: SurveyResponse) => r.completed);
         const totalPoints = completedResponses.reduce((sum: number, r: SurveyResponse) => sum + r.points_earned, 0);
         let availablePoints = totalPoints;
@@ -516,6 +522,28 @@ export default function DashboardPage() {
           </div>
 
           {/* Content area */}
+          {activeTab === "surveys" && availableSurveys.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-900">Consultas disponibles</h3>
+                <span className="text-xs text-gray-400 border border-gray-200 rounded-full px-3 py-1 font-medium">{availableSurveys.length}</span>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {availableSurveys.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between px-6 py-4 hover:bg-gray-50/60 transition-colors">
+                    <div className="min-w-0 pr-4">
+                      <h4 className="font-semibold text-gray-900 text-sm truncate">{s.title}</h4>
+                      {s.description && <p className="text-xs text-gray-400 truncate">{s.description}</p>}
+                    </div>
+                    <Link href={`/survey/${s.id}`} className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-[#2962FF] text-white text-xs rounded-xl hover:bg-[#1a4fd4] transition-all shadow-md shadow-[#2962FF]/20 font-medium">
+                      Responder
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {activeTab === "surveys" && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
