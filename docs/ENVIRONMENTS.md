@@ -10,6 +10,11 @@ Tres entornos en Railway, uno por rama. Cada entorno tiene su propio backend, fr
 
 Cada entorno deploya automáticamente al hacer merge en su rama.
 
+> **Base de datos:** la app usa la base **`pad_db`** en los tres entornos (nombre portable,
+> no el `railway` por defecto de Railway). El backend lee `DATABASE_URL` apuntando a `pad_db`.
+> La `DATABASE_PUBLIC_URL` que expone Railway apunta a `railway`, así que para conectarse a la
+> base de la app por el proxy hay que usar `pad_db` (ver helper en ONBOARDING_CLIENTE.md).
+
 ## URLs
 
 | Servicio | develop | staging | production |

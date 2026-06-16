@@ -41,10 +41,14 @@ gaps en §10).
 Los scripts del backend usan `settings.DATABASE_URL`. Para correrlos desde tu máquina contra
 la DB de un entorno de Railway, usá la URL **pública** de Postgres:
 
+> ⚠️ La base de la app se llama **`pad_db`** en todos los entornos (no el `railway` por
+> defecto de Railway). La `DATABASE_PUBLIC_URL` apunta a `railway`, así que hay que cambiar
+> el nombre de base a `pad_db` (el `sed` de abajo lo hace).
+
 ```bash
-# elegí el entorno: staging | production
+# elegí el entorno: develop | staging | production
 ENV=staging
-export DBURL=$(railway variables -e $ENV -s Postgres --json | jq -r '.DATABASE_PUBLIC_URL')
+export DBURL=$(railway variables -e $ENV -s Postgres --json | jq -r '.DATABASE_PUBLIC_URL' | sed -E 's#/railway$#/pad_db#')
 
 cd backend
 # ejemplo:
