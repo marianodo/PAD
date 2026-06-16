@@ -173,6 +173,8 @@ Ver detalles en [SETUP.md](./SETUP.md)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) - Ramas, commits, PRs y setup local
 - [docs/RELEASING.md](./docs/RELEASING.md) - Cómo se promueve y publica un release
 - [docs/ENVIRONMENTS.md](./docs/ENVIRONMENTS.md) - Entornos y variables de entorno
+- [docs/ONBOARDING_CLIENTE.md](./docs/ONBOARDING_CLIENTE.md) - Alta paso a paso de un municipio nuevo
+- [docs/integracion-api.md](./docs/integracion-api.md) - API de integración para el proveedor de pagos
 - [CHANGELOG.md](./CHANGELOG.md) - Historial de cambios
 - [ARQUITECTURA.md](./ARQUITECTURA.md) - Arquitectura completa del sistema
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - Guía de deployment en Railway

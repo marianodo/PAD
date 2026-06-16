@@ -13,6 +13,8 @@ from app.db.base import get_db
 from app.models.user import User
 from app.models.admin import Admin
 from app.models.client import Client
+from app.models.electoral_roll import ElectoralRoll
+from app.services import membership_service
 from app.schemas.auth import LoginRequest, RegisterRequest, Token
 from app.schemas.user import UserResponse
 from app.core.security import verify_password, get_password_hash, create_access_token
@@ -77,6 +79,21 @@ def register(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Si el CUIL ya está en algún padrón, asignar membresías automáticamente
+    # (con herencia por parent_id). Así el orden registro/padrón no importa.
+    padron_client_ids = [
+        cid for (cid,) in db.query(ElectoralRoll.client_id).filter(
+            ElectoralRoll.cuil == new_user.cuil
+        ).distinct().all()
+    ]
+    if padron_client_ids:
+        for cid in padron_client_ids:
+            membership_service.add_membership(db, new_user.id, cid)
+        if new_user.client_id is None:
+            new_user.client_id = padron_client_ids[0]
+        db.commit()
+        db.refresh(new_user)
 
     return {
         "id": str(new_user.id),

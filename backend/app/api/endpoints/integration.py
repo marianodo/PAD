@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -12,6 +14,7 @@ from app.schemas.integration import (
     PointsRedeemResponse,
 )
 from app.api.dependencies import verify_api_key
+from app.services import membership_service
 
 router = APIRouter()
 
@@ -47,19 +50,23 @@ def _get_user_by_cuil_authorized(
             detail="Usuario deshabilitado"
         )
 
-    if user.client_id is None:
+    member_client_ids = membership_service.get_member_client_ids(db, user.id)
+    if not member_client_ids:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Contribuyente no vinculado a ningún municipio"
         )
 
     authorized_client_ids = _get_authorized_client_ids(provider, db)
-    if str(user.client_id) not in authorized_client_ids:
+    matched = member_client_ids & authorized_client_ids
+    if not matched:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No tiene acceso a este contribuyente"
         )
 
+    # Guardar el client autorizado matcheado para el audit log (no se persiste)
+    user.authorized_client_id = uuid.UUID(next(iter(matched)))
     return user
 
 
@@ -124,7 +131,7 @@ def get_points(
             request=request,
             response_status=200,
             cuil=cuil,
-            client_id=user.client_id,
+            client_id=getattr(user, "authorized_client_id", None),
             response_body=response_data.model_dump(mode="json"),
         )
         db.commit()
@@ -242,7 +249,7 @@ def redeem_points(
             request=request,
             response_status=200,
             cuil=body.cuil,
-            client_id=user.client_id,
+            client_id=getattr(user, "authorized_client_id", None),
             request_body=request_data,
             response_body=response_data.model_dump(mode="json"),
         )

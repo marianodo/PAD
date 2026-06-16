@@ -12,13 +12,13 @@ Cada entorno deploya automáticamente al hacer merge en su rama.
 
 ## URLs
 
-> Completar con las URLs reales de cada servicio en Railway.
+| Servicio | develop | staging | production |
+|----------|---------|---------|------------|
+| Frontend | https://frontend-develop-2d9f.up.railway.app | https://frontend-staging-8cc9.up.railway.app | https://pad-usuarios.datainsights.com.ar |
+| Backend  | https://backend-develop-cbbc.up.railway.app | https://backend-staging-b39b.up.railway.app | https://api.datainsights.com.ar |
+| DB       | interna | interna | interna |
 
-| Servicio | develop                                       | staging | production |
-|----------|-----------------------------------------------|---------|------------|
-| Frontend | _(pendiente)_                                 | _(pendiente)_ | _(pendiente)_ |
-| Backend  | https://backend-develop-cbbc.up.railway.app   | _(pendiente)_ | _(pendiente)_ |
-| DB       | interna                                        | interna | interna |
+> El dominio público `*.datainsights.com.ar` vive en **production** (cliente). develop y staging usan dominios `*.up.railway.app`.
 
 ## Variables de entorno
 

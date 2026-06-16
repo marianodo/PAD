@@ -52,6 +52,7 @@ class SurveyResponse(BaseModel):
     client_id: Optional[UUID] = None
     client: Optional[ClientInfo] = None
     is_active: bool = True
+    is_public: bool = False
     points_per_question: int
     bonus_points: int
     max_responses_per_user: int = 0
@@ -85,6 +86,8 @@ class QuestionCreate(BaseModel):
 class SurveyCreate(BaseModel):
     title: str
     description: Optional[str] = None
+    client_id: Optional[UUID] = None  # Municipio dueño de la encuesta
+    is_public: bool = False  # Abierta a cualquier ciudadano logueado
     points_per_question: int = 10
     bonus_points: int = 70
     max_responses_per_user: int = 0

@@ -13,6 +13,7 @@ from app.models.client import Client
 from app.models.points import UserPoints, PointTransaction
 from app.schemas.survey import SurveyCreate
 from app.schemas.response import SurveyResponseCreate, AnswerCreate
+from app.services import membership_service
 from anthropic import Anthropic
 from app.core.config import settings
 import json
@@ -30,11 +31,34 @@ class SurveyService:
 
     @staticmethod
     def get_active_survey(db: Session) -> Optional[Survey]:
-        """Obtiene la encuesta activa actual"""
+        """Obtiene la encuesta activa actual (DEPRECADO: global, sin scope por cliente).
+
+        Se mantiene por compatibilidad. Para el flujo del ciudadano usar
+        get_available_surveys, que filtra por membresía / encuestas públicas.
+        """
         return db.query(Survey).filter(
             Survey.status == "active",
             (Survey.expires_at.is_(None) | (Survey.expires_at > datetime.now()))
         ).first()
+
+    @staticmethod
+    def get_available_surveys(db: Session, user: User) -> List[Survey]:
+        """Encuestas activas que el ciudadano puede responder.
+
+        Elegibilidad: la encuesta es pública, o el usuario es miembro del client
+        dueño (incluye herencia por parent_id vía las membresías ya cargadas).
+        """
+        active = db.query(Survey).filter(
+            Survey.is_active == True,
+            Survey.status == "active",
+            (Survey.expires_at.is_(None) | (Survey.expires_at > datetime.now()))
+        ).order_by(Survey.created_at.desc()).all()
+
+        member_ids = membership_service.get_member_client_ids(db, user.id)
+        return [
+            s for s in active
+            if getattr(s, "is_public", False) or (s.client_id is not None and str(s.client_id) in member_ids)
+        ]
 
     @staticmethod
     def get_survey_by_id(db: Session, survey_id: UUID) -> Optional[Survey]:
@@ -72,6 +96,8 @@ class SurveyService:
         survey = Survey(
             title=survey_data.title,
             description=survey_data.description,
+            client_id=survey_data.client_id,
+            is_public=survey_data.is_public,
             points_per_question=survey_data.points_per_question,
             bonus_points=survey_data.bonus_points,
             max_responses_per_user=survey_data.max_responses_per_user,
@@ -141,14 +167,16 @@ class SurveyService:
     def submit_response(
         db: Session,
         response_data: SurveyResponseCreate,
+        user_id: UUID,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> SurveyResponse:
         """
-        Envía una respuesta de encuesta y calcula los puntos ganados
+        Envía una respuesta de encuesta y calcula los puntos ganados.
+        `user_id` es el del usuario autenticado (no se confía en el body).
         """
         # Verificar que el usuario puede responder
-        if not SurveyService.user_can_respond(db, response_data.user_id, response_data.survey_id):
+        if not SurveyService.user_can_respond(db, user_id, response_data.survey_id):
             raise ValueError("Ya alcanzaste el límite de respuestas para esta encuesta")
 
         # Obtener encuesta
@@ -172,7 +200,7 @@ class SurveyService:
         # Crear respuesta
         survey_response = SurveyResponse(
             survey_id=response_data.survey_id,
-            user_id=response_data.user_id,
+            user_id=user_id,
             completed=response_data.completed,
             points_earned=points_earned,
             completed_at=datetime.now() if response_data.completed else None,
@@ -198,7 +226,7 @@ class SurveyService:
         if response_data.completed:
             SurveyService._update_user_points(
                 db,
-                response_data.user_id,
+                user_id,
                 points_earned,
                 survey_response.id
             )
