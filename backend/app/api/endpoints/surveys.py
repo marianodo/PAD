@@ -11,7 +11,8 @@ from app.db.base import get_db
 from app.services.survey_service import SurveyService
 from app.schemas.survey import SurveyResponse, SurveyCreate
 from app.schemas.response import SurveyResponseCreate, SurveyResponseResponse
-from app.api.dependencies import get_current_user, get_current_admin, get_current_account
+from app.api.dependencies import get_current_user, get_current_admin, get_current_account, get_current_regular_user
+from app.services import membership_service
 from app.models.user import User
 from app.models.admin import Admin
 from app.models.client import Client
@@ -52,7 +53,10 @@ def get_surveys(
 
 @router.get("/active", response_model=SurveyResponse)
 def get_active_survey(db: Session = Depends(get_db)):
-    """Obtiene la encuesta activa actual"""
+    """Obtiene la encuesta activa actual (DEPRECADO: global, sin scope por cliente).
+
+    Usar GET /surveys/available para el flujo del ciudadano.
+    """
     survey = SurveyService.get_active_survey(db)
     if not survey:
         raise HTTPException(
@@ -60,6 +64,19 @@ def get_active_survey(db: Session = Depends(get_db)):
             detail="No hay encuesta activa disponible"
         )
     return survey
+
+
+@router.get("/available", response_model=List[SurveyResponse])
+def get_available_surveys(
+    current_user: User = Depends(get_current_regular_user),
+    db: Session = Depends(get_db),
+):
+    """Encuestas que el ciudadano logueado puede responder.
+
+    Incluye las públicas y las de los municipios a los que pertenece (con herencia
+    por jerarquía de clientes). Reemplaza el uso ciudadano de /active.
+    """
+    return SurveyService.get_available_surveys(db, current_user)
 
 
 @router.get("/participation-trend")
@@ -196,9 +213,10 @@ def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)):
 def submit_survey_response(
     response_data: SurveyResponseCreate,
     request: Request,
+    current_user: User = Depends(get_current_regular_user),
     db: Session = Depends(get_db)
 ):
-    """Envía una respuesta de encuesta"""
+    """Envía una respuesta de encuesta (requiere ciudadano autenticado)."""
     try:
         # Verificar que la encuesta esté activa
         survey = SurveyService.get_survey_by_id(db, response_data.survey_id)
@@ -213,6 +231,13 @@ def submit_survey_response(
                 detail="Esta encuesta no está disponible actualmente"
             )
 
+        # Elegibilidad: pública o miembro del municipio dueño
+        if not membership_service.user_can_access_survey(db, current_user, survey):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No estás habilitado para responder esta consulta"
+            )
+
         # Capturar IP y User Agent
         ip_address = request.client.host if request.client else None
         user_agent = request.headers.get("user-agent")
@@ -220,6 +245,7 @@ def submit_survey_response(
         response = SurveyService.submit_response(
             db,
             response_data,
+            user_id=current_user.id,
             ip_address=ip_address,
             user_agent=user_agent
         )
@@ -242,7 +268,16 @@ def check_can_respond(
     user_id: UUID,
     db: Session = Depends(get_db)
 ):
-    """Verifica si un usuario puede responder una encuesta"""
+    """Verifica si un usuario puede responder una encuesta (elegibilidad + límite)."""
+    survey = SurveyService.get_survey_by_id(db, survey_id)
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not survey or not user:
+        return {"can_respond": False, "message": "Encuesta o usuario no encontrado"}
+
+    if not membership_service.user_can_access_survey(db, user, survey):
+        return {"can_respond": False, "message": "No estás habilitado para responder esta consulta"}
+
     can_respond = SurveyService.user_can_respond(db, user_id, survey_id)
     return {
         "can_respond": can_respond,

@@ -43,6 +43,7 @@ export const usersApi = {
 // Surveys
 export const surveysApi = {
   getActive: () => api.get<Survey>("/surveys/active"),
+  getAvailable: () => api.get<Survey[]>("/surveys/available"),
   getById: (surveyId: string) => api.get<Survey>(`/surveys/${surveyId}`),
   submitResponse: (data: SurveyResponseCreate) =>
     api.post<SurveyResponseResponse>("/surveys/responses", data),

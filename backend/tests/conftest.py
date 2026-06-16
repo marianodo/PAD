@@ -30,6 +30,7 @@ from app.db.base import Base, get_db
 from app.main import app
 from app.models.user import User
 from app.models.client import Client
+from app.models.user_client import UserClient
 from app.models.points import UserPoints, PointTransaction
 from app.models.provider import Provider, ProviderClient
 from app.models.electoral_roll import ElectoralRoll
@@ -138,6 +139,8 @@ def sample_user(db, sample_client) -> User:
         client_id=sample_client.id,
     )
     db.add(u)
+    db.flush()
+    db.add(UserClient(id=uuid.uuid4(), user_id=u.id, client_id=sample_client.id))
     db.commit()
     db.refresh(u)
     return u
@@ -171,6 +174,8 @@ def user_other_client(db, another_client) -> User:
         client_id=another_client.id,
     )
     db.add(u)
+    db.flush()
+    db.add(UserClient(id=uuid.uuid4(), user_id=u.id, client_id=another_client.id))
     db.commit()
     db.refresh(u)
     return u
