@@ -299,7 +299,7 @@ export default function DemoMuniPage() {
                 <div className="sub">100 pts = 1% de descuento</div>
               </div>
             </div>
-            <button className="pad-cta" onClick={() => window.open("https://pad-usuarios.datainsights.com.ar/survey/5a986dda-437e-40ae-a43e-3ad72ec54fb9", "_blank")}>
+            <button className="pad-cta" onClick={() => window.open("https://pad-dev.datainsights.com.ar/survey/5a986dda-437e-40ae-a43e-3ad72ec54fb9", "_blank")}>
               &#128203; Completar Consulta y Ganá <span style={{ fontSize: 20 }}>&#8250;</span>
             </button>
           </div>
