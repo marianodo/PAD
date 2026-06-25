@@ -1,0 +1,592 @@
+{
+  "slug": "cordoba-2026",
+  "period": "2026",
+  "client_name": "Gobierno de la Provincia de Córdoba",
+  "config": {
+    "badge": "Gestión Provincial 2026",
+    "title": "Plan de Gobierno 2026",
+    "titleHighlight": "Provincia de Córdoba",
+    "description": "Acciones, inversiones y compromisos anunciados por el Gobernador Martín Llaryora en la apertura de sesiones legislativas 2026, organizados por área de gestión.",
+    "descriptionMaxWidth": "max-w-2xl",
+    "statsCategoryLabel": "Áreas",
+    "segmentWord": "áreas",
+    "year": "2026",
+    "footer": "P.A.D. — Participación Activa Digital | Gobierno de la Provincia de Córdoba 2026"
+  },
+  "segments": [
+    {
+      "id": "seguridad",
+      "name": "Seguridad",
+      "icon": "Shield",
+      "color": "#0ea5e9",
+      "description": "Lucha frontal contra el narcotráfico, inversión en tecnología, territorialidad policial-judicial y protección ciudadana.",
+      "totalProjects": 14,
+      "projectsEnEjecucion": 5,
+      "projectsPlanificados": 5,
+      "projectsCompletados": 4,
+      "projectsContinuos": 0,
+      "projects": [
+        {
+          "id": "seg-1",
+          "name": "7 Fiscalías Antinarcotráfico",
+          "description": "Creación de 7 fiscalías distribuidas en toda la provincia, generando un aumento del 27% en procedimientos contra narcos",
+          "status": "completado",
+          "category": "Narcotráfico"
+        },
+        {
+          "id": "seg-2",
+          "name": "Fuerza Policial Antinarcotráfico",
+          "description": "Jerarquización, equipamiento y suma de personal formado en Fuerzas Armadas",
+          "status": "completado",
+          "category": "Narcotráfico"
+        },
+        {
+          "id": "seg-3",
+          "name": "5 nuevas sedes FPA en el interior",
+          "description": "Apertura de 5 nuevas sedes operativas de la Fuerza Policial Antinarcotráfico en el interior provincial",
+          "status": "planificado",
+          "category": "Narcotráfico"
+        },
+        {
+          "id": "seg-4",
+          "name": "Ley Antibúnker / Anti Aguantaderos",
+          "description": "Proyecto de ley para recuperar inmuebles ocupados ilegalmente por criminales y destinarlos a uso social o comunitario",
+          "status": "planificado",
+          "category": "Narcotráfico"
+        },
+        {
+          "id": "seg-5",
+          "name": "Inversión en tecnología de seguridad",
+          "description": "Más de $40.000 millones en ampliación de centros de monitoreo, cámaras de lectura de patentes, tótems de seguridad e inteligencia artificial",
+          "status": "en_ejecucion",
+          "category": "Tecnología"
+        },
+        {
+          "id": "seg-6",
+          "name": "500 nuevos vehículos",
+          "description": "Compra de 500 vehículos para Policía, FPA, Guardias Urbanas y Cordobeses en Alerta",
+          "status": "planificado",
+          "category": "Equipamiento"
+        },
+        {
+          "id": "seg-7",
+          "name": "Plan de Territorialidad judicial-policial",
+          "description": "27 distritos en Córdoba Capital y Gran Córdoba con fiscal y comisario responsable por barrio. 12 en funcionamiento, completar los 27 este año",
+          "status": "en_ejecucion",
+          "category": "Territorialidad"
+        },
+        {
+          "id": "seg-8",
+          "name": "Cordobeses en Alerta",
+          "description": "Programa que cubre 144 barrios con más de 100.000 adherentes. Meta: 100 barrios más y 250.000 adherentes",
+          "status": "en_ejecucion",
+          "category": "Participación Ciudadana"
+        },
+        {
+          "id": "seg-9",
+          "name": "Guardias Urbanas y Ojos en Alerta",
+          "description": "Programa para el interior con capacitaciones, equipamiento y tecnología en colaboración con intendentes",
+          "status": "en_ejecucion",
+          "category": "Interior"
+        },
+        {
+          "id": "seg-10",
+          "name": "Reducción de homicidios",
+          "description": "Índice provincial de 2.2 cada 100 mil habitantes en 2025, el más bajo registrado",
+          "status": "completado",
+          "category": "Resultados"
+        },
+        {
+          "id": "seg-11",
+          "name": "Reducción de muertes viales",
+          "description": "De 500 muertes anuales a 345 en 2025 gracias a controles en rutas e inversión en infraestructura",
+          "status": "completado",
+          "category": "Resultados"
+        },
+        {
+          "id": "seg-12",
+          "name": "Ley de Protección Integral de Víctimas (Ley Joaquín)",
+          "description": "Proyecto de ley que ordena derechos, garantías, asistencia, protección y reparación para víctimas de delito",
+          "status": "planificado",
+          "category": "Legislación"
+        },
+        {
+          "id": "seg-13",
+          "name": "CEMAX - Cárcel de máxima seguridad",
+          "description": "Primera cárcel de máxima seguridad de la provincia, finalización prevista este año",
+          "status": "en_ejecucion",
+          "category": "Sistema Penitenciario"
+        },
+        {
+          "id": "seg-14",
+          "name": "Flota aérea contra incendios",
+          "description": "Incorporación de 1 nuevo avión hidrante y 2 helicópteros, llevando la flota a 12 aeronaves",
+          "status": "planificado",
+          "category": "Bomberos"
+        }
+      ]
+    },
+    {
+      "id": "salud",
+      "name": "Salud",
+      "icon": "Stethoscope",
+      "color": "#ef4444",
+      "description": "Ampliación de infraestructura hospitalaria, programa MEDICOR de acceso a medicamentos y fortalecimiento del sistema público.",
+      "totalProjects": 10,
+      "projectsEnEjecucion": 3,
+      "projectsPlanificados": 4,
+      "projectsCompletados": 1,
+      "projectsContinuos": 2,
+      "projects": [
+        {
+          "id": "sal-1",
+          "name": "Hospital de Huinca Renancó",
+          "description": "Nuevo hospital en construcción, próximo a finalizar",
+          "status": "en_ejecucion",
+          "category": "Infraestructura"
+        },
+        {
+          "id": "sal-2",
+          "name": "Hospital de Bell Ville",
+          "description": "Nuevo hospital en construcción, próximo a finalizar",
+          "status": "en_ejecucion",
+          "category": "Infraestructura"
+        },
+        {
+          "id": "sal-3",
+          "name": "Hospital del Noroeste (Capital)",
+          "description": "Nuevo hospital en Córdoba Capital, próximo a finalizar",
+          "status": "en_ejecucion",
+          "category": "Infraestructura"
+        },
+        {
+          "id": "sal-4",
+          "name": "Hospital polivalente de Oliva",
+          "description": "Inicio de construcción comprometido para este período",
+          "status": "planificado",
+          "category": "Infraestructura"
+        },
+        {
+          "id": "sal-5",
+          "name": "Hospital de Villa Carlos Paz",
+          "description": "Inicio de construcción comprometido para este período",
+          "status": "planificado",
+          "category": "Infraestructura"
+        },
+        {
+          "id": "sal-6",
+          "name": "Programa MEDICOR",
+          "description": "Acceso digital desburocratizado a medicamentos mediante receta digital, en colaboración con Colegio de Farmacéuticos y Consejo Médico",
+          "status": "planificado",
+          "category": "Innovación"
+        },
+        {
+          "id": "sal-7",
+          "name": "Telemedicina provincial",
+          "description": "Extensión de telemedicina a cada rincón de la provincia a través de la plataforma MEDICOR",
+          "status": "planificado",
+          "category": "Innovación"
+        },
+        {
+          "id": "sal-8",
+          "name": "10 nuevas sedes de salud mental",
+          "description": "Ampliación de la red provincial de salud mental con 10 nuevas sedes",
+          "status": "continuo",
+          "category": "Salud Mental"
+        },
+        {
+          "id": "sal-9",
+          "name": "100+ convenios de recuperación de adicciones",
+          "description": "Convenios con municipios para programas de recuperación de adicciones",
+          "status": "continuo",
+          "category": "Salud Mental"
+        },
+        {
+          "id": "sal-10",
+          "name": "Fondo de inclusión para discapacidad",
+          "description": "Presupuesto de $4.500 millones. 460 proyectos financiados, 71% en inclusión laboral",
+          "status": "completado",
+          "category": "Discapacidad"
+        }
+      ]
+    },
+    {
+      "id": "obra-publica",
+      "name": "Obra Pública",
+      "icon": "Building",
+      "color": "#ec4899",
+      "description": "Plan de infraestructura vial, habitacional y de servicios en los 427 municipios de la provincia.",
+      "totalProjects": 14,
+      "projectsEnEjecucion": 5,
+      "projectsPlanificados": 4,
+      "projectsCompletados": 3,
+      "projectsContinuos": 2,
+      "projects": [
+        {
+          "id": "op-1",
+          "name": "Autopista Ruta 19",
+          "description": "Ruta nacional inconclusa asumida por la provincia, finalización prevista este año",
+          "status": "en_ejecucion",
+          "category": "Rutas"
+        },
+        {
+          "id": "op-2",
+          "name": "Cruce de los Gigantes (Tanti-Taninga)",
+          "description": "Segundo camino de cruce de las Altas Cumbres, obra icónica",
+          "status": "planificado",
+          "category": "Rutas"
+        },
+        {
+          "id": "op-3",
+          "name": "Circunvalación de Río Cuarto",
+          "description": "Transformación vial y crecimiento urbano ordenado",
+          "status": "planificado",
+          "category": "Rutas"
+        },
+        {
+          "id": "op-4",
+          "name": "Circunvalación de Villa María",
+          "description": "Transformación vial y crecimiento urbano ordenado",
+          "status": "planificado",
+          "category": "Rutas"
+        },
+        {
+          "id": "op-5",
+          "name": "RUTA 100 - Corredor Turístico",
+          "description": "Nuevo corredor que unirá Río Cuarto con Cruz del Eje",
+          "status": "planificado",
+          "category": "Turismo"
+        },
+        {
+          "id": "op-6",
+          "name": "Autovías Calamuchita, Punilla y Córdoba-Jesús María",
+          "description": "Tres autovías finalizadas en estos dos años",
+          "status": "completado",
+          "category": "Rutas"
+        },
+        {
+          "id": "op-7",
+          "name": "550 km de rutas y repavimentación",
+          "description": "Construcción y habilitación en todo el territorio provincial",
+          "status": "completado",
+          "category": "Rutas"
+        },
+        {
+          "id": "op-8",
+          "name": "Alto Nivel Valle Escondido",
+          "description": "Avance del 75%, finalización este año",
+          "status": "en_ejecucion",
+          "category": "Capital"
+        },
+        {
+          "id": "op-9",
+          "name": "Alto Nivel Malvinas Argentinas",
+          "description": "Avance del 20%, finalización hacia fin de año",
+          "status": "en_ejecucion",
+          "category": "Capital"
+        },
+        {
+          "id": "op-10",
+          "name": "Alto Nivel Vélez Sarsfield - Ruta 36",
+          "description": "Finalización a comienzos del año entrante",
+          "status": "en_ejecucion",
+          "category": "Capital"
+        },
+        {
+          "id": "op-11",
+          "name": "Duplicación Av. Padre Luchesse",
+          "description": "Avance del 70%, finalización este año",
+          "status": "en_ejecucion",
+          "category": "Capital"
+        },
+        {
+          "id": "op-12",
+          "name": "Programa CÓRDOBA HOGAR",
+          "description": "5.000 viviendas en finalización + 5.000 nuevas familias con vivienda propia",
+          "status": "continuo",
+          "category": "Vivienda"
+        },
+        {
+          "id": "op-13",
+          "name": "Programa MI LUGAR",
+          "description": "10.000 cordobeses con acceso a lote propio en conjunto con intendentes y entidades intermedias",
+          "status": "continuo",
+          "category": "Vivienda"
+        },
+        {
+          "id": "op-14",
+          "name": "Obras en 427 municipios",
+          "description": "Al menos una obra en marcha en cada municipio de la provincia",
+          "status": "completado",
+          "category": "Federal"
+        }
+      ]
+    },
+    {
+      "id": "educacion",
+      "name": "Educación",
+      "icon": "GraduationCap",
+      "color": "#8b5cf6",
+      "description": "Una escuela por mes, cobertura universitaria provincial, transformación digital y robótica educativa.",
+      "totalProjects": 8,
+      "projectsEnEjecucion": 2,
+      "projectsPlanificados": 3,
+      "projectsCompletados": 3,
+      "projectsContinuos": 0,
+      "projects": [
+        {
+          "id": "edu-1",
+          "name": "Una escuela por mes",
+          "description": "Ritmo de inauguración de escuelas sostenido durante los dos años de gestión",
+          "status": "completado",
+          "category": "Infraestructura"
+        },
+        {
+          "id": "edu-2",
+          "name": "Cobertura de salas de 3 años al 100%",
+          "description": "82% de cobertura actual, meta del 100% al final de la gestión",
+          "status": "en_ejecucion",
+          "category": "Nivel Inicial"
+        },
+        {
+          "id": "edu-3",
+          "name": "50.000+ Netbooks entregadas",
+          "description": "Entrega de equipamiento tecnológico incluyendo conectividad en todas las escuelas rurales y de alta montaña",
+          "status": "completado",
+          "category": "Transformación Digital"
+        },
+        {
+          "id": "edu-4",
+          "name": "1.200 Escuelas Precursoras",
+          "description": "Instituciones con innovación pedagógica en comprensión de texto, matemáticas, IA y pasantías en empresas locales",
+          "status": "en_ejecucion",
+          "category": "Innovación"
+        },
+        {
+          "id": "edu-5",
+          "name": "Campus INNOVA FUTURO",
+          "description": "Polo de vanguardia tecnológica para capacitación en IA y herramientas educativas",
+          "status": "planificado",
+          "category": "Innovación"
+        },
+        {
+          "id": "edu-6",
+          "name": "Educación Económica 5.0",
+          "description": "Programa de innovación en administración financiera para jóvenes",
+          "status": "planificado",
+          "category": "Innovación"
+        },
+        {
+          "id": "edu-7",
+          "name": "15+ sedes Universidad Provincial",
+          "description": "15 sedes regionales inauguradas en dos años, con subsedes adicionales planificadas",
+          "status": "completado",
+          "category": "Educación Superior"
+        },
+        {
+          "id": "edu-8",
+          "name": "Subsedes universitarias provinciales",
+          "description": "Nuevas subsedes para convertirse en la provincia con mayor cobertura territorial universitaria",
+          "status": "planificado",
+          "category": "Educación Superior"
+        }
+      ]
+    },
+    {
+      "id": "trabajo-empleo",
+      "name": "Trabajo y Empleo",
+      "icon": "Briefcase",
+      "color": "#f59e0b",
+      "description": "Programas de capacitación laboral, créditos productivos y fondo de capital emprendedor.",
+      "totalProjects": 4,
+      "projectsEnEjecucion": 1,
+      "projectsPlanificados": 3,
+      "projectsCompletados": 0,
+      "projectsContinuos": 0,
+      "projects": [
+        {
+          "id": "tra-1",
+          "name": "Programa Oficio 2026",
+          "description": "Capacitación rápida con salida laboral en seis meses",
+          "status": "planificado",
+          "category": "Capacitación"
+        },
+        {
+          "id": "tra-2",
+          "name": "Duplicación cupo Banco de la Gente",
+          "description": "Créditos productivos para emprendimientos a través del Banco de la Gente",
+          "status": "planificado",
+          "category": "Financiamiento"
+        },
+        {
+          "id": "tra-3",
+          "name": "Fondo Provincial de Capital Emprendedor",
+          "description": "Proyecto de ley con $10.000 millones del Impuesto sobre Ingresos Brutos para proyectos de innovación y emprendimientos dinámicos",
+          "status": "planificado",
+          "category": "Financiamiento"
+        },
+        {
+          "id": "tra-4",
+          "name": "Políticas activas de empleo",
+          "description": "Programas laborales existentes sostenidos y fortalecidos con enfoque en empleo de calidad",
+          "status": "en_ejecucion",
+          "category": "Empleo"
+        }
+      ]
+    },
+    {
+      "id": "industria-produccion",
+      "name": "Industria y Producción",
+      "icon": "Factory",
+      "color": "#10b981",
+      "description": "Promoción industrial simplificada, parques industriales y apoyo a PyMEs cordobesas.",
+      "totalProjects": 5,
+      "projectsEnEjecucion": 2,
+      "projectsPlanificados": 2,
+      "projectsCompletados": 1,
+      "projectsContinuos": 0,
+      "projects": [
+        {
+          "id": "ind-1",
+          "name": "Ley de Promoción Simplificada",
+          "description": "10.000 industrias PyMEs dejarán de pagar Ingresos Brutos en 2026",
+          "status": "en_ejecucion",
+          "category": "Incentivos"
+        },
+        {
+          "id": "ind-2",
+          "name": "Ley de Igualdad Territorial",
+          "description": "Desgravación impositiva de más de USD 100 millones con más de una decena de proyectos de inversión ya registrados",
+          "status": "en_ejecucion",
+          "category": "Incentivos"
+        },
+        {
+          "id": "ind-3",
+          "name": "70+ Parques Industriales",
+          "description": "Ampliación de la cantidad de parques industriales en todo el territorio provincial",
+          "status": "planificado",
+          "category": "Infraestructura"
+        },
+        {
+          "id": "ind-4",
+          "name": "Fondo Provincial de Garantías para PyMEs",
+          "description": "Nuevo fondo para acompañar a PyMEs cordobesas en la situación económica difícil",
+          "status": "planificado",
+          "category": "Financiamiento"
+        },
+        {
+          "id": "ind-5",
+          "name": "Industria Naranja / Industria de Eventos",
+          "description": "Apoyo e impulso a festivales y grandes eventos como motores económicos, respaldado por ley sancionada",
+          "status": "completado",
+          "category": "Eventos"
+        }
+      ]
+    },
+    {
+      "id": "campo",
+      "name": "Campo y Producción Primaria",
+      "icon": "Wheat",
+      "color": "#84cc16",
+      "description": "Inversión en caminos rurales, electrificación, créditos para productores y seguro multirriesgo inédito.",
+      "totalProjects": 5,
+      "projectsEnEjecucion": 0,
+      "projectsPlanificados": 5,
+      "projectsCompletados": 0,
+      "projectsContinuos": 0,
+      "projects": [
+        {
+          "id": "cam-1",
+          "name": "Ampliación Fondo de Caminos Rurales",
+          "description": "Sin camino no hay producción ni arraigo",
+          "status": "planificado",
+          "category": "Infraestructura"
+        },
+        {
+          "id": "cam-2",
+          "name": "Electrificación y conectividad en zonas productivas",
+          "description": "Nuevas obras para que la tecnología llegue donde nace la riqueza",
+          "status": "planificado",
+          "category": "Infraestructura"
+        },
+        {
+          "id": "cam-3",
+          "name": "Incentivos para biocombustibles y transición energética",
+          "description": "Consolidar a Córdoba como líder en economía limpia",
+          "status": "planificado",
+          "category": "Energía"
+        },
+        {
+          "id": "cam-4",
+          "name": "Créditos para pequeños y medianos productores",
+          "description": "Nueva línea de crédito especial con crecimiento inclusivo y federal",
+          "status": "planificado",
+          "category": "Financiamiento"
+        },
+        {
+          "id": "cam-5",
+          "name": "Seguro Multirriesgo Agropecuario",
+          "description": "Medida inédita en Argentina para cubrir a productores ante calamidades climáticas que destruyan total o parcialmente su producción",
+          "status": "planificado",
+          "category": "Protección"
+        }
+      ]
+    },
+    {
+      "id": "economia-fiscal",
+      "name": "Economía y Política Fiscal",
+      "icon": "TrendingUp",
+      "color": "#6366f1",
+      "description": "Reducción impositiva, equidad jubilatoria, superávit fiscal y Plan de Igualdad Territorial con inversión de USD 780 millones.",
+      "totalProjects": 6,
+      "projectsEnEjecucion": 2,
+      "projectsPlanificados": 2,
+      "projectsCompletados": 2,
+      "projectsContinuos": 0,
+      "projects": [
+        {
+          "id": "eco-1",
+          "name": "Reducción impositiva de $900.000 millones",
+          "description": "40% de propietarios paga 25% menos, 11% paga igual, resto con actualización debajo de inflación (28%)",
+          "status": "completado",
+          "category": "Impuestos"
+        },
+        {
+          "id": "eco-2",
+          "name": "Reducción de Ingresos Brutos a pequeños comercios",
+          "description": "Sostenimiento de exenciones que favorecen la producción",
+          "status": "completado",
+          "category": "Impuestos"
+        },
+        {
+          "id": "eco-3",
+          "name": "Nuevas rebajas impositivas 2027",
+          "description": "Impulso de más rebajas para el presupuesto del próximo año",
+          "status": "planificado",
+          "category": "Impuestos"
+        },
+        {
+          "id": "eco-4",
+          "name": "Ley de Equidad Jubilatoria",
+          "description": "Reducción del déficit previsional. 50.000 jubilados recuperaron el 82%. 10.000 dejaron de aportar el 20% del art. 58",
+          "status": "en_ejecucion",
+          "category": "Previsión"
+        },
+        {
+          "id": "eco-5",
+          "name": "Jubilación mínima a $800.000",
+          "description": "Elevación a una de las jubilaciones mínimas más altas de Argentina, priorizando a los que menos ganan",
+          "status": "en_ejecucion",
+          "category": "Previsión"
+        },
+        {
+          "id": "eco-6",
+          "name": "Plan de Igualdad Territorial",
+          "description": "Inversión de USD 780 millones con desgravación impositiva de USD 100 millones. Reglamentación firmada con decena de proyectos ya registrados",
+          "status": "planificado",
+          "category": "Desarrollo"
+        }
+      ]
+    }
+  ]
+}
