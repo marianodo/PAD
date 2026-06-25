@@ -25,6 +25,8 @@ def compile_inet_sqlite(type_, compiler, **kw):
 
 import os
 os.environ["TESTING"] = "1"
+# SECRET_KEY válido para que el fail-fast de config.py no impida arrancar en tests
+os.environ.setdefault("SECRET_KEY", secrets.token_urlsafe(48))
 
 from app.db.base import Base, get_db
 from app.main import app

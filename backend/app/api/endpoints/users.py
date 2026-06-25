@@ -2,23 +2,44 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from uuid import UUID
 
-from typing import List
+from typing import List, Union
 
 from app.db.base import get_db
 from app.services.user_service import UserService
 from app.schemas.user import UserCreate, UserResponse, UserUpdate, PasswordChange
 from app.schemas.points import UserPointsResponse, PointTransactionResponse
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, get_current_admin
 from app.models.user import User
+from app.models.admin import Admin
+from app.models.client import Client
 from app.models.points import PointTransaction
 from app.core.security import verify_password, get_password_hash
 
 router = APIRouter()
 
 
+def _ensure_self_or_admin(
+    target_user_id: UUID,
+    account: Union[User, Admin, Client],
+) -> None:
+    """Permite el acceso solo si la cuenta es admin o es el propio usuario dueño del recurso."""
+    if isinstance(account, Admin):
+        return
+    if isinstance(account, User) and account.id == target_user_id:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="No tenés permisos para acceder a este recurso"
+    )
+
+
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Crea un nuevo usuario"""
+def create_user(
+    user_data: UserCreate,
+    current_admin: Admin = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Crea un nuevo usuario (solo admin). Los ciudadanos se registran vía /auth/register."""
     try:
         user = UserService.create_user(db, user_data)
         return user
@@ -27,8 +48,13 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-def get_user(user_id: UUID, db: Session = Depends(get_db)):
-    """Obtiene un usuario por ID"""
+def get_user(
+    user_id: UUID,
+    current_account: Union[User, Admin, Client] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Obtiene un usuario por ID (solo el propio usuario o un admin)."""
+    _ensure_self_or_admin(user_id, current_account)
     user = UserService.get_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
@@ -36,8 +62,12 @@ def get_user(user_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.get("/email/{email}", response_model=UserResponse)
-def get_user_by_email(email: str, db: Session = Depends(get_db)):
-    """Obtiene un usuario por email"""
+def get_user_by_email(
+    email: str,
+    current_admin: Admin = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Obtiene un usuario por email (solo admin)."""
     user = UserService.get_by_email(db, email)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
@@ -45,8 +75,14 @@ def get_user_by_email(email: str, db: Session = Depends(get_db)):
 
 
 @router.patch("/{user_id}", response_model=UserResponse)
-def update_user(user_id: UUID, user_data: UserUpdate, db: Session = Depends(get_db)):
-    """Actualiza un usuario"""
+def update_user(
+    user_id: UUID,
+    user_data: UserUpdate,
+    current_account: Union[User, Admin, Client] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Actualiza un usuario (solo el propio usuario o un admin)."""
+    _ensure_self_or_admin(user_id, current_account)
     try:
         user = UserService.update_user(db, user_id, user_data)
         return user
@@ -55,8 +91,13 @@ def update_user(user_id: UUID, user_data: UserUpdate, db: Session = Depends(get_
 
 
 @router.get("/{user_id}/points", response_model=UserPointsResponse)
-def get_user_points(user_id: UUID, db: Session = Depends(get_db)):
-    """Obtiene los puntos de un usuario"""
+def get_user_points(
+    user_id: UUID,
+    current_account: Union[User, Admin, Client] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Obtiene los puntos de un usuario (solo el propio usuario o un admin)."""
+    _ensure_self_or_admin(user_id, current_account)
     points = UserService.get_user_points(db, user_id)
     if not points:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Puntos no encontrados")
@@ -64,8 +105,13 @@ def get_user_points(user_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.get("/{user_id}/transactions", response_model=List[PointTransactionResponse])
-def get_user_transactions(user_id: UUID, db: Session = Depends(get_db)):
-    """Obtiene el historial de transacciones de puntos de un usuario."""
+def get_user_transactions(
+    user_id: UUID,
+    current_account: Union[User, Admin, Client] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Obtiene el historial de transacciones de puntos de un usuario (solo el propio usuario o un admin)."""
+    _ensure_self_or_admin(user_id, current_account)
     transactions = db.query(PointTransaction).filter(
         PointTransaction.user_id == user_id
     ).order_by(PointTransaction.created_at.desc()).all()
