@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     # API
     API_V1_PREFIX: str = "/api/v1"
     PROJECT_NAME: str = "PAD API"
-    DEBUG: bool = True
+    DEBUG: bool = os.getenv("DEBUG", "false").lower() in ("1", "true", "yes")
 
     # Database
     DATABASE_URL: str = os.getenv(
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
     # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "change-this-secret-key-in-production")
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
@@ -56,3 +56,13 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Fail-fast: nunca arrancar con un SECRET_KEY débil o ausente.
+# Sin esto, los JWT serían forjables (bypass total de autenticación).
+_INSECURE_SECRETS = {"", "change-this-secret-key-in-production", "your-secret-key-change-this-in-production"}
+if settings.SECRET_KEY in _INSECURE_SECRETS or len(settings.SECRET_KEY) < 32:
+    raise RuntimeError(
+        "SECRET_KEY no está configurada o es insegura. "
+        "Definí una clave aleatoria de al menos 32 caracteres en la variable de entorno SECRET_KEY "
+        "(ej: `python -c \"import secrets; print(secrets.token_urlsafe(48))\"`)."
+    )
