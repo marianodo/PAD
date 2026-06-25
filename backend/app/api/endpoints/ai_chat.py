@@ -19,6 +19,7 @@ from app.models.admin import Admin
 from app.models.client import Client
 from app.models.user import User
 from app.api.endpoints.ai_insights import _json_dumps, _get_client_context
+from app.api.endpoints.surveys import ensure_can_view_survey_results
 
 router = APIRouter()
 
@@ -41,6 +42,12 @@ async def chat_with_survey(
     current_user: Union[User, Admin, Client] = Depends(get_current_user),
 ):
     try:
+        # Autorización: solo admin o el cliente dueño pueden ver datos de esta encuesta
+        survey = SurveyService.get_survey_by_id(db, UUID(survey_id))
+        if not survey:
+            raise HTTPException(status_code=404, detail="Encuesta no encontrada")
+        ensure_can_view_survey_results(survey, current_user)
+
         api_key = settings.ANTHROPIC_API_KEY
         if not api_key:
             raise HTTPException(

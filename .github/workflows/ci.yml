@@ -24,9 +24,10 @@ jobs:
       # El conftest usa SQLite y overridea get_db; estos valores solo
       # satisfacen la config al importar la app (no se conecta a una DB real).
       TESTING: "1"
-      SECRET_KEY: dummy-ci-secret
+      # Valor dummy solo para CI: debe tener >=32 chars para pasar el fail-fast de config.py
+      SECRET_KEY: dummy-ci-secret-not-used-in-production-0123456789
       DATABASE_URL: sqlite:///./test.db
-      DEBUG: "True"
+      DEBUG: "False"
       BACKEND_CORS_ORIGINS: '["http://localhost:3000"]'
       ANTHROPIC_API_KEY: dummy-ci-key
     steps:
