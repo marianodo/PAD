@@ -1,33 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../../components/ui/card"
-import { Badge } from "../../../../../components/ui/badge"
-import { Segment, ProjectStatus } from "../lib/data"
-import {
-  Trees, Wrench, Trophy, Heart, Building,
-  Stethoscope, Shield, Briefcase,
-  CheckCircle2, Clock, Calendar, RefreshCw,
-} from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Segment, ProjectStatus } from "./types"
+import { iconMap, fallbackIcon } from "./icons"
+import { CheckCircle2, Clock, Calendar, RefreshCw } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts"
-
-const iconMap: Record<string, typeof Building> = {
-  Trees, Wrench, Trophy, Heart, Building, Stethoscope, Shield, Briefcase,
-}
-
-const SEGMENT_COLORS: Record<string, string> = {
-  "espacios-publicos":  "#10b981",
-  "servicios-publicos": "#f97316",
-  "deportes-cultura-turismo": "#8b5cf6",
-  "ayuda-social":       "#f59e0b",
-  "obras":              "#ec4899",
-  "salud":              "#ef4444",
-  "seguridad":          "#0ea5e9",
-  "otras-acciones":     "#6366f1",
-}
 
 const STATUS_META: Record<ProjectStatus, { label: string; color: string; Icon: typeof Clock }> = {
   en_ejecucion: { label: "En Ejecución", color: "#0ea5e9", Icon: Clock },
@@ -44,8 +26,8 @@ export function SegmentView({ segment }: SegmentViewProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
-  const Icon = iconMap[segment.icon] || Building
-  const accentColor = SEGMENT_COLORS[segment.id] ?? "#0ea5e9"
+  const Icon = iconMap[segment.icon] || fallbackIcon
+  const accentColor = segment.color ?? "#0ea5e9"
 
   const highlighted = segment.projects.slice(0, 3)
 

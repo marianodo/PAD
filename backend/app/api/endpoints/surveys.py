@@ -25,6 +25,23 @@ class ToggleSurveyRequest(BaseModel):
     is_active: bool
 
 
+def ensure_can_view_survey_results(survey, account: Union[User, Admin, Client]) -> None:
+    """Verifica que la cuenta pueda ver resultados/analytics de la encuesta.
+
+    Reglas: los admin ven todo; los clientes solo sus propias encuestas;
+    los ciudadanos (User) no tienen acceso a analytics.
+    Lanza 403 si no está autorizado.
+    """
+    if isinstance(account, Admin):
+        return
+    if isinstance(account, Client) and survey.client_id == account.id:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="No tenés permisos para ver los datos de esta encuesta"
+    )
+
+
 @router.get("/", response_model=List[SurveyResponse])
 def get_surveys(
     current_user: Union[User, Admin, Client] = Depends(get_current_user),
@@ -96,6 +113,11 @@ def get_participation_trend(
     from app.models.survey import Survey
 
     if survey_id:
+        # Verificar que la cuenta pueda ver esta encuesta puntual (evita fuga cross-tenant)
+        survey = SurveyService.get_survey_by_id(db, UUID(survey_id))
+        if not survey:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Encuesta no encontrada")
+        ensure_can_view_survey_results(survey, current_user)
         target_survey_ids = [survey_id]
     else:
         if isinstance(current_user, Client):
@@ -197,8 +219,12 @@ def get_survey(survey_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=SurveyResponse, status_code=status.HTTP_201_CREATED)
-def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)):
-    """Crea una nueva encuesta (Admin)"""
+def create_survey(
+    survey_data: SurveyCreate,
+    current_admin: Admin = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Crea una nueva encuesta (solo Admin)"""
     try:
         survey = SurveyService.create_survey(db, survey_data)
         return survey
@@ -266,9 +292,20 @@ def submit_survey_response(
 def check_can_respond(
     survey_id: UUID,
     user_id: UUID,
+    current_account: Union[User, Admin, Client] = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Verifica si un usuario puede responder una encuesta (elegibilidad + límite)."""
+    """Verifica si un usuario puede responder una encuesta (elegibilidad + límite).
+
+    Solo el propio usuario o un admin pueden consultarlo (evita enumeración de ciudadanos).
+    """
+    if not (isinstance(current_account, Admin) or
+            (isinstance(current_account, User) and current_account.id == user_id)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tenés permisos para consultar este recurso"
+        )
+
     survey = SurveyService.get_survey_by_id(db, survey_id)
     user = db.query(User).filter(User.id == user_id).first()
 
@@ -347,6 +384,13 @@ def toggle_survey_status(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Encuesta no encontrada"
+        )
+
+    # Un cliente solo puede activar/desactivar sus propias encuestas (evita tocar otros municipios)
+    if isinstance(current_account, Client) and survey.client_id != current_account.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tenés permisos para modificar esta encuesta"
         )
 
     # Actualizar estado

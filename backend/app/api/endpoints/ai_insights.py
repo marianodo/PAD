@@ -38,6 +38,15 @@ def _json_dumps(obj) -> str:
     return json.dumps(obj, cls=_DecimalEncoder, ensure_ascii=False)
 
 
+def _ensure_can_view_survey(db: Session, survey_id: str, account: Union[User, Admin, Client]) -> None:
+    """Valida que la encuesta exista y que la cuenta pueda ver sus datos (admin o cliente dueño)."""
+    from app.api.endpoints.surveys import ensure_can_view_survey_results
+    survey = db.query(Survey).filter(Survey.id == UUID(survey_id)).first()
+    if not survey:
+        raise HTTPException(status_code=404, detail="Encuesta no encontrada")
+    ensure_can_view_survey_results(survey, account)
+
+
 def _get_client_context(db: Session, survey_id: str) -> Dict[str, str]:
     """
     Devuelve contexto del cliente asociado a la encuesta para personalizar el prompt.
@@ -100,6 +109,8 @@ async def get_ai_insights(
     Obtiene los insights de IA cacheados para una consulta.
     Retorna None si no hay insights generados aún.
     """
+    _ensure_can_view_survey(db, survey_id, current_user)
+
     cached_insight = db.query(AIInsight).filter(
         AIInsight.survey_id == UUID(survey_id)
     ).order_by(AIInsight.created_at.desc()).first()
@@ -134,6 +145,9 @@ async def generate_ai_insights(
 
     - force_regenerate: Si es True, regenera los insights aunque exista cache
     """
+    # 0. Autorización: solo admin o el cliente dueño (evita acceso cross-tenant
+    #    y abuso de costo de la API de IA por parte de ciudadanos).
+    _ensure_can_view_survey(db, survey_id, current_user)
 
     # 1. Verificar que existe la API key
     api_key = settings.ANTHROPIC_API_KEY

@@ -41,10 +41,14 @@ gaps en §10).
 Los scripts del backend usan `settings.DATABASE_URL`. Para correrlos desde tu máquina contra
 la DB de un entorno de Railway, usá la URL **pública** de Postgres:
 
+> ⚠️ La base de la app se llama **`pad_db`** en todos los entornos (no el `railway` por
+> defecto de Railway). La `DATABASE_PUBLIC_URL` apunta a `railway`, así que hay que cambiar
+> el nombre de base a `pad_db` (el `sed` de abajo lo hace).
+
 ```bash
-# elegí el entorno: staging | production
+# elegí el entorno: develop | staging | production
 ENV=staging
-export DBURL=$(railway variables -e $ENV -s Postgres --json | jq -r '.DATABASE_PUBLIC_URL')
+export DBURL=$(railway variables -e $ENV -s Postgres --json | jq -r '.DATABASE_PUBLIC_URL' | sed -E 's#/railway$#/pad_db#')
 
 cd backend
 # ejemplo:
@@ -135,16 +139,86 @@ Tipos de pregunta soportados: `single_choice`, `multiple_choice`, `percentage_di
 > Definí los **puntos** acá (campos del `Survey`). Es la config que después consulta/canjea el proveedor.
 > Asegurate de setear `survey.client_id` al municipio correcto y `is_active = true` cuando esté lista.
 
-### Paso 5 — Dashboard / reporte de resultados
+### Paso 5 — Dashboard de resultados de la encuesta
 
 - **Dashboard dinámico (automático)**: `/client/results/[surveyId]` ya muestra resultados,
   segmentaciones y heatmap a partir de `GET /surveys/{id}/results` y `/segments`. No requiere
-  trabajo extra salvo tener cargados los barrios (paso 2) para el mapa.
-- **Reporte custom (opcional)**: páginas tipo `frontend/app/reports/<ciudad>/<año>` (ej:
-  `reports/alta-gracia/2026`) son reportes a medida → **es tarea de desarrollo** (PR contra `develop`).
-  Usalo solo si el cliente pide un informe presentable y curado.
+  trabajo extra salvo tener cargados los barrios (paso 2) para el mapa. **No es por cliente.**
 
-### Paso 6 — Crear el token del proveedor (integración de puntos)
+### Paso 6 — Reporte de gestión del municipio (transparencia)
+
+Es el informe público de avances/proyectos del municipio que ve el ciudadano (ej: `reports/alta-gracia/2026`).
+**Es data-driven: el contenido vive en la DB y un componente genérico lo renderiza.** Crear o actualizar
+un reporte = cargar datos, **sin deploy ni página nueva**.
+
+**Forma de armarlo (asistido con Claude):**
+
+1. El municipio te pasa su **PDF o página web** de avances/proyectos.
+2. Se lo das a **Claude** junto con el schema de abajo y le pedís que lo convierta a JSON estructurado
+   (categorías + proyectos + estado). **Revisá el resultado**: Claude resume y estructura, pero la
+   fidelidad la validás vos (no es un pipeline automático todavía — eso es mejora futura).
+3. Guardás el JSON en `backend/scripts/report_seeds/<slug>.json` (slug = `<ciudad>-<año>`, ej
+   `alta-gracia-2026`).
+4. Lo cargás (idempotente, upsert por slug), por entorno (staging → prod):
+
+```bash
+cd backend
+DATABASE_URL="$DBURL" .venv/bin/python -m scripts.seed_reports
+```
+
+5. Queda publicado en `https://<frontend>/reports/<ciudad>/<año>`.
+
+**Schema del JSON** (lo que Claude tiene que producir):
+
+```jsonc
+{
+  "slug": "alta-gracia-2026",
+  "period": "2026",
+  "client_name": "Municipalidad de Alta Gracia",
+  "config": {
+    "badge": "Gestión Municipal 2026",
+    "title": "Acciones 2026",
+    "titleHighlight": "Alta Gracia",
+    "description": "Detalle de acciones … para el ejercicio fiscal 2026.",
+    "descriptionMaxWidth": "max-w-xl",     // ancho del subtítulo (max-w-xl | max-w-2xl)
+    "statsCategoryLabel": "Categorías",    // "Categorías" (municipio) | "Áreas" (provincia)
+    "segmentWord": "categorías",           // se muestra "{n} categorías|áreas"
+    "year": "2026",
+    "footer": "P.A.D. — Participación Activa Digital | Municipalidad de Alta Gracia 2026"
+  },
+  "segments": [
+    {
+      "id": "obras",                        // slug único de la categoría
+      "name": "Obras",
+      "icon": "Wrench",                      // ver iconos soportados abajo
+      "color": "#ec4899",                    // color de acento (hex)
+      "description": "Obras de infraestructura…",
+      "totalProjects": 12,
+      "projectsEnEjecucion": 5,
+      "projectsPlanificados": 4,
+      "projectsCompletados": 2,
+      "projectsContinuos": 1,
+      "projects": [
+        {
+          "id": "obra-1",
+          "name": "Pavimentación Av. Sarmiento",
+          "description": "…",
+          "status": "en_ejecucion",          // en_ejecucion | planificado | completado | continuo
+          "category": "Pavimentación"        // agrupador opcional dentro de la categoría
+        }
+      ]
+    }
+  ]
+}
+```
+
+- **Iconos soportados** (`icon`): `Trees, Wrench, Trophy, Heart, Building, Stethoscope, Shield, Briefcase,
+  GraduationCap, Factory, Wheat, TrendingUp`. Para sumar otro, agregalo en
+  `frontend/app/reports/_components/icons.ts` (ese sí es un cambio de código + deploy).
+- **Actualización trimestral**: el municipio manda el nuevo PDF → repetís pasos 2–4 (editás el JSON y
+  re-corrés el seed). **Sin deploy.**
+
+### Paso 7 — Crear el token del proveedor (integración de puntos)
 
 El **proveedor** es el sistema de pagos del municipio: consulta los puntos del ciudadano y
 nos informa los canjes (descuentos en el pago de tributos). Usa una **API key** (`X-API-Key`).
@@ -185,11 +259,12 @@ Solo puede operar sobre CUILs de municipios vinculados a ese proveedor. Detalle 
 [ ] 2. Cargar barrios+coordenadas (editar ciudad en sync_neighborhoods_table.py)
 [ ] 3. Cargar padrón electoral (load_padron + vincula usuarios)
 [ ] 4. Crear encuesta + preguntas + puntos (panel/API)
-[ ] 5. Verificar dashboard dinámico (y reporte custom si aplica)
-[ ] 6. Crear provider + API key (entregar al proveedor)
-[ ] 7. Verificación end-to-end (QA)
-[ ] 8. Repetir en PRODUCTION + entregar credenciales y doc de integración
-[ ] 9. Capacitar al municipio en el panel /client
+[ ] 5. Verificar dashboard dinámico de resultados
+[ ] 6. Reporte de gestión: PDF→Claude→JSON→seed_reports (si el cliente lo tiene)
+[ ] 7. Crear provider + API key (entregar al proveedor)
+[ ] 8. Verificación end-to-end (QA)
+[ ] 9. Repetir en PRODUCTION + entregar credenciales y doc de integración
+[ ] 10. Capacitar al municipio en el panel /client
 ```
 
 ---

@@ -9,6 +9,7 @@ from app.models.ai_insight import AIInsight
 from app.models.provider import Provider, ProviderClient
 from app.models.electoral_roll import ElectoralRoll
 from app.models.integration_audit import IntegrationAuditLog
+from app.models.report import Report
 
 __all__ = [
     "User",
@@ -27,4 +28,5 @@ __all__ = [
     "ProviderClient",
     "ElectoralRoll",
     "IntegrationAuditLog",
+    "Report",
 ]
