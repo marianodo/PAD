@@ -1,40 +1,35 @@
 "use client"
 
 import { useState } from "react"
-import { segments, getTotals } from "../lib/data"
-import { SegmentView } from "./segment-view"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../../../components/ui/tabs"
-import { ScrollArea, ScrollBar } from "../../../../../components/ui/scroll-area"
-import {
-  Building, Stethoscope, Shield, Briefcase,
-  GraduationCap, Factory, Wheat, TrendingUp,
-  LayoutDashboard, Calendar, CheckCircle2,
-} from "lucide-react"
+import { SegmentView } from "./SegmentView"
+import { iconMap, fallbackIcon } from "./icons"
+import { ReportConfig, Segment } from "./types"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { Building, LayoutDashboard, TrendingUp, Calendar, CheckCircle2 } from "lucide-react"
 
-const iconMap: Record<string, typeof Building> = {
-  Shield, Stethoscope, Building, GraduationCap, Briefcase, Factory, Wheat, TrendingUp,
+interface ReportProps {
+  config: ReportConfig
+  segments: Segment[]
 }
 
-const SEGMENT_COLORS: Record<string, string> = {
-  "seguridad":            "#0ea5e9",
-  "salud":                "#ef4444",
-  "obra-publica":         "#ec4899",
-  "educacion":            "#8b5cf6",
-  "trabajo-empleo":       "#f59e0b",
-  "industria-produccion": "#10b981",
-  "campo":                "#84cc16",
-  "economia-fiscal":      "#6366f1",
-}
+export function Report({ config, segments }: ReportProps) {
+  const [selectedSegment, setSelectedSegment] = useState(segments[0]?.id)
 
-export function Dashboard() {
-  const [selectedSegment, setSelectedSegment] = useState(segments[0].id)
-  const totals = getTotals()
+  const totals = segments.reduce(
+    (acc, s) => {
+      acc.totalProjects += s.totalProjects
+      acc.completados += s.projectsCompletados
+      return acc
+    },
+    { totalProjects: 0, completados: 0 }
+  )
 
   const stats = [
-    { label: "Áreas",       value: String(segments.length),   Icon: LayoutDashboard, color: "#0ea5e9" },
-    { label: "Año Fiscal",  value: "2026",                    Icon: Calendar,        color: "#10b981" },
-    { label: "Acciones",    value: `${totals.totalProjects}`,  Icon: TrendingUp,      color: "#8b5cf6" },
-    { label: "Completados", value: String(totals.completados), Icon: CheckCircle2,    color: "#f59e0b" },
+    { label: config.statsCategoryLabel, value: String(segments.length), Icon: LayoutDashboard, color: "#0ea5e9" },
+    { label: "Año Fiscal",  value: config.year,                    Icon: Calendar,        color: "#10b981" },
+    { label: "Acciones",    value: `${totals.totalProjects}`,       Icon: TrendingUp,      color: "#8b5cf6" },
+    { label: "Completados", value: String(totals.completados),      Icon: CheckCircle2,    color: "#f59e0b" },
   ]
 
   return (
@@ -46,16 +41,15 @@ export function Dashboard() {
           <div className="text-center space-y-3">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-widest text-white/80">
               <Building className="h-4 w-4" />
-              Gestión Provincial 2026
+              {config.badge}
             </div>
             <h1 className="font-montserrat text-4xl font-extrabold leading-tight tracking-tight text-white md:text-5xl text-balance">
-              Plan de Gobierno 2026
+              {config.title}
               <br />
-              <span className="text-[#0ea5e9]">Provincia de Córdoba</span>
+              <span className="text-[#0ea5e9]">{config.titleHighlight}</span>
             </h1>
-            <p className="mx-auto max-w-2xl font-sans text-base text-white/60 leading-relaxed">
-              Acciones, inversiones y compromisos anunciados por el Gobernador Martín Llaryora
-              en la apertura de sesiones legislativas 2026, organizados por área de gestión.
+            <p className={`mx-auto ${config.descriptionMaxWidth ?? "max-w-xl"} font-sans text-base text-white/60 leading-relaxed`}>
+              {config.description}
             </p>
           </div>
 
@@ -79,7 +73,7 @@ export function Dashboard() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="font-montserrat text-xl font-bold text-foreground">Áreas de Gestión</h2>
-          <span className="font-sans text-sm text-muted-foreground">{segments.length} áreas</span>
+          <span className="font-sans text-sm text-muted-foreground">{segments.length} {config.segmentWord}</span>
         </div>
 
         <Tabs value={selectedSegment} onValueChange={setSelectedSegment}>
@@ -88,8 +82,8 @@ export function Dashboard() {
           <ScrollArea className="w-full pb-1">
             <TabsList className="inline-flex h-auto w-max gap-2 bg-transparent p-0 mb-6">
               {segments.map(segment => {
-                const Icon = iconMap[segment.icon] || Building
-                const color = SEGMENT_COLORS[segment.id] ?? "#0ea5e9"
+                const Icon = iconMap[segment.icon] || fallbackIcon
+                const color = segment.color ?? "#0ea5e9"
                 const isActive = selectedSegment === segment.id
                 return (
                   <TabsTrigger
@@ -124,7 +118,7 @@ export function Dashboard() {
       <footer className="mt-12 border-t border-border bg-card py-6">
         <div className="container mx-auto px-4 text-center">
           <p className="font-sans text-sm text-muted-foreground">
-            P.A.D. — Participación Activa Digital | Gobierno de la Provincia de Córdoba 2026
+            {config.footer}
           </p>
         </div>
       </footer>
