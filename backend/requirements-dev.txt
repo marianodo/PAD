@@ -1,0 +1,5 @@
+# Dependencias solo de desarrollo/testing (NO se instalan en el deploy).
+# Para el smoke test visual (scripts/smoke_test_ui.py):
+#   .venv/bin/pip install -r requirements-dev.txt
+#   .venv/bin/playwright install chromium
+playwright>=1.40.0
