@@ -12,7 +12,10 @@ class ElectoralRoll(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
-    cuil = Column(String(11), nullable=False, index=True)
+    # DNI es la llave canónica de match (todos los padrones lo traen). cuil es opcional
+    # (algunos padrones vienen enriquecidos con CUIL; el oficial de la CNE no).
+    dni = Column(String(9), nullable=True, index=True)
+    cuil = Column(String(11), nullable=True, index=True)
     name = Column(String(255), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -22,4 +25,5 @@ class ElectoralRoll(Base):
 
     __table_args__ = (
         UniqueConstraint("client_id", "cuil", name="uq_electoral_roll_client_cuil"),
+        UniqueConstraint("client_id", "dni", name="uq_electoral_roll_client_dni"),
     )

@@ -78,6 +78,33 @@ if not _TESTING:
                 """))
                 conn.commit()
 
+        # Migración: DNI como llave de match del padrón
+        er_columns = [col["name"] for col in inspector.get_columns("electoral_roll")]
+        if "dni" not in er_columns:
+            conn.execute(text("ALTER TABLE electoral_roll ADD COLUMN dni VARCHAR(9)"))
+            conn.execute(text("ALTER TABLE electoral_roll ALTER COLUMN cuil DROP NOT NULL"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_electoral_roll_dni ON electoral_roll (dni)"))
+            conn.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_electoral_roll_client_dni "
+                "ON electoral_roll (client_id, dni)"
+            ))
+            # Backfill: derivar dni del cuil existente (ej: padrón de Alta Gracia)
+            conn.execute(text(
+                "UPDATE electoral_roll SET dni = ltrim(substr(cuil,3,8),'0') "
+                "WHERE dni IS NULL AND cuil IS NOT NULL AND length(cuil)=11"
+            ))
+            conn.commit()
+
+        user_columns = [col["name"] for col in inspector.get_columns("users")]
+        if "dni" not in user_columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN dni VARCHAR(9)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_dni ON users (dni)"))
+            conn.execute(text(
+                "UPDATE users SET dni = ltrim(substr(cuil,3,8),'0') "
+                "WHERE dni IS NULL AND cuil IS NOT NULL AND length(cuil)=11"
+            ))
+            conn.commit()
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_PREFIX}/openapi.json",

@@ -20,6 +20,7 @@ from app.db.base import get_db
 from app.models.electoral_roll import ElectoralRoll
 from app.models.user import User
 from app.services.membership_service import get_ancestor_client_ids
+from app.core.identity import dni_from_cuil
 
 
 def load_padron(xlsx_path: str, client_id: str):
@@ -78,6 +79,7 @@ def load_padron(xlsx_path: str, client_id: str):
                 id=uuid.uuid4(),
                 client_id=client_id,
                 cuil=cuil_str,
+                dni=dni_from_cuil(cuil_str),
                 name=name,
             )
             batch.append(entry)
