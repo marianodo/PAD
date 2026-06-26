@@ -15,6 +15,7 @@ from app.models.admin import Admin
 from app.models.client import Client
 from app.models.electoral_roll import ElectoralRoll
 from app.services import membership_service
+from app.core.identity import dni_from_cuil
 from app.schemas.auth import LoginRequest, RegisterRequest, Token
 from app.schemas.user import UserResponse
 from app.core.security import verify_password, get_password_hash, create_access_token
@@ -64,6 +65,7 @@ def register(
     hashed_password = get_password_hash(user_data.password)
     new_user = User(
         cuil=user_data.cuil,
+        dni=dni_from_cuil(user_data.cuil),
         hashed_password=hashed_password,
         email=user_data.email,
         name=user_data.name,
@@ -80,13 +82,13 @@ def register(
     db.commit()
     db.refresh(new_user)
 
-    # Si el CUIL ya está en algún padrón, asignar membresías automáticamente
-    # (con herencia por parent_id). Así el orden registro/padrón no importa.
+    # Si el DNI ya está en algún padrón, asignar membresías automáticamente
+    # (con herencia por parent_id). Match por DNI: el CUIL contiene el DNI.
     padron_client_ids = [
         cid for (cid,) in db.query(ElectoralRoll.client_id).filter(
-            ElectoralRoll.cuil == new_user.cuil
+            ElectoralRoll.dni == new_user.dni
         ).distinct().all()
-    ]
+    ] if new_user.dni else []
     if padron_client_ids:
         for cid in padron_client_ids:
             membership_service.add_membership(db, new_user.id, cid)
