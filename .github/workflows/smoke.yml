@@ -1,0 +1,49 @@
+name: Smoke post-deploy
+
+# Corre el smoke test de API contra el entorno desplegado, después de cada push
+# a develop / staging / main (Railway deploya solo en esas ramas).
+on:
+  push:
+    branches: [develop, staging, main]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install httpx
+
+      - name: Configurar entorno según la rama
+        id: cfg
+        run: |
+          case "${{ github.ref_name }}" in
+            main)
+              # Producción está limpia (sin cliente/datos demo) → solo health.
+              echo "base=https://api.datainsights.com.ar" >> "$GITHUB_OUTPUT"
+              echo "skip_citizen=1" >> "$GITHUB_OUTPUT"
+              echo "skip_client=1" >> "$GITHUB_OUTPUT" ;;
+            staging)
+              echo "base=https://backend-staging-b39b.up.railway.app" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "base=https://backend-develop-cbbc.up.railway.app" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Esperar al deploy de Railway
+        run: sleep 90
+
+      - name: Smoke test (con un reintento)
+        env:
+          BASE_URL: ${{ steps.cfg.outputs.base }}
+          SKIP_CITIZEN: ${{ steps.cfg.outputs.skip_citizen }}
+          SKIP_CLIENT: ${{ steps.cfg.outputs.skip_client }}
+          CLIENT_EMAIL: ${{ secrets.SMOKE_CLIENT_EMAIL || 'muni.altagracia@gmail.com' }}
+          CLIENT_PASS: ${{ secrets.SMOKE_CLIENT_PASS || 'muni123' }}
+        run: |
+          python backend/scripts/smoke_test.py \
+            || (echo "Reintentando en 30s (el deploy puede no haber terminado)..." \
+                && sleep 30 && python backend/scripts/smoke_test.py)
