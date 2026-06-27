@@ -21,15 +21,20 @@ jobs:
       - name: Configurar entorno según la rama
         id: cfg
         run: |
+          # NOTA: staging y producción están VACÍOS (sin cliente/datos demo) → solo health.
+          # Cuando tengan datos reales (ej: alta de Despeñaderos), sacar los skip_* de esa rama
+          # para que corra el smoke completo (login ciudadano + cliente + gráficos).
           case "${{ github.ref_name }}" in
             main)
-              # Producción está limpia (sin cliente/datos demo) → solo health.
               echo "base=https://api.datainsights.com.ar" >> "$GITHUB_OUTPUT"
               echo "skip_citizen=1" >> "$GITHUB_OUTPUT"
               echo "skip_client=1" >> "$GITHUB_OUTPUT" ;;
             staging)
-              echo "base=https://backend-staging-b39b.up.railway.app" >> "$GITHUB_OUTPUT" ;;
+              echo "base=https://backend-staging-b39b.up.railway.app" >> "$GITHUB_OUTPUT"
+              echo "skip_citizen=1" >> "$GITHUB_OUTPUT"
+              echo "skip_client=1" >> "$GITHUB_OUTPUT" ;;
             *)
+              # develop tiene datos demo (Alta Gracia) → smoke completo.
               echo "base=https://backend-develop-cbbc.up.railway.app" >> "$GITHUB_OUTPUT" ;;
           esac
 
