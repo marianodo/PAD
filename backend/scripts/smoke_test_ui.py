@@ -45,8 +45,10 @@ def main():
         sys.exit(1)
     survey_id = surveys[0]["id"]
 
+    # HEADED=1 abre un navegador visible (para mirarlo); por default es headless.
+    headed = os.getenv("HEADED", "").lower() in ("1", "true", "yes")
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=not headed, slow_mo=600 if headed else 0)
         page = browser.new_page()
         try:
             # 2. Login del cliente por la UI (el municipio entra por /auth/admin-login con email)
@@ -68,6 +70,12 @@ def main():
             page.wait_for_function(f"() => ({big_svgs})() > 0", timeout=40000)
             n_charts = page.evaluate(big_svgs)
             print(f"  ✅ gráficos renderizados: {n_charts}")
+
+            # Guardar evidencia visual del dashboard
+            page.screenshot(path="/tmp/smoke_ui.png", full_page=True)
+            print("  📸 screenshot: /tmp/smoke_ui.png")
+            if headed:
+                page.wait_for_timeout(4000)  # dejar el navegador a la vista un rato
 
             browser.close()
             if n_charts > 0:
