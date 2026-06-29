@@ -30,6 +30,10 @@ CITIZEN_CUIL = os.getenv("CITIZEN_CUIL", "20999999991")
 CITIZEN_PASS = os.getenv("CITIZEN_PASS", "smoke1234")
 CITIZEN_EMAIL = os.getenv("CITIZEN_EMAIL", "smoke.citizen@example.com")
 
+# Flags (para entornos sin datos demo, ej: producción limpia → solo health).
+SKIP_CITIZEN = os.getenv("SKIP_CITIZEN", "").lower() in ("1", "true", "yes")
+SKIP_CLIENT = os.getenv("SKIP_CLIENT", "").lower() in ("1", "true", "yes")
+
 _failures = []
 
 
@@ -47,21 +51,33 @@ def login(identifier, password):
 def main():
     print(f"\nSmoke test → {BASE_URL}\n")
 
-    # ── 1. Ciudadano: entrar con CUIL ──────────────────────────────
-    print("1) Ciudadano (login con CUIL)")
-    reg = httpx.post(f"{API}/auth/register", json={
-        "cuil": CITIZEN_CUIL, "email": CITIZEN_EMAIL,
-        "password": CITIZEN_PASS, "name": "Smoke Test",
-    }, timeout=30)
-    # 201 = recién creado, 400 = ya existía. Ambos son OK para el smoke.
-    check("registro disponible", reg.status_code in (201, 400), f"HTTP {reg.status_code}")
+    # ── 0. Health ──────────────────────────────────────────────────
+    try:
+        h = httpx.get(f"{BASE_URL}/health", timeout=30)
+        check("health", h.status_code == 200, f"HTTP {h.status_code}")
+    except Exception as e:
+        check("health", False, str(e))
 
-    rc = login(CITIZEN_CUIL, CITIZEN_PASS)
-    cdata = rc.json() if rc.status_code == 200 else {}
-    check("login ciudadano con CUIL", rc.status_code == 200 and bool(cdata.get("access_token")),
-          f"HTTP {rc.status_code}")
+    # ── 1. Ciudadano: entrar con CUIL ──────────────────────────────
+    if not SKIP_CITIZEN:
+        print("\n1) Ciudadano (login con CUIL)")
+        reg = httpx.post(f"{API}/auth/register", json={
+            "cuil": CITIZEN_CUIL, "email": CITIZEN_EMAIL,
+            "password": CITIZEN_PASS, "name": "Smoke Test",
+        }, timeout=30)
+        # 201 = recién creado, 400 = ya existía. Ambos son OK para el smoke.
+        check("registro disponible", reg.status_code in (201, 400), f"HTTP {reg.status_code}")
+
+        rc = login(CITIZEN_CUIL, CITIZEN_PASS)
+        cdata = rc.json() if rc.status_code == 200 else {}
+        check("login ciudadano con CUIL", rc.status_code == 200 and bool(cdata.get("access_token")),
+              f"HTTP {rc.status_code}")
 
     # ── 2. Cliente: entrar y ver datos de gráficos ─────────────────
+    if SKIP_CLIENT:
+        _finish()
+        return
+
     print("\n2) Cliente (login + gráficos)")
     rcl = login(CLIENT_EMAIL, CLIENT_PASS)
     cl = rcl.json() if rcl.status_code == 200 else {}
@@ -84,7 +100,10 @@ def main():
                   rr.status_code == 200 and len(qs) > 0,
                   f"HTTP {rr.status_code}, {len(qs)} preguntas, {rj.get('total_responses', 0)} respuestas")
 
-    # ── Resultado ──────────────────────────────────────────────────
+    _finish()
+
+
+def _finish():
     print()
     if _failures:
         print(f"❌ FALLÓ: {', '.join(_failures)}")
