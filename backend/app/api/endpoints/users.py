@@ -154,10 +154,10 @@ def change_password(
         )
 
     # Validate new password length
-    if len(password_data.new_password) < 6:
+    if len(password_data.new_password) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La nueva contraseña debe tener al menos 6 caracteres"
+            detail="La nueva contraseña debe tener al menos 8 caracteres"
         )
 
     # Update password

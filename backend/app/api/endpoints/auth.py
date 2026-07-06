@@ -1,13 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import Union
 import logging
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.info("AUTH ENDPOINT MODULE LOADED - VERSION 2.0")
 
 from app.db.base import get_db
 from app.models.user import User
@@ -20,17 +17,36 @@ from app.schemas.auth import LoginRequest, RegisterRequest, Token
 from app.schemas.user import UserResponse
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.config import settings
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, login_rate_limiter, register_rate_limiter
 
 router = APIRouter()
+
+# Hash bcrypt de una password dummy. Se verifica contra este hash cuando la cuenta
+# no existe, para que el tiempo de respuesta sea uniforme y no se pueda enumerar
+# cuentas por timing.
+_DUMMY_PASSWORD_HASH = get_password_hash("dummy-password-for-constant-time-check")
+
+
+def _enforce_rate_limit(limiter, key: str) -> None:
+    """Aplica un rate limit sobre `key`; lanza 429 si se excede."""
+    if not limiter.check(key):
+        retry_after = limiter.seconds_until_reset(key)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados intentos. Intentá nuevamente más tarde.",
+            headers={"Retry-After": str(retry_after)},
+        )
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(
     user_data: RegisterRequest,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """Register a new regular user (citizen)."""
+    client_ip = request.client.host if request.client else "unknown"
+    _enforce_rate_limit(register_rate_limiter, f"register:{client_ip}")
 
     # Check if CUIL already exists
     existing_user = db.query(User).filter(User.cuil == user_data.cuil).first()
@@ -109,69 +125,57 @@ def register(
 @router.post("/login", response_model=Token)
 def login_v2(
     credentials: LoginRequest,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """
     Login with CUIL/Email and password.
     Busca en las tres tablas: users (CUIL), admins (email), clients (email).
-    VERSION 2 - Fixed to search in admins table first
     """
-    logger.warning(f"=== LOGIN ATTEMPT V2 === Email/CUIL: {credentials.cuil}")
+    # Anti fuerza bruta: se limita por identificador de cuenta (no por IP) para
+    # apuntar al brute-force de una cuenta puntual sin afectar IPs compartidas.
+    _enforce_rate_limit(login_rate_limiter, f"login:{credentials.cuil.strip().lower()}")
 
     account: Union[User, Admin, Client, None] = None
     account_type = None
 
     # Si contiene @, es email (buscar en admins y clients)
     if "@" in credentials.cuil:
-        logger.warning(f"Email detected ({credentials.cuil}), searching in admins first")
-
         # Primero buscar en admins
         admin = db.query(Admin).filter(Admin.email == credentials.cuil).first()
-        logger.warning(f"Admin query result: {admin is not None}")
-
         if admin:
-            logger.warning(f"✅ Admin found - ID: {admin.id}, Email: {admin.email}")
             account = admin
             account_type = "admin"
         else:
-            logger.warning(f"No admin found, checking clients...")
             # Luego buscar en clients
             client = db.query(Client).filter(Client.email == credentials.cuil).first()
             if client:
-                logger.warning(f"✅ Client found - ID: {client.id}")
                 account = client
                 account_type = "client"
             else:
-                logger.warning(f"No client found, checking users...")
                 # Por último, buscar en users por si algún user tiene email
                 user = db.query(User).filter(User.email == credentials.cuil).first()
                 if user:
-                    logger.warning(f"✅ User found - ID: {user.id}")
                     account = user
                     account_type = "user"
     else:
-        logger.warning(f"CUIL detected ({credentials.cuil}), searching in users only")
         # Es CUIL, buscar solo en users
         user = db.query(User).filter(User.cuil == credentials.cuil).first()
         if user:
             account = user
             account_type = "user"
 
-    if not account:
-        logger.warning(f"❌ NO ACCOUNT FOUND for: {credentials.cuil}")
+    # Verificación de password en tiempo constante: si la cuenta no existe se
+    # verifica contra un hash dummy para no revelar la existencia por timing.
+    if account is None:
+        verify_password(credentials.password, _DUMMY_PASSWORD_HASH)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Verify password
-    logger.warning(f"Account found ({account_type}), verifying password...")
-    password_valid = verify_password(credentials.password, account.hashed_password)
-    logger.warning(f"Password verification result: {password_valid}")
-
-    if not password_valid:
-        logger.warning(f"❌ INVALID PASSWORD for: {credentials.cuil}")
+    if not verify_password(credentials.password, account.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas",
@@ -180,7 +184,6 @@ def login_v2(
 
     # Check is_active for users (only users tienen este flag)
     if account_type == "user" and not getattr(account, "is_active", True):
-        logger.warning(f"❌ DISABLED USER attempted login: {credentials.cuil}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuario deshabilitado. Contactá al administrador.",

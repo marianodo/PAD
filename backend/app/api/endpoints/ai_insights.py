@@ -6,9 +6,12 @@ from sqlalchemy.orm import Session
 from anthropic import Anthropic
 import json
 import os
+import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from decimal import Decimal
+
+logger = logging.getLogger(__name__)
 
 from app.db.base import get_db
 from app.api.dependencies import get_current_user
@@ -296,11 +299,10 @@ Responde SOLO con el JSON, sin texto adicional:
             else:
                 insights = json.loads(response_text)
         except json.JSONDecodeError as e:
-            print(f"Error parsing JSON: {e}")
-            print(f"Response text: {response_text}")
+            logger.error("Error parsing insights JSON from Claude: %s", e)
             raise HTTPException(
                 status_code=500,
-                detail=f"Error al parsear la respuesta de Claude AI: {str(e)}"
+                detail="Error al procesar la respuesta de IA"
             )
 
         # 6. Validar estructura de los insights
@@ -388,11 +390,11 @@ Responde SOLO con el JSON, sin texto adicional:
 
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error generando AI insights: {str(e)}")
+    except Exception:
+        logger.exception("Error generando AI insights")
         raise HTTPException(
             status_code=500,
-            detail=f"Error al generar insights con Claude AI: {str(e)}"
+            detail="Error al generar insights con IA"
         )
 
 
@@ -405,6 +407,9 @@ async def generate_ai_predictions(
     """
     Genera predicciones y proyecciones usando Claude AI basándose en los datos de la consulta.
     """
+    # 0. Autorización: solo admin o el cliente dueño (evita acceso cross-tenant
+    #    y abuso de costo de la API de IA por parte de ciudadanos).
+    _ensure_can_view_survey(db, survey_id, current_user)
 
     # 1. Verificar que existe la API key
     api_key = settings.ANTHROPIC_API_KEY
@@ -513,11 +518,10 @@ Responde SOLO con el JSON:
             else:
                 predictions = json.loads(response_text)
         except json.JSONDecodeError as e:
-            print(f"Error parsing predictions JSON: {e}")
-            print(f"Response: {response_text}")
+            logger.error("Error parsing predictions JSON from Claude: %s", e)
             raise HTTPException(
                 status_code=500,
-                detail=f"Error al parsear predicciones de Claude AI: {str(e)}"
+                detail="Error al procesar la respuesta de IA"
             )
 
         # 6. Validar estructura
@@ -561,9 +565,9 @@ Responde SOLO con el JSON:
 
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error generando AI predictions: {str(e)}")
+    except Exception:
+        logger.exception("Error generando AI predictions")
         raise HTTPException(
             status_code=500,
-            detail=f"Error al generar predicciones con Claude AI: {str(e)}"
+            detail="Error al generar predicciones con IA"
         )

@@ -184,8 +184,31 @@ class SurveyService:
         if not survey:
             raise ValueError("Encuesta no encontrada")
 
-        # Calcular puntos
-        questions_answered = len(response_data.answers)
+        # Anti-fraude: solo se aceptan respuestas a preguntas reales de ESTA encuesta.
+        # Los puntos se calculan sobre preguntas válidas y DISTINTAS (no sobre el
+        # largo del array que envía el cliente), evitando inflar el saldo con
+        # answers duplicadas o de question_id inventados. Los puntos son canjeables
+        # por dinero (descuento de impuestos), así que esto es crítico.
+        valid_question_ids = {
+            q_id for (q_id,) in db.query(Question.id).filter(
+                Question.survey_id == survey.id
+            ).all()
+        }
+
+        valid_answers = []
+        seen_question_ids = set()
+        for answer_data in response_data.answers:
+            if answer_data.question_id not in valid_question_ids:
+                # Ignorar answers que no corresponden a la encuesta (no corrompen analytics)
+                continue
+            if answer_data.question_id in seen_question_ids:
+                # Ignorar duplicados: una respuesta por pregunta
+                continue
+            seen_question_ids.add(answer_data.question_id)
+            valid_answers.append(answer_data)
+
+        # Calcular puntos sobre preguntas válidas y distintas
+        questions_answered = len(valid_answers)
         points_earned = questions_answered * survey.points_per_question
 
         # Si completó todas las preguntas requeridas, dar bonus
@@ -210,8 +233,8 @@ class SurveyService:
         db.add(survey_response)
         db.flush()
 
-        # Crear respuestas individuales
-        for answer_data in response_data.answers:
+        # Crear respuestas individuales (solo las válidas y deduplicadas)
+        for answer_data in valid_answers:
             answer = Answer(
                 response_id=survey_response.id,
                 question_id=answer_data.question_id,

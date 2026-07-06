@@ -20,7 +20,7 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     """Schema para registro de usuarios ciudadanos"""
     cuil: str = Field(..., min_length=11, max_length=11, description="CUIL sin guiones")
-    password: str = Field(..., min_length=6, max_length=72)
+    password: str = Field(..., min_length=8, max_length=72)
     email: str = Field(..., description="Email del usuario")
     name: str = Field(..., min_length=1, description="Nombre completo")
     phone: Optional[str] = None
