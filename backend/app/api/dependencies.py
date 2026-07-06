@@ -1,5 +1,6 @@
 import time
 import threading
+import uuid
 from collections import defaultdict
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -58,6 +59,15 @@ class RateLimiter:
 
 
 rate_limiter = RateLimiter(max_requests=100, window_seconds=60)
+
+# Anti fuerza bruta en login: se keyea por IDENTIFICADOR de cuenta (CUIL/email),
+# no por IP, para no bloquear usuarios legítimos detrás de una IP compartida
+# (CGNAT, wifi municipal). 10 intentos cada 5 minutos por cuenta.
+login_rate_limiter = RateLimiter(max_requests=10, window_seconds=300)
+
+# Anti abuso de registro masivo: se keyea por IP con un umbral más tolerante
+# (permite altas en lote desde una oficina, corta bots).
+register_rate_limiter = RateLimiter(max_requests=30, window_seconds=300)
 
 
 # --- API Key Authentication ---
@@ -133,14 +143,25 @@ def get_current_account(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # El sub del token es el UUID de la cuenta. Parseo explícito para no depender
+    # de la coerción del driver de la DB y rechazar tokens con sub malformado.
+    try:
+        account_uuid = uuid.UUID(str(account_id))
+    except (ValueError, AttributeError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     # Buscar en la tabla correspondiente según account_type
     account = None
     if account_type == "user":
-        account = db.query(User).filter(User.id == account_id).first()
+        account = db.query(User).filter(User.id == account_uuid).first()
     elif account_type == "admin":
-        account = db.query(Admin).filter(Admin.id == account_id).first()
+        account = db.query(Admin).filter(Admin.id == account_uuid).first()
     elif account_type == "client":
-        account = db.query(Client).filter(Client.id == account_id).first()
+        account = db.query(Client).filter(Client.id == account_uuid).first()
 
     if account is None:
         raise HTTPException(

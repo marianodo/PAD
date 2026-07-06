@@ -6,6 +6,9 @@ from uuid import UUID
 from typing import Optional, List, Union
 from datetime import date, datetime
 import io
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.db.base import get_db
 from app.services.survey_service import SurveyService
@@ -69,10 +72,13 @@ def get_surveys(
 
 
 @router.get("/active", response_model=SurveyResponse)
-def get_active_survey(db: Session = Depends(get_db)):
+def get_active_survey(
+    current_user: Union[User, Admin, Client] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Obtiene la encuesta activa actual (DEPRECADO: global, sin scope por cliente).
 
-    Usar GET /surveys/available para el flujo del ciudadano.
+    Requiere autenticación. Usar GET /surveys/available para el flujo del ciudadano.
     """
     survey = SurveyService.get_active_survey(db)
     if not survey:
@@ -207,14 +213,40 @@ def get_participation_trend(
 
 
 @router.get("/{survey_id}", response_model=SurveyResponse)
-def get_survey(survey_id: UUID, db: Session = Depends(get_db)):
-    """Obtiene una encuesta por ID"""
+def get_survey(
+    survey_id: UUID,
+    current_user: Union[User, Admin, Client] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Obtiene una encuesta por ID.
+
+    Requiere autenticación y autorización según el tipo de cuenta:
+    - Admin: cualquiera.
+    - Client: solo las propias.
+    - User (ciudadano): solo públicas o de municipios a los que pertenece.
+    """
     survey = SurveyService.get_survey_by_id(db, survey_id)
     if not survey:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Encuesta no encontrada"
         )
+
+    if isinstance(current_user, Admin):
+        pass
+    elif isinstance(current_user, Client):
+        if survey.client_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tenés permisos para ver esta encuesta"
+            )
+    else:  # User (ciudadano)
+        if not membership_service.user_can_access_survey(db, current_user, survey):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tenés permisos para ver esta encuesta"
+            )
+
     return survey
 
 
@@ -281,10 +313,11 @@ def submit_survey_response(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
-    except Exception as e:
+    except Exception:
+        logger.exception("Error al procesar la respuesta de encuesta")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al procesar la respuesta: {str(e)}"
+            detail="Error al procesar la respuesta"
         )
 
 
@@ -515,5 +548,6 @@ def export_survey_segments(
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={"Content-Disposition": f'attachment; filename="{filename}"'}
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al generar XLSX: {str(e)}")
+    except Exception:
+        logger.exception("Error al generar XLSX de segmentos")
+        raise HTTPException(status_code=500, detail="Error al generar el archivo XLSX")

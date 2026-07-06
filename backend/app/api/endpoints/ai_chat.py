@@ -7,9 +7,12 @@ from anthropic import Anthropic
 from pydantic import BaseModel
 import json
 import re
+import logging
 from decimal import Decimal
 from typing import List, Union
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 
 from app.db.base import get_db
 from app.api.dependencies import get_current_user
@@ -185,8 +188,9 @@ REGLAS PARA GRAFICOS:
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
+        logger.exception("Error al procesar el mensaje del chat de IA")
         raise HTTPException(
             status_code=500,
-            detail=f"Error al procesar el mensaje: {str(e)}"
+            detail="Error al procesar el mensaje"
         )
