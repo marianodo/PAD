@@ -184,11 +184,16 @@ def user_other_client(db, another_client) -> User:
 
 
 @pytest.fixture
-def sample_user_points(db, sample_user) -> UserPoints:
-    """Create points for the sample user."""
+def sample_user_points(db, sample_user, sample_client) -> UserPoints:
+    """Create points for the sample user en su entidad.
+
+    Los saldos son por entidad, así que el client_id es parte de la identidad de
+    la fila: sin él el saldo no es alcanzable por los endpoints.
+    """
     up = UserPoints(
         id=uuid.uuid4(),
         user_id=sample_user.id,
+        client_id=sample_client.id,
         total_points=150,
         available_points=100,
         redeemed_points=50,
