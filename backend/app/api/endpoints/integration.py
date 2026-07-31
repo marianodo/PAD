@@ -113,8 +113,11 @@ def get_points(
     try:
         user = _get_user_by_cuil_authorized(cuil, provider, db)
 
+        # Los puntos son por entidad: se informa el saldo de la entidad para la
+        # que este proveedor está autorizado, no un total entre todas.
         user_points = db.query(UserPoints).filter(
-            UserPoints.user_id == user.id
+            UserPoints.user_id == user.id,
+            UserPoints.client_id == user.authorized_client_id,
         ).first()
 
         response_data = PointsQueryResponse(
@@ -176,7 +179,8 @@ def redeem_points(
         if existing_tx:
             # Devolver la transacción original sin modificar datos
             user_points = db.query(UserPoints).filter(
-                UserPoints.user_id == existing_tx.user_id
+                UserPoints.user_id == existing_tx.user_id,
+                UserPoints.client_id == existing_tx.client_id,
             ).first()
 
             response_data = PointsRedeemResponse(
@@ -205,9 +209,10 @@ def redeem_points(
         # Buscar y validar acceso al contribuyente
         user = _get_user_by_cuil_authorized(body.cuil, provider, db)
 
-        # Obtener puntos del usuario
+        # Obtener puntos del usuario en la entidad autorizada para este proveedor
         user_points = db.query(UserPoints).filter(
-            UserPoints.user_id == user.id
+            UserPoints.user_id == user.id,
+            UserPoints.client_id == user.authorized_client_id,
         ).with_for_update().first()
 
         if not user_points or user_points.available_points < body.points:
@@ -220,6 +225,7 @@ def redeem_points(
         # Crear transacción de canjeo
         transaction = PointTransaction(
             user_id=user.id,
+            client_id=user.authorized_client_id,
             transaction_type="redeemed",
             amount=-body.points,
             description=body.description or f"Canjeo de {body.points} puntos",

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from uuid import UUID
 
-from typing import List, Union
+from typing import List, Optional, Union
 
 from app.db.base import get_db
 from app.services.user_service import UserService
@@ -93,12 +93,16 @@ def update_user(
 @router.get("/{user_id}/points", response_model=UserPointsResponse)
 def get_user_points(
     user_id: UUID,
+    client_id: Optional[UUID] = None,
     current_account: Union[User, Admin, Client] = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Obtiene los puntos de un usuario (solo el propio usuario o un admin)."""
+    """Obtiene los puntos de un usuario (solo el propio usuario o un admin).
+
+    Con ?client_id= devuelve el saldo en esa entidad; sin él, la suma de todas.
+    """
     _ensure_self_or_admin(user_id, current_account)
-    points = UserService.get_user_points(db, user_id)
+    points = UserService.get_user_points(db, user_id, client_id)
     if not points:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Puntos no encontrados")
     return points

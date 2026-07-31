@@ -35,8 +35,10 @@ class UserService:
         db.commit()
         db.refresh(user)
 
-        # Crear registro de puntos
-        user_points = UserPoints(user_id=user.id)
+        # Crear registro de puntos en la entidad principal del ciudadano. Los
+        # saldos son por entidad; si más adelante participa en otra, ese saldo se
+        # crea solo al ganar los primeros puntos ahí.
+        user_points = UserPoints(user_id=user.id, client_id=user.client_id)
         db.add(user_points)
         db.commit()
 
@@ -59,9 +61,41 @@ class UserService:
         return user
 
     @staticmethod
-    def get_user_points(db: Session, user_id: UUID) -> Optional[UserPoints]:
-        """Obtiene los puntos de un usuario"""
-        return db.query(UserPoints).filter(UserPoints.user_id == user_id).first()
+    def get_user_points(
+        db: Session,
+        user_id: UUID,
+        client_id: Optional[UUID] = None,
+    ) -> Optional[UserPoints]:
+        """Obtiene los puntos de un usuario.
+
+        Con client_id devuelve el saldo de esa entidad. Sin client_id devuelve la
+        suma de todas, para conservar la semántica de "puntos totales" que la API
+        tenía antes de que los saldos fueran por entidad. El agregado es un objeto
+        transitorio: no se agrega a la sesión ni se persiste.
+        """
+        if client_id is not None:
+            return db.query(UserPoints).filter(
+                UserPoints.user_id == user_id,
+                UserPoints.client_id == client_id,
+            ).first()
+
+        rows = db.query(UserPoints).filter(UserPoints.user_id == user_id).all()
+        if not rows:
+            return None
+        if len(rows) == 1:
+            return rows[0]
+
+        aggregate = UserPoints(
+            user_id=user_id,
+            client_id=None,
+            total_points=sum(r.total_points or 0 for r in rows),
+            available_points=sum(r.available_points or 0 for r in rows),
+            redeemed_points=sum(r.redeemed_points or 0 for r in rows),
+        )
+        aggregate.updated_at = max(
+            (r.updated_at for r in rows if r.updated_at is not None), default=None
+        )
+        return aggregate
 
     @staticmethod
     def delete_user(db: Session, user_id: UUID) -> None:

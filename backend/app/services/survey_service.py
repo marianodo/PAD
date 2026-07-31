@@ -251,7 +251,8 @@ class SurveyService:
                 db,
                 user_id,
                 points_earned,
-                survey_response.id
+                survey_response.id,
+                survey.client_id,
             )
 
         db.commit()
@@ -263,14 +264,24 @@ class SurveyService:
         db: Session,
         user_id: UUID,
         points: int,
-        response_id: UUID
+        response_id: UUID,
+        client_id: Optional[UUID] = None,
     ):
-        """Actualiza los puntos del usuario"""
-        # Obtener o crear registro de puntos
-        user_points = db.query(UserPoints).filter(UserPoints.user_id == user_id).first()
+        """Actualiza los puntos del usuario en el saldo de una entidad.
+
+        Los puntos se acumulan por entidad (la dueña de la encuesta), porque de
+        ese saldo salen los cupones que se consumen en sus comercios adheridos.
+        Una encuesta sin client_id acumula en el saldo histórico sin entidad, que
+        no puede convertirse en cupones.
+        """
+        # Obtener o crear registro de puntos para esta entidad
+        user_points = db.query(UserPoints).filter(
+            UserPoints.user_id == user_id,
+            UserPoints.client_id == client_id,
+        ).first()
 
         if not user_points:
-            user_points = UserPoints(user_id=user_id)
+            user_points = UserPoints(user_id=user_id, client_id=client_id)
             db.add(user_points)
             db.flush()
 
@@ -281,6 +292,7 @@ class SurveyService:
         # Crear transacción
         transaction = PointTransaction(
             user_id=user_id,
+            client_id=client_id,
             transaction_type="earned",
             amount=points,
             description=f"Encuesta completada",

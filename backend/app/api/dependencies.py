@@ -14,6 +14,7 @@ from app.models.user import User
 from app.models.admin import Admin
 from app.models.client import Client
 from app.models.provider import Provider
+from app.models.merchant import Merchant, MERCHANT_APPROVED
 from app.core.security import decode_access_token
 
 security = HTTPBearer()
@@ -69,6 +70,11 @@ login_rate_limiter = RateLimiter(max_requests=10, window_seconds=300)
 # (permite altas en lote desde una oficina, corta bots).
 register_rate_limiter = RateLimiter(max_requests=30, window_seconds=300)
 
+# Anti fuerza bruta de códigos de cupón: se keyea por comercio. Un mostrador real
+# tipea unos pocos códigos por minuto, así que 20 por minuto no molesta a nadie
+# legítimo y hace inviable barrer el espacio de códigos desde una cuenta.
+coupon_rate_limiter = RateLimiter(max_requests=20, window_seconds=60)
+
 
 # --- API Key Authentication ---
 
@@ -117,10 +123,10 @@ def verify_api_key(
 def get_current_account(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> Union[User, Admin, Client]:
+) -> Union[User, Admin, Client, Merchant]:
     """
     Get current authenticated account from JWT token.
-    Returns User, Admin, or Client based on account_type in token.
+    Returns User, Admin, Client, or Merchant based on account_type in token.
     """
 
     token = credentials.credentials
@@ -162,6 +168,8 @@ def get_current_account(
         account = db.query(Admin).filter(Admin.id == account_uuid).first()
     elif account_type == "client":
         account = db.query(Client).filter(Client.id == account_uuid).first()
+    elif account_type == "merchant":
+        account = db.query(Merchant).filter(Merchant.id == account_uuid).first()
 
     if account is None:
         raise HTTPException(
@@ -222,3 +230,43 @@ def get_current_regular_user(
             detail="Esta funcionalidad es solo para usuarios regulares"
         )
     return account
+
+
+def get_current_merchant(
+    account: Union[User, Admin, Client, Merchant] = Depends(get_current_account)
+) -> Merchant:
+    """Verify that current account is a merchant (aprobado o no)."""
+    if not isinstance(account, Merchant):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Esta funcionalidad es solo para comercios"
+        )
+    return account
+
+
+def get_approved_merchant(
+    merchant: Merchant = Depends(get_current_merchant)
+) -> Merchant:
+    """Exige un comercio habilitado.
+
+    El alta la hace el comercio por su cuenta, pero recién puede operar cuando
+    verificamos con la entidad que está efectivamente adherido al plan.
+    """
+    if merchant.status != MERCHANT_APPROVED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu cuenta todavía no está habilitada para consumir cupones."
+        )
+
+    # El rate limit va acá y no en el endpoint para que cubra por igual la
+    # validación y el consumo: son las dos puertas donde se prueban códigos.
+    merchant_key = f"coupon:{merchant.id}"
+    if not coupon_rate_limiter.check(merchant_key):
+        retry_after = coupon_rate_limiter.seconds_until_reset(merchant_key)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiadas consultas de cupones. Esperá unos segundos.",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+    return merchant
