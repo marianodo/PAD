@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.coupon import (
@@ -58,6 +59,20 @@ def _is_expired(coupon: Coupon) -> bool:
     return expires_at is not None and expires_at <= _utcnow()
 
 
+def effective_status(coupon: Coupon) -> str:
+    """Estado real del cupón en este instante.
+
+    Ningún job marca los vencimientos, así que la columna `status` puede seguir
+    diciendo 'active' después de la fecha de vencimiento. Toda lectura que se
+    muestre a alguien tiene que pasar por acá: confiar en la columna hace que el
+    ciudadano vea como disponible un cupón que en el mostrador va a ser
+    rechazado.
+    """
+    if coupon.status == COUPON_ACTIVE and _is_expired(coupon):
+        return COUPON_EXPIRED
+    return coupon.status
+
+
 class CouponService:
 
     # --- Lado del ciudadano ---
@@ -69,6 +84,29 @@ class CouponService:
             CouponReward.client_id == client_id,
             CouponReward.is_active == True,  # noqa: E712
         ).order_by(CouponReward.points_cost.asc()).all()
+
+    @staticmethod
+    def list_rewards_for_clients(
+        db: Session,
+        client_ids: List[UUID],
+    ) -> dict:
+        """Catálogos activos de varias entidades, agrupados por entidad.
+
+        Una sola query para todas: la pantalla de cupones pide el catálogo de
+        cada entidad en la que el ciudadano tiene saldo.
+        """
+        if not client_ids:
+            return {}
+
+        rewards = db.query(CouponReward).filter(
+            CouponReward.client_id.in_(client_ids),
+            CouponReward.is_active == True,  # noqa: E712
+        ).order_by(CouponReward.points_cost.asc()).all()
+
+        grouped: dict = {}
+        for reward in rewards:
+            grouped.setdefault(reward.client_id, []).append(reward)
+        return grouped
 
     @staticmethod
     def get_balances(db: Session, user_id: UUID) -> List[UserPoints]:
@@ -91,7 +129,18 @@ class CouponService:
         query = db.query(Coupon).filter(Coupon.user_id == user_id)
         if client_id is not None:
             query = query.filter(Coupon.client_id == client_id)
-        return query.order_by(Coupon.created_at.desc()).all()
+        coupons = query.order_by(Coupon.created_at.desc()).all()
+
+        # Los cupones que vencieron sin que ningún comercio los escaneara nunca
+        # pasaron por validate(), así que su estado guardado quedó viejo. Se
+        # normaliza acá para que la DB no siga afirmando que están disponibles.
+        if any(c.status == COUPON_ACTIVE and _is_expired(c) for c in coupons):
+            for coupon in coupons:
+                if coupon.status == COUPON_ACTIVE and _is_expired(coupon):
+                    coupon.status = COUPON_EXPIRED
+            db.commit()
+
+        return coupons
 
     @staticmethod
     def _generate_unique_code(db: Session, attempts: int = 10) -> str:
@@ -135,6 +184,16 @@ class CouponService:
                 404,
             )
 
+        # El catálogo se administra por SQL a mano, sin validación de la app. Un
+        # tier de costo 0 saltearía el chequeo de saldo y emitiría cupones
+        # infinitos; uno negativo acreditaría puntos en vez de debitarlos.
+        if reward.points_cost <= 0:
+            raise CouponError(
+                "reward_not_found",
+                "La recompensa no existe o no está disponible en esta entidad.",
+                404,
+            )
+
         # Lock del saldo: sin esto, dos requests simultáneos leerían el mismo
         # available_points y emitirían dos cupones pagados una sola vez.
         user_points = db.query(UserPoints).filter(
@@ -142,8 +201,10 @@ class CouponService:
             UserPoints.client_id == client_id,
         ).with_for_update().first()
 
+        # Sin fila de saldo no hay nada que debitar. Se chequea aparte del
+        # importe porque `available < cost` no protege cuando cost es 0.
         available = user_points.available_points if user_points else 0
-        if available < reward.points_cost:
+        if user_points is None or available < reward.points_cost:
             raise CouponError(
                 "insufficient_points",
                 f"Puntos insuficientes. Disponibles: {available}, "
@@ -151,22 +212,41 @@ class CouponService:
                 400,
             )
 
-        code = CouponService._generate_unique_code(db)
+        # El chequeo de unicidad y el INSERT no son atómicos: otro request puede
+        # quedarse con el código en el medio. El UNIQUE de la columna es la
+        # garantía real, así que la colisión se reintenta en vez de morir en 500.
+        for attempt in range(3):
+            savepoint = db.begin_nested()
+            code = CouponService._generate_unique_code(db)
 
-        coupon = Coupon(
-            code=code,
-            user_id=user_id,
-            client_id=client_id,
-            reward_id=reward.id,
-            # Condiciones congeladas: si mañana se edita el catálogo, este cupón
-            # sigue valiendo lo que se le prometió al emitirlo.
-            discount_pct=reward.discount_pct,
-            points_spent=reward.points_cost,
-            status=COUPON_ACTIVE,
-            expires_at=_utcnow() + timedelta(days=COUPON_EXPIRY_DAYS),
-        )
-        db.add(coupon)
-        db.flush()  # necesito coupon.id para el reference_id de la transacción
+            coupon = Coupon(
+                code=code,
+                user_id=user_id,
+                client_id=client_id,
+                reward_id=reward.id,
+                # Condiciones congeladas: si mañana se edita el catálogo, este
+                # cupón sigue valiendo lo que se le prometió al emitirlo.
+                discount_pct=reward.discount_pct,
+                points_spent=reward.points_cost,
+                status=COUPON_ACTIVE,
+                expires_at=_utcnow() + timedelta(days=COUPON_EXPIRY_DAYS),
+            )
+            db.add(coupon)
+
+            try:
+                db.flush()  # necesito coupon.id para el reference_id
+            except IntegrityError:
+                savepoint.rollback()
+                if attempt == 2:
+                    raise CouponError(
+                        "code_generation_failed",
+                        "No se pudo generar un código de cupón. Intentá de nuevo.",
+                        500,
+                    )
+                continue
+
+            savepoint.commit()
+            break
 
         user_points.available_points -= reward.points_cost
         user_points.redeemed_points += reward.points_cost

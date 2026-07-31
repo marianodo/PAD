@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import List
@@ -12,30 +13,18 @@ from app.schemas.merchant import (
     MerchantLoginRequest,
     MerchantResponse,
 )
-from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.security import (
+    verify_password, get_password_hash, create_access_token, DUMMY_PASSWORD_HASH,
+)
 from app.core.config import settings
 from app.api.dependencies import (
     get_current_merchant,
     login_rate_limiter,
     register_rate_limiter,
+    enforce_rate_limit,
 )
 
 router = APIRouter()
-
-# Mismo criterio que en auth.py: se verifica contra un hash dummy cuando la
-# cuenta no existe, para no revelar su existencia por diferencia de tiempo.
-_DUMMY_PASSWORD_HASH = get_password_hash("dummy-password-for-constant-time-check")
-
-
-def _enforce_rate_limit(limiter, key: str) -> None:
-    """Aplica un rate limit sobre `key`; lanza 429 si se excede."""
-    if not limiter.check(key):
-        retry_after = limiter.seconds_until_reset(key)
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Demasiados intentos. Intentá nuevamente más tarde.",
-            headers={"Retry-After": str(retry_after)},
-        )
 
 
 def _to_response(merchant: Merchant) -> MerchantResponse:
@@ -69,7 +58,7 @@ def register_merchant(
     adherido al plan y lo habilitemos.
     """
     client_ip = request.client.host if request.client else "unknown"
-    _enforce_rate_limit(register_rate_limiter, f"merchant_register:{client_ip}")
+    enforce_rate_limit(register_rate_limiter, f"merchant_register:{client_ip}")
 
     entity = db.query(Client).filter(Client.id == body.client_id).first()
     if not entity:
@@ -96,7 +85,17 @@ def register_merchant(
         status=MERCHANT_PENDING,
     )
     db.add(merchant)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Dos altas simultáneas con el mismo email pasan las dos por el chequeo
+        # de arriba; el índice único es el que decide, y la que pierde tiene que
+        # ver el mismo 400 que habría visto en serie, no un 500.
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El email ya está registrado",
+        )
     db.refresh(merchant)
 
     return _to_response(merchant)
@@ -113,12 +112,12 @@ def login_merchant(
     estado de su solicitud. El bloqueo para operar está en get_approved_merchant.
     """
     email = credentials.email.strip().lower()
-    _enforce_rate_limit(login_rate_limiter, f"merchant_login:{email}")
+    enforce_rate_limit(login_rate_limiter, f"merchant_login:{email}")
 
     merchant = db.query(Merchant).filter(Merchant.email == email).first()
 
     if merchant is None:
-        verify_password(credentials.password, _DUMMY_PASSWORD_HASH)
+        verify_password(credentials.password, DUMMY_PASSWORD_HASH)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas",

@@ -108,10 +108,17 @@ export const merchantApi = {
     phone?: string;
   }) => merchantAxios.post<Merchant>("/merchants/register", data),
   me: () => merchantAxios.get<Merchant>("/merchants/me"),
+  // El código se escapa: lo tipea una persona en el mostrador, y una barra o un
+  // numeral sin escapar cambian la ruta y devuelven el 404 genérico de FastAPI
+  // ("Not Found") en lugar del mensaje de cupón inválido.
   validateCoupon: (code: string) =>
-    merchantAxios.get<CouponValidation>(`/coupons/validate/${code}`),
+    merchantAxios.get<CouponValidation>(
+      `/coupons/validate/${encodeURIComponent(code)}`
+    ),
   redeemCoupon: (code: string) =>
-    merchantAxios.post<CouponRedeem>(`/coupons/${code}/redeem`),
+    merchantAxios.post<CouponRedeem>(
+      `/coupons/${encodeURIComponent(code)}/redeem`
+    ),
 };
 
 export default api;

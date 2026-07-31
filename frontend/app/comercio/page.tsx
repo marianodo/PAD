@@ -416,7 +416,11 @@ function Validator() {
             maxLength={6}
             placeholder="A1B2C3"
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onChange={(e) =>
+              // Solo los caracteres que puede tener un código: evita que un dedo
+              // torcido mande una barra y reciba un error que no explica nada.
+              setCode(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ""))
+            }
             className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 text-center text-3xl font-mono font-bold tracking-[0.3em] uppercase text-gray-900 focus:outline-none focus:border-[#2962FF]"
           />
           <button

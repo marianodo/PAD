@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
@@ -7,7 +7,10 @@ from uuid import UUID
 class MerchantRegisterRequest(BaseModel):
     """Alta de un comercio. Queda pendiente de habilitación manual."""
     client_id: UUID = Field(..., description="Entidad a la que se adhiere")
-    email: str = Field(..., description="Email del comercio")
+    # EmailStr y no str: el alta es pública y el email es la única vía para
+    # avisarle al comercio que lo habilitamos, además de ser clave del rate
+    # limiter y ocupar el índice único global.
+    email: EmailStr = Field(..., description="Email del comercio")
     password: str = Field(..., min_length=8, max_length=72)
     name: str = Field(..., min_length=1, description="Nombre del comercio")
     cuit: Optional[str] = Field(None, description="CUIT sin guiones")
@@ -26,7 +29,9 @@ class MerchantRegisterRequest(BaseModel):
 
 
 class MerchantLoginRequest(BaseModel):
-    email: str
+    # También acotado: el email se usa como clave del rate limiter de login, así
+    # que un campo libre permitiría inventar una clave nueva por request.
+    email: EmailStr = Field(..., max_length=255)
     password: str = Field(..., min_length=6, max_length=72)
 
 

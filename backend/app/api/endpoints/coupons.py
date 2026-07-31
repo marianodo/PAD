@@ -15,7 +15,7 @@ from app.schemas.coupon import (
     CouponRewardResponse,
     CouponValidationResponse,
 )
-from app.services.coupon_service import CouponService, CouponError
+from app.services.coupon_service import CouponService, CouponError, effective_status
 from app.api.dependencies import get_approved_merchant, get_current_regular_user
 
 router = APIRouter()
@@ -35,6 +35,9 @@ def _raise(error: CouponError):
 
 def _coupon_to_response(coupon) -> CouponResponse:
     data = CouponResponse.model_validate(coupon)
+    # Nunca reportar como disponible un cupón que ya venció, aunque la fila
+    # todavía no se haya normalizado.
+    data.status = effective_status(coupon)
     data.client_name = coupon.client.name if coupon.client else None
     data.reward_name = coupon.reward.name if coupon.reward else None
     data.redeemed_by_merchant_name = (
@@ -55,21 +58,31 @@ def get_my_balances(
     Es lo que alimenta la pantalla de cupones: en qué entidades tiene puntos y
     qué puede canjear en cada una.
     """
-    balances = []
+    rows = CouponService.get_balances(db, user.id)
+    if not rows:
+        return []
 
-    for points in CouponService.get_balances(db, user.id):
-        entity = db.query(Client).filter(Client.id == points.client_id).first()
+    # Nombres y catálogos se traen en dos queries en vez de dos por entidad: es
+    # el endpoint que abre la pantalla de cupones y se llama en cada carga.
+    client_ids = [r.client_id for r in rows]
+    names = dict(
+        db.query(Client.id, Client.name).filter(Client.id.in_(client_ids)).all()
+    )
+    rewards_by_client = CouponService.list_rewards_for_clients(db, client_ids)
+
+    balances = []
+    for points in rows:
         available = points.available_points or 0
 
         rewards = []
-        for reward in CouponService.list_rewards(db, points.client_id):
+        for reward in rewards_by_client.get(points.client_id, []):
             item = CouponRewardResponse.model_validate(reward)
             item.affordable = available >= reward.points_cost
             rewards.append(item)
 
         balances.append(CouponBalanceResponse(
             client_id=points.client_id,
-            client_name=entity.name if entity else "Entidad desconocida",
+            client_name=names.get(points.client_id, "Entidad desconocida"),
             available_points=available,
             total_points=points.total_points or 0,
             rewards=rewards,
