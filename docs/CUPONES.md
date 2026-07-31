@@ -44,6 +44,16 @@ consuman el mismo cupón simultáneamente.
   un token de ciudadano no sirve en los endpoints de comercio ni al revés. En el
   navegador se guarda bajo otra clave (`merchant_token`) para que las dos sesiones
   no se pisen.
+- **`get_current_user` rechaza comercios explícitamente.** Los endpoints de
+  encuestas autorizan con deny-lists ("si es `User`, 403; si es `Client` de otra
+  entidad, 403"), así que una cuenta de un tipo nuevo los atraviesa sin control.
+  Como el alta de comercio es pública, eso alcanzaba para leer nombre, email y
+  barrio de los respondentes de cualquier entidad. Cualquier tipo de cuenta que se
+  agregue en el futuro tiene que sumarse a ese rechazo o convertir las deny-lists
+  en allow-lists.
+- **El catálogo se valida al canjear.** `points_cost <= 0` se rechaza aunque esté
+  activo en la tabla: como el catálogo se edita por SQL a mano, un tier de costo
+  cero emitiría cupones infinitos y uno negativo acreditaría puntos.
 - **Rate limit de 20/min por comercio** sobre validar y consumir. El espacio de
   códigos es grande, pero un comercio con cuenta podría sondearlo; un mostrador
   real no tipea más que unos pocos códigos por minuto.
@@ -55,12 +65,16 @@ consuman el mismo cupón simultáneamente.
 
 ## Puesta en marcha
 
+El scoping de puntos por entidad se aplica **solo al arrancar la app**
+(`app/main.py`), igual que el resto de las migraciones del proyecto, porque
+`create_all()` no altera tablas existentes. No hace falta ningún paso manual en el
+deploy. El script existe para correrlo aparte y ver el reporte de atribución:
+
 ```bash
-# 1. Scoping de puntos por entidad (OBLIGATORIO en bases que ya tienen datos:
-#    create_all() crea tablas nuevas pero NO altera las existentes)
+# Opcional: aplicar/inspeccionar el scoping a mano (idempotente)
 python scripts/migrate_add_client_to_points.py
 
-# 2. Catálogo por defecto: 100 puntos = 5% en cada entidad
+# Catálogo por defecto: 100 puntos = 5% en cada entidad
 python scripts/seed_coupon_rewards.py
 python scripts/seed_coupon_rewards.py --list
 
@@ -84,7 +98,7 @@ VALUES (gen_random_uuid(), '<client_uuid>', '10% de descuento', 200, 10, true);
 
 ## API
 
-```
+```text
 Ciudadano (JWT de ciudadano)
   GET  /api/v1/coupons/balances          saldos por entidad + catálogo
   GET  /api/v1/coupons/me                mis cupones
@@ -120,3 +134,10 @@ Los errores de cupón devuelven `detail: {code, message}`. Los `code` son
 - **El lock de fila no está cubierto por tests.** Los tests corren sobre SQLite,
   donde `with_for_update()` es un no-op. Se testea la revalidación de estado, que
   es la garantía lógica; la carrera real solo se ejerce en Postgres.
+- **`_update_user_points` hace get-or-create sin lock.** Dos respuestas
+  concurrentes del mismo ciudadano en una entidad donde todavía no tiene saldo
+  pueden intentar dos INSERT y la segunda choca contra el unique. Es preexistente,
+  pero ahora la ventana se repite cada vez que participa en una entidad nueva.
+- **El rate limit de cupones cuenta también los consumos válidos.** Son 20 por
+  minuto por comercio; un local con varias cajas en hora pico podría recibir un
+  429 operando normalmente.
