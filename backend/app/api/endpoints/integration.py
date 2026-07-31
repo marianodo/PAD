@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -15,6 +16,34 @@ from app.schemas.integration import (
 )
 from app.api.dependencies import verify_api_key
 from app.services import membership_service
+
+logger = logging.getLogger(__name__)
+
+
+def _warn_if_unattributed(db: Session, user: User, scoped_points) -> None:
+    """Deja rastro cuando el ciudadano tiene puntos sin entidad asignada.
+
+    Tras el scoping por entidad, los saldos que no se pudieron atribuir quedan
+    con client_id NULL. Para el proveedor esos ciudadanos son indistinguibles de
+    uno que gastó todo: en ambos casos la respuesta dice 0 puntos. Se registra en
+    el log para poder diagnosticarlo sin cambiarle el contrato al proveedor.
+    """
+    if scoped_points is not None and (scoped_points.available_points or 0) > 0:
+        return
+
+    unattributed = db.query(UserPoints).filter(
+        UserPoints.user_id == user.id,
+        UserPoints.client_id.is_(None),
+        UserPoints.available_points > 0,
+    ).first()
+
+    if unattributed:
+        logger.warning(
+            "Contribuyente %s tiene %s puntos sin entidad asignada; se reporta 0 "
+            "para la entidad %s. Asignar client_id en user_points para habilitarlos.",
+            user.id, unattributed.available_points,
+            getattr(user, "authorized_client_id", None),
+        )
 
 router = APIRouter()
 
@@ -65,8 +94,13 @@ def _get_user_by_cuil_authorized(
             detail="No tiene acceso a este contribuyente"
         )
 
-    # Guardar el client autorizado matcheado para el audit log (no se persiste)
-    user.authorized_client_id = uuid.UUID(next(iter(matched)))
+    # Guardar el client autorizado matcheado (no se persiste). Se ordena antes
+    # de elegir porque `matched` es un set de strings y su orden de iteración
+    # depende del hash, que Python aleatoriza por proceso: sin sorted(), dos
+    # workers podrían elegir entidades distintas para el mismo pedido. Desde que
+    # los puntos son por entidad, esta elección decide de qué saldo se lee y se
+    # debita, así que tiene que ser estable.
+    user.authorized_client_id = uuid.UUID(sorted(matched)[0])
     return user
 
 
@@ -119,6 +153,7 @@ def get_points(
             UserPoints.user_id == user.id,
             UserPoints.client_id == user.authorized_client_id,
         ).first()
+        _warn_if_unattributed(db, user, user_points)
 
         response_data = PointsQueryResponse(
             cuil=cuil,
@@ -216,6 +251,7 @@ def redeem_points(
         ).with_for_update().first()
 
         if not user_points or user_points.available_points < body.points:
+            _warn_if_unattributed(db, user, user_points)
             available = user_points.available_points if user_points else 0
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

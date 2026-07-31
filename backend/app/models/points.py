@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, func, Numeric, Text, UniqueConstraint
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, func, Numeric, Text, UniqueConstraint, Index, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -21,7 +21,7 @@ class UserPoints(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Nullable solo por las filas previas al scoping por entidad: esos saldos
-    # históricos no se pueden convertir en cupones (ver scripts/migrate_points_client_scope.sql).
+    # históricos no se pueden convertir en cupones (ver app/db/points_scope_migration.py).
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id", ondelete="CASCADE"), nullable=True, index=True)
 
     total_points = Column(Integer, default=0)
@@ -35,6 +35,17 @@ class UserPoints(Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", "client_id", name="uq_user_points_user_client"),
+        # El UNIQUE de arriba no impide dos filas (user, NULL): tanto Postgres
+        # como SQLite tratan los NULL como distintos entre sí. Sin este índice
+        # parcial, dos respuestas concurrentes a encuestas sin entidad crean dos
+        # saldos históricos para el mismo ciudadano.
+        Index(
+            "uq_user_points_user_legacy",
+            "user_id",
+            unique=True,
+            postgresql_where=text("client_id IS NULL"),
+            sqlite_where=text("client_id IS NULL"),
+        ),
     )
 
 

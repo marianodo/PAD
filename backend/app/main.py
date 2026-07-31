@@ -4,7 +4,9 @@ from sqlalchemy import text, inspect
 from app.core.config import settings
 from app.api.api import api_router
 from app.db.base import engine, Base
+from app.db import points_scope_migration
 from dotenv import load_dotenv
+import logging
 import os
 
 # Cargar .env file
@@ -104,6 +106,19 @@ if not _TESTING:
                 "WHERE dni IS NULL AND cuil IS NOT NULL AND length(cuil)=11"
             ))
             conn.commit()
+
+        # Migración: saldos de puntos por entidad (cupones).
+        # Sin esto, toda query que toque user_points.client_id falla apenas
+        # arranca el proceso nuevo, porque create_all() no altera tablas.
+        if points_scope_migration.is_pending(inspector):
+            stats = points_scope_migration.run(conn)
+            conn.commit()
+            if stats.get("stranded_rows"):
+                logging.getLogger(__name__).warning(
+                    "Scoping de puntos: %s saldo(s) sin entidad (%s puntos). "
+                    "No se pueden canjear por cupones hasta asignarles client_id.",
+                    stats["stranded_rows"], stats["stranded_points"],
+                )
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
