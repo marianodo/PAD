@@ -193,6 +193,39 @@ class TestGenerateCoupon:
         assert float(stored.discount_pct) == 5.0
         assert stored.points_spent == 100
 
+    def test_zero_cost_reward_is_rejected(
+        self, client, db, sample_user, sample_user_points, sample_client
+    ):
+        """El catálogo se edita por SQL a mano, sin validación de la app.
+
+        Un tier de costo 0 saltearía el chequeo de saldo (`0 < 0` es falso) y
+        emitiría cupones infinitos; uno negativo acreditaría puntos.
+        """
+        free = _make_reward(db, sample_client, points_cost=0, discount_pct=100)
+        resp = client.post(
+            f"{API}/coupons",
+            json={"client_id": str(sample_client.id), "reward_id": str(free.id)},
+            headers=_citizen_header(sample_user),
+        )
+        assert resp.status_code == 404
+
+    def test_negative_cost_reward_is_rejected(
+        self, client, db, sample_user, sample_user_points, sample_client
+    ):
+        evil = _make_reward(db, sample_client, points_cost=-500, discount_pct=100)
+        resp = client.post(
+            f"{API}/coupons",
+            json={"client_id": str(sample_client.id), "reward_id": str(evil.id)},
+            headers=_citizen_header(sample_user),
+        )
+        assert resp.status_code == 404
+
+        points = db.query(UserPoints).filter(
+            UserPoints.user_id == sample_user.id,
+            UserPoints.client_id == sample_client.id,
+        ).first()
+        assert points.available_points == 100, "un costo negativo acreditó puntos"
+
     def test_merchant_cannot_generate_coupons(
         self, client, approved_merchant, sample_client, reward
     ):
@@ -418,6 +451,23 @@ class TestExpiry:
         stored = db.query(Coupon).filter(Coupon.code == coupon["code"]).first()
         assert stored.status == COUPON_EXPIRED
 
+    def test_owner_sees_expired_coupon_as_expired(
+        self, client, coupon, db, sample_user
+    ):
+        """Un cupón que venció sin que ningún comercio lo escanee.
+
+        Es el caso real: el ciudadano genera, se olvida, y a los 61 días abre la
+        app. Si su propio listado se lo muestra como disponible, va al comercio
+        con un cupón que la UI le dijo que servía.
+        """
+        self._expire(db, coupon["code"])
+
+        resp = client.get(f"{API}/coupons/me", headers=_citizen_header(sample_user))
+        assert resp.status_code == 200
+
+        mine = next(c for c in resp.json() if c["code"] == coupon["code"])
+        assert mine["status"] == COUPON_EXPIRED
+
     def test_expiry_does_not_refund_points(
         self, client, coupon, approved_merchant, db, sample_user, sample_client
     ):
@@ -434,6 +484,128 @@ class TestExpiry:
             UserPoints.client_id == sample_client.id,
         ).first()
         assert points.available_points == 0
+
+
+# --- Los puntos se acumulan en la entidad dueña de la encuesta ---
+
+class TestPointsScoping:
+    """El otorgamiento es la pieza que cambió de semántica: antes había un saldo
+    global por ciudadano y ahora hay uno por entidad. De ese saldo salen los
+    cupones, así que si los puntos caen en la entidad equivocada el ciudadano
+    puede canjear descuentos en comercios donde nunca participó."""
+
+    def _award(self, db, user, client_obj, points=100):
+        from app.models.survey import Survey
+        from app.services.survey_service import SurveyService
+
+        survey = Survey(id=uuid.uuid4(), title="Encuesta", client_id=client_obj.id)
+        db.add(survey)
+        db.flush()
+        SurveyService._update_user_points(db, user.id, points, None, survey.client_id)
+        db.commit()
+
+    def test_points_land_in_the_survey_owner_entity(
+        self, db, sample_user, sample_client, another_client
+    ):
+        self._award(db, sample_user, sample_client, 100)
+
+        mine = db.query(UserPoints).filter(
+            UserPoints.user_id == sample_user.id,
+            UserPoints.client_id == sample_client.id,
+        ).first()
+        assert mine is not None and mine.available_points == 100
+
+        other = db.query(UserPoints).filter(
+            UserPoints.user_id == sample_user.id,
+            UserPoints.client_id == another_client.id,
+        ).first()
+        assert other is None, "los puntos se filtraron a otra entidad"
+
+    def test_two_entities_keep_separate_balances(
+        self, db, sample_user, sample_client, another_client
+    ):
+        self._award(db, sample_user, sample_client, 100)
+        self._award(db, sample_user, another_client, 250)
+
+        balances = {
+            p.client_id: p.available_points
+            for p in db.query(UserPoints).filter(UserPoints.user_id == sample_user.id)
+        }
+        assert balances[sample_client.id] == 100
+        assert balances[another_client.id] == 250
+
+    def test_transaction_records_the_entity(self, db, sample_user, sample_client):
+        self._award(db, sample_user, sample_client, 100)
+
+        tx = db.query(PointTransaction).filter(
+            PointTransaction.user_id == sample_user.id
+        ).first()
+        assert tx.client_id == sample_client.id
+
+    def test_aggregate_sums_across_entities(
+        self, db, sample_user, sample_client, another_client
+    ):
+        """Sin client_id, get_user_points conserva la semántica de "total"."""
+        from app.services.user_service import UserService
+
+        self._award(db, sample_user, sample_client, 100)
+        self._award(db, sample_user, another_client, 250)
+
+        total = UserService.get_user_points(db, sample_user.id)
+        assert total.available_points == 350
+        assert total.client_id is None  # es un agregado, no una fila real
+
+        scoped = UserService.get_user_points(db, sample_user.id, sample_client.id)
+        assert scoped.available_points == 100
+
+
+# --- Aislamiento del token de comercio ---
+
+class TestMerchantTokenIsolation:
+    """El token de comercio no puede entrar por la puerta de los ciudadanos.
+
+    Los endpoints de encuestas autorizan con deny-lists ("si es User, 403; si es
+    Client de otra entidad, 403"), así que una cuenta de un tipo nuevo los
+    atraviesa sin control. Como el alta de comercio es pública y no requiere
+    aprobación, eso alcanzaría para leer datos personales de cualquier entidad.
+    """
+
+    @pytest.mark.parametrize("path", [
+        "/surveys/{sid}/results",
+        "/surveys/{sid}/segments",
+        "/surveys/{sid}/segments/export",
+    ])
+    def test_merchant_cannot_reach_survey_data(
+        self, client, db, another_client, pending_merchant, path
+    ):
+        from app.models.survey import Survey
+        survey = Survey(id=uuid.uuid4(), title="Encuesta ajena", client_id=another_client.id)
+        db.add(survey)
+        db.commit()
+
+        resp = client.get(
+            f"{API}{path.format(sid=survey.id)}",
+            headers=_merchant_header(pending_merchant),
+        )
+        assert resp.status_code == 403, (
+            f"{path} dejó pasar a un comercio: {resp.status_code}"
+        )
+
+    def test_merchant_token_on_auth_me_is_rejected_not_crashed(
+        self, client, approved_merchant
+    ):
+        """El branch else de /auth/me asume User y desreferencia .cuil."""
+        resp = client.get(f"{API}/auth/me", headers=_merchant_header(approved_merchant))
+        assert resp.status_code == 403
+
+    def test_merchant_cannot_read_citizen_points(
+        self, client, sample_user, sample_user_points, approved_merchant
+    ):
+        resp = client.get(
+            f"{API}/users/{sample_user.id}/points",
+            headers=_merchant_header(approved_merchant),
+        )
+        assert resp.status_code == 403
 
 
 # --- Alta y habilitación de comercios ---
