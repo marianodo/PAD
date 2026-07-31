@@ -20,6 +20,17 @@ from app.core.security import decode_access_token
 security = HTTPBearer()
 
 
+def enforce_rate_limit(limiter: "RateLimiter", key: str) -> None:
+    """Aplica un rate limit sobre `key`; lanza 429 si se excede."""
+    if not limiter.check(key):
+        retry_after = limiter.seconds_until_reset(key)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados intentos. Intentá nuevamente más tarde.",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+
 # --- Rate Limiter ---
 
 class RateLimiter:
@@ -30,6 +41,7 @@ class RateLimiter:
         self.window_seconds = window_seconds
         self._requests: dict[str, list[float]] = defaultdict(list)
         self._lock = threading.Lock()
+        self._last_purge = time.time()
 
     def check(self, provider_id: str) -> bool:
         """Retorna True si el request está permitido, False si excede el límite."""
@@ -37,6 +49,20 @@ class RateLimiter:
         cutoff = now - self.window_seconds
 
         with self._lock:
+            # Purga global periódica: las claves las elige quien llama, y algunas
+            # vienen de endpoints públicos (el email de login de un comercio, por
+            # ejemplo). Sin esto, cada valor nuevo deja una entrada para siempre y
+            # basta con pedir con un identificador distinto cada vez para hacer
+            # crecer la memoria del proceso hasta que lo maten.
+            if now - self._last_purge > self.window_seconds:
+                stale = [
+                    key for key, timestamps in self._requests.items()
+                    if not timestamps or max(timestamps) <= cutoff
+                ]
+                for key in stale:
+                    del self._requests[key]
+                self._last_purge = now
+
             # Limpiar requests viejos
             self._requests[provider_id] = [
                 ts for ts in self._requests[provider_id] if ts > cutoff
@@ -192,8 +218,24 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ) -> Union[User, Admin, Client]:
-    """Get current authenticated account (user, admin, or client)."""
-    return get_current_account(credentials, db)
+    """Get current authenticated account (user, admin, or client).
+
+    Excluye explícitamente a los comercios. Los endpoints que dependen de esto
+    autorizan con deny-lists del tipo "si es User, 403; si es Client de otra
+    entidad, 403", así que una cuenta que no sea ninguna de las dos los
+    atraviesa sin control: un comercio llegaría a los resultados y segmentos de
+    encuestas de cualquier entidad, que exponen nombre, email y barrio de cada
+    respondente. Los comercios tienen su propia puerta en get_current_merchant.
+    """
+    account = get_current_account(credentials, db)
+
+    if isinstance(account, Merchant):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Esta funcionalidad no está disponible para comercios"
+        )
+
+    return account
 
 
 def get_current_admin(
