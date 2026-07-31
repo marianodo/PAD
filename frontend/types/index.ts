@@ -90,10 +90,81 @@ export interface UserCreate {
 }
 
 export interface UserPoints {
-  id: string;
+  // Ausentes cuando la respuesta es la suma de los saldos de varias entidades.
+  id?: string;
+  client_id?: string;
   user_id: string;
   total_points: number;
   available_points: number;
   redeemed_points: number;
-  updated_at: string;
+  updated_at?: string;
+}
+
+// --- Cupones ---
+
+export interface CouponReward {
+  id: string;
+  client_id: string;
+  name: string;
+  points_cost: number;
+  discount_pct: number;
+  affordable?: boolean;
+}
+
+/** Saldo del ciudadano en una entidad, con el catálogo de esa entidad. */
+export interface CouponBalance {
+  client_id: string;
+  client_name: string;
+  available_points: number;
+  total_points: number;
+  rewards: CouponReward[];
+}
+
+export type CouponStatus = "active" | "redeemed" | "expired";
+
+export interface Coupon {
+  id: string;
+  code: string;
+  client_id: string;
+  reward_id: string;
+  discount_pct: number;
+  points_spent: number;
+  status: CouponStatus;
+  created_at?: string;
+  expires_at: string;
+  redeemed_at?: string;
+  client_name?: string;
+  reward_name?: string;
+  /** Solo viene en el historial del propio dueño del cupón. */
+  redeemed_by_merchant_name?: string;
+}
+
+export interface CouponValidation {
+  code: string;
+  valid: boolean;
+  discount_pct: number;
+  expires_at: string;
+  reward_name?: string;
+}
+
+export interface CouponRedeem {
+  code: string;
+  discount_pct: number;
+  redeemed_at: string;
+  reward_name?: string;
+}
+
+export type MerchantStatus = "pending" | "approved" | "rejected";
+
+export interface Merchant {
+  id: string;
+  client_id: string;
+  email: string;
+  name: string;
+  cuit?: string;
+  address?: string;
+  phone?: string;
+  status: MerchantStatus;
+  client_name?: string;
+  created_at?: string;
 }
