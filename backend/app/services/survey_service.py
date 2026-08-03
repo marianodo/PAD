@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, func
+from sqlalchemy.exc import IntegrityError
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta, date
 from uuid import UUID
@@ -281,9 +282,22 @@ class SurveyService:
         ).first()
 
         if not user_points:
-            user_points = UserPoints(user_id=user_id, client_id=client_id)
-            db.add(user_points)
-            db.flush()
+            # Dos respuestas concurrentes del mismo ciudadano en una entidad
+            # donde todavía no tiene saldo llegan las dos hasta acá y las dos
+            # intentan insertar. El unique es el que decide; la que pierde relee
+            # la fila que creó la otra en vez de romper la respuesta con un 500.
+            savepoint = db.begin_nested()
+            try:
+                user_points = UserPoints(user_id=user_id, client_id=client_id)
+                db.add(user_points)
+                db.flush()
+                savepoint.commit()
+            except IntegrityError:
+                savepoint.rollback()
+                user_points = db.query(UserPoints).filter(
+                    UserPoints.user_id == user_id,
+                    UserPoints.client_id == client_id,
+                ).one()
 
         # Actualizar puntos
         user_points.total_points += points

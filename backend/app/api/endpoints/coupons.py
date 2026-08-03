@@ -16,9 +16,25 @@ from app.schemas.coupon import (
     CouponValidationResponse,
 )
 from app.services.coupon_service import CouponService, CouponError, effective_status
-from app.api.dependencies import get_approved_merchant, get_current_regular_user
+from app.api.dependencies import (
+    coupon_rate_limiter,
+    get_approved_merchant,
+    get_current_regular_user,
+)
 
 router = APIRouter()
+
+
+def _note_failed_lookup(merchant: Merchant, error: CouponError) -> None:
+    """Cuenta contra el rate limit solo los códigos que no existen.
+
+    Es la señal de sondeo: barrer el espacio de códigos produce casi puros
+    'invalid_code'. Un cupón ya consumido o vencido, en cambio, es un código real
+    de la propia entidad del comercio, así que no se penaliza. Y las operaciones
+    exitosas no cuentan nunca: el límite no debe estorbarle al mostrador.
+    """
+    if error.code == "invalid_code":
+        coupon_rate_limiter.record(f"coupon:{merchant.id}")
 
 
 def _raise(error: CouponError):
@@ -133,6 +149,7 @@ def validate_coupon(
     try:
         coupon = CouponService.validate(db, code, merchant)
     except CouponError as e:
+        _note_failed_lookup(merchant, e)
         _raise(e)
 
     return CouponValidationResponse(
@@ -154,6 +171,7 @@ def redeem_coupon(
     try:
         coupon = CouponService.redeem(db, code, merchant)
     except CouponError as e:
+        _note_failed_lookup(merchant, e)
         _raise(e)
 
     return CouponRedeemResponse(

@@ -74,6 +74,23 @@ class RateLimiter:
             self._requests[provider_id].append(now)
             return True
 
+    def is_blocked(self, key: str) -> bool:
+        """Si la clave ya agotó su cupo, sin consumir un intento.
+
+        Se usa cuando el intento solo debe contarse según cómo termine la
+        operación: primero se pregunta, y recién después se registra el fallo.
+        """
+        cutoff = time.time() - self.window_seconds
+        with self._lock:
+            recent = [ts for ts in self._requests.get(key, []) if ts > cutoff]
+            self._requests[key] = recent
+            return len(recent) >= self.max_requests
+
+    def record(self, key: str) -> None:
+        """Registra un intento contra la clave."""
+        with self._lock:
+            self._requests[key].append(time.time())
+
     def seconds_until_reset(self, provider_id: str) -> int:
         """Segundos hasta que el window se resetea para este provider."""
         with self._lock:
@@ -96,10 +113,12 @@ login_rate_limiter = RateLimiter(max_requests=10, window_seconds=300)
 # (permite altas en lote desde una oficina, corta bots).
 register_rate_limiter = RateLimiter(max_requests=30, window_seconds=300)
 
-# Anti fuerza bruta de códigos de cupón: se keyea por comercio. Un mostrador real
-# tipea unos pocos códigos por minuto, así que 20 por minuto no molesta a nadie
-# legítimo y hace inviable barrer el espacio de códigos desde una cuenta.
-coupon_rate_limiter = RateLimiter(max_requests=20, window_seconds=60)
+# Anti sondeo de códigos de cupón, keyeado por comercio. Cuenta SOLO los códigos
+# que no existen, nunca las operaciones válidas: un local con varias cajas tiene
+# que poder validar y consumir en paralelo sin toparse con un 429. Barrer el
+# espacio de códigos, en cambio, produce casi puros fallos, y a 30 por minuto
+# recorrer 30^6 combinaciones lleva milenios.
+coupon_rate_limiter = RateLimiter(max_requests=30, window_seconds=60)
 
 
 # --- API Key Authentication ---
@@ -300,14 +319,15 @@ def get_approved_merchant(
             detail="Tu cuenta todavía no está habilitada para consumir cupones."
         )
 
-    # El rate limit va acá y no en el endpoint para que cubra por igual la
-    # validación y el consumo: son las dos puertas donde se prueban códigos.
+    # Solo se consulta el cupo, no se consume: el intento se cuenta después,
+    # y únicamente si el código resultó inexistente. Así N cajas del mismo
+    # comercio pueden operar en paralelo sin gastarse el cupo entre ellas.
     merchant_key = f"coupon:{merchant.id}"
-    if not coupon_rate_limiter.check(merchant_key):
+    if coupon_rate_limiter.is_blocked(merchant_key):
         retry_after = coupon_rate_limiter.seconds_until_reset(merchant_key)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Demasiadas consultas de cupones. Esperá unos segundos.",
+            detail="Demasiados códigos inválidos seguidos. Esperá unos segundos.",
             headers={"Retry-After": str(retry_after)},
         )
 
