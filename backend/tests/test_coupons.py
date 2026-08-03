@@ -765,6 +765,32 @@ class TestMerchantOnboarding:
         )
         assert resp.status_code == 404
 
+    def test_login_accepts_accounts_with_special_use_domains(
+        self, client, db, sample_client
+    ):
+        """Una cuenta ya guardada tiene que poder entrar siempre.
+
+        Validar el formato del email en el login deja fuera para siempre a
+        cualquier cuenta cuyo dominio el validador no acepte —.test y .local son
+        de uso especial y los rechaza— y devuelve 422 en vez del 401 que
+        corresponde. El formato se valida en el alta, no acá.
+        """
+        _make_merchant(db, sample_client, MERCHANT_APPROVED, email="demo@comercio.test")
+
+        resp = client.post(
+            f"{API}/merchants/login",
+            json={"email": "demo@comercio.test", "password": "comercio123"},
+        )
+        assert resp.status_code == 200, resp.text
+
+    def test_login_with_garbage_email_is_401_not_422(self, client):
+        """Un email inexistente falla como credencial, no como validación."""
+        resp = client.post(
+            f"{API}/merchants/login",
+            json={"email": "no soy un email", "password": "comercio123"},
+        )
+        assert resp.status_code == 401
+
     def test_wrong_password_is_rejected(self, client, db, sample_client):
         _make_merchant(db, sample_client, MERCHANT_APPROVED, email="w@comercio.com")
         resp = client.post(
