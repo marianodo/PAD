@@ -29,9 +29,13 @@ class MerchantRegisterRequest(BaseModel):
 
 
 class MerchantLoginRequest(BaseModel):
-    # También acotado: el email se usa como clave del rate limiter de login, así
-    # que un campo libre permitiría inventar una clave nueva por request.
-    email: EmailStr = Field(..., max_length=255)
+    # `str` y no `EmailStr` a propósito: validar el formato acá dejaría fuera
+    # para siempre a cualquier cuenta ya guardada con un email que el validador
+    # no acepte (dominios de uso especial como .test o .local, por ejemplo), y
+    # devolvería un 422 en lugar del 401 que corresponde. El login busca lo que
+    # le pasen y, si no existe, falla como credencial incorrecta.
+    # El max_length sí importa: este valor es clave del rate limiter.
+    email: str = Field(..., max_length=255)
     password: str = Field(..., min_length=6, max_length=72)
 
 
