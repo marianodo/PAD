@@ -347,9 +347,45 @@ class TestValidateCoupon:
         headers = _merchant_header(approved_merchant)
         codes = 429 in [
             client.get(f"{API}/coupons/validate/ZZZ{i:03d}", headers=headers).status_code
-            for i in range(25)
+            for i in range(40)
         ]
         assert codes, "el rate limiter no cortó el sondeo de códigos"
+
+    def test_valid_operations_never_consume_the_limit(
+        self, client, coupon, approved_merchant
+    ):
+        """Un local con varias cajas tiene que poder operar en paralelo.
+
+        El límite existe contra el sondeo de códigos, no contra el trabajo del
+        mostrador: validar cupones que existen no debe gastar cupo por más veces
+        que se haga.
+        """
+        headers = _merchant_header(approved_merchant)
+        for _ in range(60):
+            resp = client.get(
+                f"{API}/coupons/validate/{coupon['code']}", headers=headers
+            )
+            assert resp.status_code == 200, (
+                f"una operación válida se comió el rate limit: {resp.status_code}"
+            )
+
+    def test_expired_and_used_codes_do_not_count_as_probing(
+        self, client, coupon, approved_merchant, db
+    ):
+        """Son códigos reales de la propia entidad, no sondeo."""
+        client.post(
+            f"{API}/coupons/{coupon['code']}/redeem",
+            headers=_merchant_header(approved_merchant),
+        )
+
+        headers = _merchant_header(approved_merchant)
+        for _ in range(40):
+            resp = client.get(
+                f"{API}/coupons/validate/{coupon['code']}", headers=headers
+            )
+            assert resp.status_code == 409, (
+                f"un cupón ya consumido contó como sondeo: {resp.status_code}"
+            )
 
 
 # --- Consumo ---
@@ -541,6 +577,66 @@ class TestPointsScoping:
             PointTransaction.user_id == sample_user.id
         ).first()
         assert tx.client_id == sample_client.id
+
+    def test_concurrent_first_award_does_not_break(
+        self, db, sample_user, sample_client
+    ):
+        """Dos respuestas simultáneas en una entidad donde aún no hay saldo.
+
+        Las dos pasan el "no existe la fila" y las dos intentan insertar. El
+        unique deja entrar a una sola; la otra tiene que releer esa fila en vez
+        de reventar la respuesta de la encuesta con un 500.
+        """
+        from app.models.survey import Survey
+        from app.services.survey_service import SurveyService
+        from tests.conftest import TestingSessionLocal
+
+        from sqlalchemy import event
+
+        survey = Survey(id=uuid.uuid4(), title="Encuesta", client_id=sample_client.id)
+        db.add(survey)
+        db.commit()
+
+        # La otra respuesta inserta el saldo justo entre nuestra consulta (que no
+        # encontró nada) y nuestro INSERT. Enganchado al flush porque es el único
+        # punto donde la ventana existe de verdad.
+        state = {"raced": False}
+
+        def race(session, flush_context, instances):
+            if state["raced"]:
+                return
+            state["raced"] = True
+            other = TestingSessionLocal()
+            try:
+                other.add(UserPoints(
+                    id=uuid.uuid4(),
+                    user_id=sample_user.id,
+                    client_id=sample_client.id,
+                    total_points=0,
+                    available_points=0,
+                    redeemed_points=0,
+                ))
+                other.commit()
+            finally:
+                other.close()
+
+        event.listen(db, "before_flush", race)
+        try:
+            SurveyService._update_user_points(
+                db, sample_user.id, 100, None, sample_client.id
+            )
+            db.commit()
+        finally:
+            event.remove(db, "before_flush", race)
+
+        assert state["raced"], "el test no llegó a provocar la carrera"
+
+        rows = db.query(UserPoints).filter(
+            UserPoints.user_id == sample_user.id,
+            UserPoints.client_id == sample_client.id,
+        ).all()
+        assert len(rows) == 1, "se crearon saldos duplicados para la misma entidad"
+        assert rows[0].available_points == 100
 
     def test_aggregate_sums_across_entities(
         self, db, sample_user, sample_client, another_client
