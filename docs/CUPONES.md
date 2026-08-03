@@ -54,9 +54,11 @@ consuman el mismo cupón simultáneamente.
 - **El catálogo se valida al canjear.** `points_cost <= 0` se rechaza aunque esté
   activo en la tabla: como el catálogo se edita por SQL a mano, un tier de costo
   cero emitiría cupones infinitos y uno negativo acreditaría puntos.
-- **Rate limit de 20/min por comercio** sobre validar y consumir. El espacio de
-  códigos es grande, pero un comercio con cuenta podría sondearlo; un mostrador
-  real no tipea más que unos pocos códigos por minuto.
+- **Rate limit por comercio que cuenta solo los códigos inexistentes.** Validar y
+  consumir cupones reales no tiene tope, así que un local con varias cajas opera
+  en paralelo sin estorbarse. Barrer el espacio de códigos, en cambio, produce
+  casi puros fallos, y a 30 por minuto recorrer 30⁶ combinaciones lleva milenios.
+  Un cupón ya usado o vencido no penaliza: es un código real de la propia entidad.
 - **Sin filtración entre entidades.** Un cupón de otra entidad devuelve exactamente
   la misma respuesta que un código inexistente. Si se distinguieran, un comercio
   podría descubrir códigos ajenos por sondeo.
@@ -134,10 +136,8 @@ Los errores de cupón devuelven `detail: {code, message}`. Los `code` son
 - **El lock de fila no está cubierto por tests.** Los tests corren sobre SQLite,
   donde `with_for_update()` es un no-op. Se testea la revalidación de estado, que
   es la garantía lógica; la carrera real solo se ejerce en Postgres.
-- **`_update_user_points` hace get-or-create sin lock.** Dos respuestas
-  concurrentes del mismo ciudadano en una entidad donde todavía no tiene saldo
-  pueden intentar dos INSERT y la segunda choca contra el unique. Es preexistente,
-  pero ahora la ventana se repite cada vez que participa en una entidad nueva.
-- **El rate limit de cupones cuenta también los consumos válidos.** Son 20 por
-  minuto por comercio; un local con varias cajas en hora pico podría recibir un
-  429 operando normalmente.
+- **El vencimiento se normaliza al leerlo, no por un job.** El estado siempre se
+  deriva de la fecha al serializar, así que ninguna respuesta miente; pero una
+  fila que nadie consultó puede seguir guardada como `active` hasta que alguien
+  la mire. Para reportes que consulten la tabla directamente, hay que filtrar por
+  `expires_at` además de por `status`.
