@@ -1,18 +1,17 @@
 """
 AI Chat endpoint - Chat conversacional sobre datos de consultas usando Claude AI
 """
+import asyncio
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from anthropic import Anthropic
+from anthropic import Anthropic, APIStatusError, APIConnectionError, APITimeoutError
 from pydantic import BaseModel
 import json
 import re
-import logging
 from decimal import Decimal
 from typing import List, Union
 from uuid import UUID
-
-logger = logging.getLogger(__name__)
 
 from app.db.base import get_db
 from app.api.dependencies import get_current_user
@@ -23,6 +22,8 @@ from app.models.client import Client
 from app.models.user import User
 from app.api.endpoints.ai_insights import _json_dumps, _get_client_context
 from app.api.endpoints.surveys import ensure_can_view_survey_results
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -137,14 +138,40 @@ REGLAS PARA GRAFICOS:
             messages.append({"role": msg.role, "content": msg.content})
         messages.append({"role": "user", "content": request.message})
 
-        client = Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model=settings.CLAUDE_MODEL,
-            max_tokens=1500,
-            temperature=0.4,
-            system=system_prompt,
-            messages=messages,
-        )
+        # Nuestro loop controla los reintentos, asi que desactivamos los del SDK
+        client = Anthropic(api_key=api_key, max_retries=0)
+
+        max_attempts = 3
+        response = None
+        last_error = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = client.messages.create(
+                    model=settings.CLAUDE_MODEL,
+                    max_tokens=1500,
+                    temperature=0.4,
+                    system=system_prompt,
+                    messages=messages,
+                )
+                break
+            except (APIConnectionError, APITimeoutError) as e:
+                last_error = e
+                logger.warning(
+                    f"Intento {attempt}/{max_attempts} fallido (conexion) en chat de encuesta {survey_id}: {e!r}"
+                )
+            except APIStatusError as e:
+                last_error = e
+                if e.status_code not in (429, 500, 502, 503, 529):
+                    # Error no transitorio (ej: 400 bad request): reintentar no ayuda
+                    raise
+                logger.warning(
+                    f"Intento {attempt}/{max_attempts} fallido (status {e.status_code}) en chat de encuesta {survey_id}: {e!r}"
+                )
+            if attempt < max_attempts:
+                await asyncio.sleep(2 ** (attempt - 1))
+
+        if response is None:
+            raise last_error
 
         raw_text = response.content[0].text
 
@@ -188,8 +215,16 @@ REGLAS PARA GRAFICOS:
 
     except HTTPException:
         raise
+    except (APIStatusError, APIConnectionError, APITimeoutError) as e:
+        logger.error(f"Error de Anthropic en chat de encuesta {survey_id}: {e!r}")
+        status = getattr(e, "status_code", None)
+        if status in (429, 529):
+            detail = "El asistente está temporalmente saturado. Intenta de nuevo en unos segundos."
+        else:
+            detail = "No se pudo contactar al asistente de IA. Intenta de nuevo."
+        raise HTTPException(status_code=502, detail=detail)
     except Exception:
-        logger.exception("Error al procesar el mensaje del chat de IA")
+        logger.exception(f"Error inesperado en chat de encuesta {survey_id}")
         raise HTTPException(
             status_code=500,
             detail="Error al procesar el mensaje"
