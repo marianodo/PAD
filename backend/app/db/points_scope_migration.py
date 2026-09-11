@@ -19,7 +19,7 @@ Todo el módulo es idempotente.
 
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 from uuid import UUID, uuid4
 
 from sqlalchemy import func, insert, select, text, update
@@ -248,8 +248,13 @@ def lock_for_reconciliation(conn) -> None:
 
     Sin esto, un punto sumado entre el cálculo y la escritura haría que la
     escritura pise el saldo con un valor viejo. Las lecturas siguen andando.
+
+    Mientras el LOCK espera a otra transacción, todas las escrituras de puntos
+    se encolan detrás de él; el lock_timeout lo hace fallar en vez de dejar
+    colgada la app.
     """
     if conn.dialect.name == "postgresql":
+        conn.execute(text("SET LOCAL lock_timeout = '10s'"))
         conn.execute(text(
             "LOCK TABLE user_points, point_transactions IN SHARE ROW EXCLUSIVE MODE"
         ))
@@ -464,7 +469,9 @@ def _attribute_redemptions(conn) -> List[TransactionFix]:
     return fixes
 
 
-def _rebalance(stored: Dict, ledger: Dict):
+def _rebalance(
+    stored: Dict, ledger: Dict
+) -> Optional[Union[str, Dict[Optional[UUID], Balance]]]:
     """Saldos objetivo de un ciudadano, por entidad.
 
     Devuelve None si no hay nada que mover, un str con el motivo si no se puede

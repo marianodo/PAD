@@ -119,6 +119,12 @@ if not _TESTING:
                     "No se pueden canjear por cupones hasta asignarles client_id.",
                     stats["stranded_rows"], stats["stranded_points"],
                 )
+            if stats.get("skipped_balances"):
+                logging.getLogger(__name__).warning(
+                    "Scoping de puntos: %s saldo(s) no se repartieron por historial "
+                    "porque hacerlo sería adivinar. Ver scripts/reconcile_points_scope.py.",
+                    stats["skipped_balances"],
+                )
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

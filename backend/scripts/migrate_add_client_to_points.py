@@ -37,15 +37,22 @@ def migrate():
             print(f"  {stats['transactions_attributed']} transacciones atribuidas por encuesta")
             print(f"  {stats['balances_by_transactions']} saldos atribuidos por sus transacciones")
             print(f"  {stats['balances_by_membership']} saldos atribuidos por membresía única")
+            print(f"  {stats['reconciled_transactions']} transacciones y "
+                  f"{stats['reconciled_balances']} saldos repartidos por historial")
             print("✅ Migration completed successfully!")
 
             if stats["stranded_rows"]:
                 print(f"\n⚠️  {stats['stranded_rows']} saldo(s) quedaron sin entidad "
                       f"({stats['stranded_points']} puntos disponibles en total).")
-                print("   Son ciudadanos que ganaron puntos en más de una entidad, o que")
-                print("   no tienen transacciones ni membresía única. Esos puntos NO pueden")
+                print("   Son puntos de encuestas sin entidad, o de ciudadanos sin")
+                print("   transacciones ni membresía única que los expliquen. NO pueden")
                 print("   convertirse en cupones hasta que se les asigne un client_id a mano:")
                 print("     UPDATE user_points SET client_id = '<uuid>' WHERE user_id = '<uuid>';")
+
+            if stats["skipped_balances"]:
+                print(f"\n⚠️  {stats['skipped_balances']} saldo(s) no se repartieron por historial")
+                print("   porque hacerlo sería adivinar. Detalle con:")
+                print("     python scripts/reconcile_points_scope.py")
 
         except Exception as e:
             trans.rollback()
