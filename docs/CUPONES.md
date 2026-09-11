@@ -69,12 +69,21 @@ consuman el mismo cupón simultáneamente.
 
 El scoping de puntos por entidad se aplica **solo al arrancar la app**
 (`app/main.py`), igual que el resto de las migraciones del proyecto, porque
-`create_all()` no altera tablas existentes. No hace falta ningún paso manual en el
-deploy. El script existe para correrlo aparte y ver el reporte de atribución:
+`create_all()` no altera tablas existentes. Al final del scoping, los saldos se
+reparten por entidad según el historial de transacciones. En una base sin migrar
+no hace falta ningún paso manual en el deploy.
+
+Las bases que se migraron antes de que existiera ese reparto (develop y staging)
+lo necesitan una vez a mano, **después** de deployar el código nuevo: si se corre
+antes, el código viejo sigue sumando puntos sin entidad. Hacer un backup antes.
 
 ```bash
 # Opcional: aplicar/inspeccionar el scoping a mano (idempotente)
 python scripts/migrate_add_client_to_points.py
+
+# Reparto por historial en una base ya migrada: primero simular, después aplicar
+python scripts/reconcile_points_scope.py
+python scripts/reconcile_points_scope.py --apply
 
 # Catálogo por defecto: 100 puntos = 5% en cada entidad
 python scripts/seed_coupon_rewards.py
@@ -125,9 +134,15 @@ Los errores de cupón devuelven `detail: {code, message}`. Los `code` son
   saldo histórico sin `client_id`, que no puede convertirse en cupones (queda
   excluido de `/coupons/balances`). El script de migración reporta cuántos puntos
   quedaron en esa situación.
-- **Saldos ambiguos en la migración.** Si un ciudadano ganó puntos en más de una
-  entidad, su saldo global único no se puede repartir sin una decisión de negocio.
-  El script los deja sin entidad y los reporta en vez de adivinar.
+- **Saldos ambiguos en la migración.** El reparto por historial mueve a cada
+  entidad lo que se ganó y canjeó ahí, sin cambiar la suma de ningún ciudadano.
+  No toca a quien tiene canjes sin entidad atribuible, un faltante que podría
+  venir de más de una fila o puntos de otra entidad ya gastados en cupones: los
+  reporta en vez de adivinar. Los puntos que el historial no explica (cargados a
+  mano, por ejemplo) se quedan en la fila donde estaban.
+- **No se puede volver al código previo al scoping.** Ese código asume una sola
+  fila de puntos por ciudadano y, con varias, lee y debita una cualquiera. Si hay
+  que revertir el deploy, hay que restaurar también el backup de la base.
 - **`integration.py` elige la entidad con `next(iter(matched))`.** Si un proveedor
   está autorizado para varias entidades del ciudadano, toma una arbitrariamente.
   Ya era ambiguo antes; ahora además define de qué saldo se debita.
