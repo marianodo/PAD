@@ -41,5 +41,6 @@ class User(Base):
     client = relationship("Client", back_populates="users")
     client_memberships = relationship("UserClient", back_populates="user", cascade="all, delete-orphan")
     responses = relationship("SurveyResponse", back_populates="user")
-    points = relationship("UserPoints", back_populates="user", uselist=False)
+    # Un saldo por entidad en la que el ciudadano participa, no uno solo.
+    points = relationship("UserPoints", back_populates="user")
     point_transactions = relationship("PointTransaction", back_populates="user")

@@ -14,9 +14,21 @@ from app.models.user import User
 from app.models.admin import Admin
 from app.models.client import Client
 from app.models.provider import Provider
+from app.models.merchant import Merchant, MERCHANT_APPROVED
 from app.core.security import decode_access_token
 
 security = HTTPBearer()
+
+
+def enforce_rate_limit(limiter: "RateLimiter", key: str) -> None:
+    """Aplica un rate limit sobre `key`; lanza 429 si se excede."""
+    if not limiter.check(key):
+        retry_after = limiter.seconds_until_reset(key)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados intentos. Intentá nuevamente más tarde.",
+            headers={"Retry-After": str(retry_after)},
+        )
 
 
 # --- Rate Limiter ---
@@ -29,6 +41,7 @@ class RateLimiter:
         self.window_seconds = window_seconds
         self._requests: dict[str, list[float]] = defaultdict(list)
         self._lock = threading.Lock()
+        self._last_purge = time.time()
 
     def check(self, provider_id: str) -> bool:
         """Retorna True si el request está permitido, False si excede el límite."""
@@ -36,6 +49,20 @@ class RateLimiter:
         cutoff = now - self.window_seconds
 
         with self._lock:
+            # Purga global periódica: las claves las elige quien llama, y algunas
+            # vienen de endpoints públicos (el email de login de un comercio, por
+            # ejemplo). Sin esto, cada valor nuevo deja una entrada para siempre y
+            # basta con pedir con un identificador distinto cada vez para hacer
+            # crecer la memoria del proceso hasta que lo maten.
+            if now - self._last_purge > self.window_seconds:
+                stale = [
+                    key for key, timestamps in self._requests.items()
+                    if not timestamps or max(timestamps) <= cutoff
+                ]
+                for key in stale:
+                    del self._requests[key]
+                self._last_purge = now
+
             # Limpiar requests viejos
             self._requests[provider_id] = [
                 ts for ts in self._requests[provider_id] if ts > cutoff
@@ -46,6 +73,23 @@ class RateLimiter:
 
             self._requests[provider_id].append(now)
             return True
+
+    def is_blocked(self, key: str) -> bool:
+        """Si la clave ya agotó su cupo, sin consumir un intento.
+
+        Se usa cuando el intento solo debe contarse según cómo termine la
+        operación: primero se pregunta, y recién después se registra el fallo.
+        """
+        cutoff = time.time() - self.window_seconds
+        with self._lock:
+            recent = [ts for ts in self._requests.get(key, []) if ts > cutoff]
+            self._requests[key] = recent
+            return len(recent) >= self.max_requests
+
+    def record(self, key: str) -> None:
+        """Registra un intento contra la clave."""
+        with self._lock:
+            self._requests[key].append(time.time())
 
     def seconds_until_reset(self, provider_id: str) -> int:
         """Segundos hasta que el window se resetea para este provider."""
@@ -68,6 +112,13 @@ login_rate_limiter = RateLimiter(max_requests=10, window_seconds=300)
 # Anti abuso de registro masivo: se keyea por IP con un umbral más tolerante
 # (permite altas en lote desde una oficina, corta bots).
 register_rate_limiter = RateLimiter(max_requests=30, window_seconds=300)
+
+# Anti sondeo de códigos de cupón, keyeado por comercio. Cuenta SOLO los códigos
+# que no existen, nunca las operaciones válidas: un local con varias cajas tiene
+# que poder validar y consumir en paralelo sin toparse con un 429. Barrer el
+# espacio de códigos, en cambio, produce casi puros fallos, y a 30 por minuto
+# recorrer 30^6 combinaciones lleva milenios.
+coupon_rate_limiter = RateLimiter(max_requests=30, window_seconds=60)
 
 
 # --- API Key Authentication ---
@@ -117,10 +168,10 @@ def verify_api_key(
 def get_current_account(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> Union[User, Admin, Client]:
+) -> Union[User, Admin, Client, Merchant]:
     """
     Get current authenticated account from JWT token.
-    Returns User, Admin, or Client based on account_type in token.
+    Returns User, Admin, Client, or Merchant based on account_type in token.
     """
 
     token = credentials.credentials
@@ -162,6 +213,8 @@ def get_current_account(
         account = db.query(Admin).filter(Admin.id == account_uuid).first()
     elif account_type == "client":
         account = db.query(Client).filter(Client.id == account_uuid).first()
+    elif account_type == "merchant":
+        account = db.query(Merchant).filter(Merchant.id == account_uuid).first()
 
     if account is None:
         raise HTTPException(
@@ -184,8 +237,24 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ) -> Union[User, Admin, Client]:
-    """Get current authenticated account (user, admin, or client)."""
-    return get_current_account(credentials, db)
+    """Get current authenticated account (user, admin, or client).
+
+    Excluye explícitamente a los comercios. Los endpoints que dependen de esto
+    autorizan con deny-lists del tipo "si es User, 403; si es Client de otra
+    entidad, 403", así que una cuenta que no sea ninguna de las dos los
+    atraviesa sin control: un comercio llegaría a los resultados y segmentos de
+    encuestas de cualquier entidad, que exponen nombre, email y barrio de cada
+    respondente. Los comercios tienen su propia puerta en get_current_merchant.
+    """
+    account = get_current_account(credentials, db)
+
+    if isinstance(account, Merchant):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Esta funcionalidad no está disponible para comercios"
+        )
+
+    return account
 
 
 def get_current_admin(
@@ -222,3 +291,44 @@ def get_current_regular_user(
             detail="Esta funcionalidad es solo para usuarios regulares"
         )
     return account
+
+
+def get_current_merchant(
+    account: Union[User, Admin, Client, Merchant] = Depends(get_current_account)
+) -> Merchant:
+    """Verify that current account is a merchant (aprobado o no)."""
+    if not isinstance(account, Merchant):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Esta funcionalidad es solo para comercios"
+        )
+    return account
+
+
+def get_approved_merchant(
+    merchant: Merchant = Depends(get_current_merchant)
+) -> Merchant:
+    """Exige un comercio habilitado.
+
+    El alta la hace el comercio por su cuenta, pero recién puede operar cuando
+    verificamos con la entidad que está efectivamente adherido al plan.
+    """
+    if merchant.status != MERCHANT_APPROVED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu cuenta todavía no está habilitada para consumir cupones."
+        )
+
+    # Solo se consulta el cupo, no se consume: el intento se cuenta después,
+    # y únicamente si el código resultó inexistente. Así N cajas del mismo
+    # comercio pueden operar en paralelo sin gastarse el cupo entre ellas.
+    merchant_key = f"coupon:{merchant.id}"
+    if coupon_rate_limiter.is_blocked(merchant_key):
+        retry_after = coupon_rate_limiter.seconds_until_reset(merchant_key)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados códigos inválidos seguidos. Esperá unos segundos.",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+    return merchant

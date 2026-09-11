@@ -15,28 +15,15 @@ from app.services import membership_service
 from app.core.identity import dni_from_cuil
 from app.schemas.auth import LoginRequest, RegisterRequest, Token
 from app.schemas.user import UserResponse
-from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.security import (
+    verify_password, get_password_hash, create_access_token, DUMMY_PASSWORD_HASH,
+)
 from app.core.config import settings
-from app.api.dependencies import get_current_user, login_rate_limiter, register_rate_limiter
+from app.api.dependencies import (
+    get_current_user, login_rate_limiter, register_rate_limiter, enforce_rate_limit,
+)
 
 router = APIRouter()
-
-# Hash bcrypt de una password dummy. Se verifica contra este hash cuando la cuenta
-# no existe, para que el tiempo de respuesta sea uniforme y no se pueda enumerar
-# cuentas por timing.
-_DUMMY_PASSWORD_HASH = get_password_hash("dummy-password-for-constant-time-check")
-
-
-def _enforce_rate_limit(limiter, key: str) -> None:
-    """Aplica un rate limit sobre `key`; lanza 429 si se excede."""
-    if not limiter.check(key):
-        retry_after = limiter.seconds_until_reset(key)
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Demasiados intentos. Intentá nuevamente más tarde.",
-            headers={"Retry-After": str(retry_after)},
-        )
-
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(
@@ -46,7 +33,7 @@ def register(
 ):
     """Register a new regular user (citizen)."""
     client_ip = request.client.host if request.client else "unknown"
-    _enforce_rate_limit(register_rate_limiter, f"register:{client_ip}")
+    enforce_rate_limit(register_rate_limiter, f"register:{client_ip}")
 
     # Check if CUIL already exists
     existing_user = db.query(User).filter(User.cuil == user_data.cuil).first()
@@ -134,7 +121,7 @@ def login_v2(
     """
     # Anti fuerza bruta: se limita por identificador de cuenta (no por IP) para
     # apuntar al brute-force de una cuenta puntual sin afectar IPs compartidas.
-    _enforce_rate_limit(login_rate_limiter, f"login:{credentials.cuil.strip().lower()}")
+    enforce_rate_limit(login_rate_limiter, f"login:{credentials.cuil.strip().lower()}")
 
     account: Union[User, Admin, Client, None] = None
     account_type = None
@@ -168,7 +155,7 @@ def login_v2(
     # Verificación de password en tiempo constante: si la cuenta no existe se
     # verifica contra un hash dummy para no revelar la existencia por timing.
     if account is None:
-        verify_password(credentials.password, _DUMMY_PASSWORD_HASH)
+        verify_password(credentials.password, DUMMY_PASSWORD_HASH)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas",

@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { API_URL } from "@/lib/config";
+import type { Coupon, CouponBalance, CouponReward } from "@/types";
+
+/** Entrada del historial unificado: encuestas respondidas y cupones, en una
+ *  sola línea de tiempo. `date` es la fecha con la que se ordena todo. */
+type ActivityItem =
+  | { kind: "survey"; date: string; response: SurveyResponse }
+  | { kind: "coupon"; date: string; coupon: Coupon };
 
 interface SurveyResponse {
   id: string;
@@ -35,6 +42,7 @@ interface PointTransaction {
 }
 
 interface UserData {
+  id?: string;
   cuil: string;
   name: string;
   email: string;
@@ -87,7 +95,7 @@ export default function DashboardPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"surveys" | "points" | "profile">("surveys");
+  const [activeTab, setActiveTab] = useState<"surveys" | "cupones" | "points" | "profile">("surveys");
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<UserData | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -98,10 +106,74 @@ export default function DashboardPage() {
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
   const [selectedResponse, setSelectedResponse] = useState<ResponseDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  // Cupones
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [balances, setBalances] = useState<CouponBalance[]>([]);
+  const [pendingReward, setPendingReward] = useState<{ balance: CouponBalance; reward: CouponReward } | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [justCreated, setJustCreated] = useState<Coupon | null>(null);
+  const [couponError, setCouponError] = useState("");
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     router.push("/auth/login");
+  };
+
+  /** Saldos por entidad + cupones del ciudadano. */
+  const loadCoupons = async (token: string) => {
+    try {
+      const [balRes, coupRes] = await Promise.all([
+        fetch(`${API_URL}/api/v1/coupons/balances`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/v1/coupons/me`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      if (balRes.ok) setBalances(await balRes.json());
+      if (coupRes.ok) setCoupons(await coupRes.json());
+    } catch (err) { /* la sección de cupones queda vacía */ }
+  };
+
+  const handleGenerateCoupon = async () => {
+    if (!pendingReward) return;
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    setIsGenerating(true);
+    setCouponError("");
+    try {
+      const res = await fetch(`${API_URL}/api/v1/coupons`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ client_id: pendingReward.balance.client_id, reward_id: pendingReward.reward.id }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.detail?.message || "No pudimos generar el cupón.");
+
+      setJustCreated(body);
+      setPendingReward(null);
+      // El canje mueve saldo e historial, así que se recarga todo lo que lo refleja.
+      await loadCoupons(token);
+      await refreshPointsAndTransactions(token);
+    } catch (err: any) {
+      setCouponError(err.message);
+      setPendingReward(null);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const refreshPointsAndTransactions = async (token: string) => {
+    const uid = userData?.id;
+    if (!uid) return;
+    try {
+      const [pointsRes, txRes] = await Promise.all([
+        fetch(`${API_URL}/api/v1/users/${uid}/points`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/v1/users/${uid}/transactions`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      if (pointsRes.ok) {
+        const p = await pointsRes.json();
+        setStats((prev) => ({ ...prev, available_points: p.available_points ?? prev.available_points, redeemed_points: p.redeemed_points ?? prev.redeemed_points }));
+      }
+      if (txRes.ok) setTransactions(await txRes.json());
+    } catch (err) { /* ignore */ }
   };
 
   const fetchResponseDetail = async (responseId: string) => {
@@ -258,6 +330,7 @@ export default function DashboardPage() {
             if (txRes.ok) { setTransactions(await txRes.json()); }
           } catch (err) { /* ignore */ }
         }
+        await loadCoupons(token);
         setStats({ total_responses: completedResponses.length, total_points: totalPoints, available_points: availablePoints, redeemed_points: redeemedPoints, level: totalPoints >= 1000 ? "Oro" : totalPoints >= 500 ? "Plata" : "Bronce", points_to_next_level: totalPoints >= 1000 ? 0 : totalPoints >= 500 ? 1000 - totalPoints : 500 - totalPoints });
       } catch (err: any) { setError(err.message); } finally { setLoading(false); }
     };
@@ -276,6 +349,22 @@ export default function DashboardPage() {
       case "Oro": return { bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-300", bar: "from-yellow-400 to-yellow-600", icon: "text-yellow-500" };
       case "Platino": return { bg: "bg-[#2962FF]/5", text: "text-[#1a4fd4]", border: "border-[#5E8AFF]", bar: "from-[#5E8AFF] to-[#2962FF]", icon: "text-[#2962FF]" };
       default: return { bg: "bg-[#2962FF]/5", text: "text-[#1a4fd4]", border: "border-[#2962FF]", bar: "from-[#2962FF] to-[#1a4fd4]", icon: "text-[#5E8AFF]" };
+    }
+  };
+
+  // Historial unificado: las encuestas respondidas y los cupones conviven en una
+  // sola línea de tiempo, ordenados por fecha. Un cupón se ancla en su fecha de
+  // generación, que es cuando movió los puntos.
+  const activity: ActivityItem[] = [
+    ...responses.map((r) => ({ kind: "survey" as const, date: r.completed_at || r.started_at, response: r })),
+    ...coupons.map((c) => ({ kind: "coupon" as const, date: c.created_at || c.expires_at, coupon: c })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const couponStatusBadge = (status: string) => {
+    switch (status) {
+      case "active": return { label: "Disponible", className: "bg-green-50 text-green-700 border-green-200/60" };
+      case "redeemed": return { label: "Usado", className: "bg-gray-100 text-gray-600 border-gray-200" };
+      default: return { label: "Vencido", className: "bg-red-50 text-red-600 border-red-200/60" };
     }
   };
 
@@ -315,6 +404,7 @@ export default function DashboardPage() {
 
   const navItems = [
     { id: "surveys" as const, label: "Mis Consultas", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg> },
+    { id: "cupones" as const, label: "Mis Cupones", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg> },
     { id: "points" as const, label: "Mis Puntos", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg> },
     { id: "profile" as const, label: "Mi Perfil", icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> },
   ];
@@ -547,11 +637,14 @@ export default function DashboardPage() {
           {activeTab === "surveys" && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-900">Historial de Consultas</h3>
-                <span className="text-xs text-gray-400 border border-gray-200 rounded-full px-3 py-1 font-medium">{responses.length} consulta{responses.length !== 1 ? "s" : ""}</span>
+                <h3 className="text-lg font-bold text-gray-900">Historial de Actividad</h3>
+                <span className="text-xs text-gray-400 border border-gray-200 rounded-full px-3 py-1 font-medium">
+                  {responses.length} consulta{responses.length !== 1 ? "s" : ""}
+                  {coupons.length > 0 && ` · ${coupons.length} cupón${coupons.length !== 1 ? "es" : ""}`}
+                </span>
               </div>
 
-              {responses.length === 0 ? (
+              {activity.length === 0 ? (
                 <div className="text-center py-16 px-4">
                   <div className="w-16 h-16 rounded-full bg-[#2962FF]/5 flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-[#00C853]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
@@ -567,7 +660,7 @@ export default function DashboardPage() {
                 <>
                   {/* Table header */}
                   <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50/80 text-[11px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
-                    <div className="col-span-4">Consulta</div>
+                    <div className="col-span-4">Actividad</div>
                     <div className="col-span-2">Fecha</div>
                     <div className="col-span-2">Estado</div>
                     <div className="col-span-2">Puntos</div>
@@ -576,7 +669,58 @@ export default function DashboardPage() {
 
                   {/* Table rows */}
                   <div className="divide-y divide-gray-50">
-                    {responses.map((response) => (
+                    {activity.map((item) => item.kind === "coupon" ? (() => {
+                      const coupon = item.coupon;
+                      const badge = couponStatusBadge(coupon.status);
+                      return (
+                        <div key={`c-${coupon.id}`} className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-6 py-4 hover:bg-gray-50/60 transition-colors duration-150 items-center">
+                          <div className="col-span-4 flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-[#2962FF]/5 flex items-center justify-center shrink-0">
+                              <svg className="w-4 h-4 text-[#2962FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-semibold text-gray-900 text-sm">
+                                Cupón <span className="font-mono tracking-wider">{coupon.code}</span> · {Number(coupon.discount_pct)}% off
+                              </h4>
+                              <p className="text-xs text-gray-400 truncate">
+                                {coupon.status === "redeemed" && coupon.redeemed_by_merchant_name
+                                  ? `Usado en ${coupon.redeemed_by_merchant_name}`
+                                  : coupon.client_name}
+                              </p>
+                              <p className="text-xs text-gray-400 md:hidden mt-0.5">{formatDate(item.date)}</p>
+                            </div>
+                          </div>
+                          <div className="col-span-2 hidden md:flex items-center">
+                            <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                              <svg className="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                              {formatDate(item.date)}
+                            </span>
+                          </div>
+                          <div className="col-span-2 hidden md:block">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${badge.className}`}>
+                              {badge.label}
+                            </span>
+                          </div>
+                          <div className="col-span-2 hidden md:block">
+                            <span className="text-red-500 font-bold text-sm">-{coupon.points_spent} <span className="text-xs font-normal text-gray-400">pts</span></span>
+                          </div>
+                          <div className="col-span-2 flex md:justify-end items-center gap-2">
+                            <span className={`md:hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${badge.className}`}>{badge.label}</span>
+                            <span className="md:hidden text-red-500 font-bold text-sm">-{coupon.points_spent}</span>
+                            {coupon.status === "active" && (
+                              <button
+                                onClick={() => setActiveTab("cupones")}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg text-xs font-medium hover:bg-[#2962FF]/5 hover:text-[#2962FF] hover:border-[#2962FF]/20 transition-all duration-200"
+                              >
+                                Ver cupón
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })() : (() => {
+                      const response = item.response;
+                      return (
                       <div key={response.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-6 py-4 hover:bg-gray-50/60 transition-colors duration-150 items-center">
                         <div className="col-span-4">
                           <h4 className="font-semibold text-gray-900 text-sm">{response.survey_title}</h4>
@@ -634,9 +778,119 @@ export default function DashboardPage() {
                           )}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })()
+                    )}
                   </div>
                 </>
+              )}
+            </div>
+          )}
+
+          {activeTab === "cupones" && (
+            <div className="space-y-5">
+              {couponError && (
+                <div className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm">{couponError}</div>
+              )}
+
+              {justCreated && (
+                <div className="p-5 rounded-2xl bg-white border-2 border-[#00C853] shadow-sm">
+                  <p className="text-xs font-medium tracking-widest uppercase text-[#00A344]">Cupón generado</p>
+                  <p className="mt-2 text-4xl font-bold tracking-[0.2em] text-gray-900 font-mono">{justCreated.code}</p>
+                  <p className="mt-2 text-sm text-gray-600">
+                    {Number(justCreated.discount_pct)}% de descuento · vence el {formatDate(justCreated.expires_at)}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-400">Mostrale este código al comercio adherido.</p>
+                  <button onClick={() => setJustCreated(null)} className="mt-3 text-sm text-gray-500 hover:text-gray-700">Entendido</button>
+                </div>
+              )}
+
+              {/* Saldos y catálogo por entidad */}
+              {balances.length === 0 ? (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#2962FF]/5 flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-[#2962FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+                  </div>
+                  <p className="text-gray-900 font-semibold mb-1">Todavía no podés generar cupones</p>
+                  <p className="text-gray-400 text-sm">Respondé consultas de tu municipio para acumular puntos y canjearlos por descuentos.</p>
+                </div>
+              ) : (
+                balances.map((balance) => (
+                  <div key={balance.client_id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <h3 className="text-base font-bold text-gray-900 truncate">{balance.client_name}</h3>
+                        <p className="text-xs text-gray-400">{balance.total_points} puntos ganados en total</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-2xl font-bold text-[#2962FF]">{balance.available_points}</p>
+                        <p className="text-xs text-gray-400">disponibles</p>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      {balance.rewards.length === 0 ? (
+                        <p className="text-sm text-gray-400">Esta entidad todavía no publicó descuentos para canjear.</p>
+                      ) : (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {balance.rewards.map((reward) => (
+                            <div key={reward.id} className={`p-4 rounded-xl border flex items-center justify-between gap-3 ${reward.affordable ? "border-gray-200" : "border-gray-100 bg-gray-50/60"}`}>
+                              <div className="min-w-0">
+                                <p className="font-bold text-gray-900">{Number(reward.discount_pct)}% off</p>
+                                <p className="text-xs text-gray-400">{reward.points_cost} puntos</p>
+                              </div>
+                              <button
+                                disabled={!reward.affordable}
+                                onClick={() => { setCouponError(""); setPendingReward({ balance, reward }); }}
+                                className="px-3 py-2 rounded-lg text-sm font-medium shrink-0 bg-[#2962FF] text-white hover:bg-[#1a4fd4] transition-all disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+                              >
+                                {reward.affordable ? "Generar" : "Faltan puntos"}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {/* Cupones del ciudadano */}
+              {coupons.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="text-base font-bold text-gray-900">Mis cupones</h3>
+                    <span className="text-xs text-gray-400 border border-gray-200 rounded-full px-3 py-1 font-medium">
+                      {coupons.filter((c) => c.status === "active").length} disponible{coupons.filter((c) => c.status === "active").length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-gray-50">
+                    {coupons.map((coupon) => {
+                      const badge = couponStatusBadge(coupon.status);
+                      const days = Math.max(0, Math.ceil((new Date(coupon.expires_at).getTime() - Date.now()) / 86400000));
+                      return (
+                        <div key={coupon.id} className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-gray-50/60 transition-colors">
+                          <div className="min-w-0">
+                            <p className={`font-mono font-bold text-lg tracking-[0.15em] ${coupon.status === "active" ? "text-gray-900" : "text-gray-400 line-through"}`}>
+                              {coupon.code}
+                            </p>
+                            <p className="text-xs text-gray-400 truncate">
+                              {Number(coupon.discount_pct)}% · {coupon.client_name}
+                              {coupon.status === "redeemed" && coupon.redeemed_by_merchant_name && ` · ${coupon.redeemed_by_merchant_name}`}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${badge.className}`}>{badge.label}</span>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {coupon.status === "active" ? `Vence en ${days} día${days !== 1 ? "s" : ""}`
+                                : coupon.status === "redeemed" ? `Usado el ${formatDate(coupon.redeemed_at!)}`
+                                : `Venció el ${formatDate(coupon.expires_at)}`}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -966,6 +1220,54 @@ export default function DashboardPage() {
             <div className="px-6 py-4 border-t border-gray-100 shrink-0">
               <button onClick={() => setSelectedResponse(null)} className="w-full px-4 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition text-sm">
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmación de canje: el débito es irreversible, no puede ser un solo click */}
+      {pendingReward && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-gray-900">
+              ¿Generar el cupón de {Number(pendingReward.reward.discount_pct)}%?
+            </h3>
+
+            <div className="mt-4 space-y-2 text-sm text-gray-600">
+              <p className="flex justify-between gap-4">
+                <span>Puntos que se descuentan</span>
+                <span className="font-semibold text-gray-900">{pendingReward.reward.points_cost}</span>
+              </p>
+              <p className="flex justify-between gap-4">
+                <span>Te quedan</span>
+                <span className="font-semibold text-gray-900">{pendingReward.balance.available_points - pendingReward.reward.points_cost}</span>
+              </p>
+              <p className="flex justify-between gap-4">
+                <span>Válido en</span>
+                <span className="font-semibold text-gray-900 text-right">Comercios de {pendingReward.balance.client_name}</span>
+              </p>
+            </div>
+
+            <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-900 text-sm">
+              Los puntos se descuentan ahora y el cupón vence en 60 días.
+              <strong className="font-semibold"> Si no lo usás, no se devuelven.</strong>
+            </div>
+
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => setPendingReward(null)}
+                disabled={isGenerating}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleGenerateCoupon}
+                disabled={isGenerating}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[#2962FF] text-white font-medium hover:bg-[#1a4fd4] transition disabled:opacity-50"
+              >
+                {isGenerating ? "Generando..." : "Confirmar"}
               </button>
             </div>
           </div>

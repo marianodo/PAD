@@ -10,6 +10,8 @@ from app.models.provider import Provider, ProviderClient
 from app.models.electoral_roll import ElectoralRoll
 from app.models.integration_audit import IntegrationAuditLog
 from app.models.report import Report
+from app.models.merchant import Merchant
+from app.models.coupon import Coupon, CouponReward
 
 __all__ = [
     "User",
@@ -29,4 +31,7 @@ __all__ = [
     "ElectoralRoll",
     "IntegrationAuditLog",
     "Report",
+    "Merchant",
+    "Coupon",
+    "CouponReward",
 ]

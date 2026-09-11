@@ -24,6 +24,13 @@ def get_password_hash(password: str) -> str:
     return hashed.decode('utf-8')
 
 
+# Hash bcrypt de una password dummy. Se verifica contra este hash cuando la
+# cuenta no existe, para que el tiempo de respuesta sea uniforme y no se puedan
+# enumerar cuentas por timing. Vive acá y no en cada endpoint de login porque
+# cada bcrypt cuesta ~100-300 ms al importar el módulo.
+DUMMY_PASSWORD_HASH = get_password_hash("dummy-password-for-constant-time-check")
+
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create a JWT access token."""
     to_encode = data.copy()

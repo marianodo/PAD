@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints import users, surveys, auth, responses, admin, ai_insights, ai_chat, integration, neighborhoods, reports
+from app.api.endpoints import users, surveys, auth, responses, admin, ai_insights, ai_chat, integration, neighborhoods, reports, merchants, coupons
 
 api_router = APIRouter()
 
@@ -13,3 +13,5 @@ api_router.include_router(ai_chat.router, tags=["ai-chat"])
 api_router.include_router(integration.router, prefix="/integration", tags=["integration"])
 api_router.include_router(neighborhoods.router, prefix="/neighborhoods", tags=["neighborhoods"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
+api_router.include_router(merchants.router, prefix="/merchants", tags=["merchants"])
+api_router.include_router(coupons.router, prefix="/coupons", tags=["coupons"])
